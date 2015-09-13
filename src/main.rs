@@ -1,4 +1,4 @@
 fn main() {
-    println!("Helo  Нилитиус! Dota mast die!");
+    println!("Dota mast die!");
 
 }

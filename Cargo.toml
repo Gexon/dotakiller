@@ -1,0 +1,7 @@
+[package]
+name = "dk_server"
+version = "0.1.0"
+authors = ["Gexon <alimgan@gmail.com>"]
+
+[[bin]]
+name = "dk_server"

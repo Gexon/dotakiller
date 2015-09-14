@@ -1,42 +1,38 @@
-use std::f32::consts;
+use mio::{EventLoop, io, buf};
 
-static MAX_HELTH: i32 = 100;
-static GAME_NAME: &'static str = "Убийца доты!";
 
 fn main() {
-    dota_mast_die();
-    player();
+			start().assert("Цикл обработки событий не может быть запущен");
 }
 
 
-// комент, тестовая функция.
-fn dota_mast_die(){
-    type ManaType = i16;
-    let mut num: i32;
-    let index = 1;
-    num = 1000;
-    const PI: f32 = 123.123;
-    num = num + MAX_HELTH;
-    let mut ibool: i16;
-    ibool = num as i16;
-    let mana: ManaType = 50;
-    ibool = mana;
-    println!("Dota mast die! {1} {0} {2}", MAX_HELTH, GAME_NAME, PI);
-    println!("Dota mast die! {0} {points}", consts::PI, points=num);
-    println!("{}", ibool);
-    println!("{:p} {:p}", &ibool, &GAME_NAME);
+fn start() -> MioResult<EventLoop> {
+	// Create a new event loop. This can fail if the underlying OS cannot
+	// provide a selector.
+	let event_loop = try!(EventLoop::new());
+
+	// Create a two-way pipe.
+	let (mut reader, mut writer) = try!(io::pipe());
+
+	// the second parameter here is a 64-bit, copyable value that will be sent
+	// to the Handler when there is activity on `reader`
+	try!(event_loop.register(&reader, 1u64));
+
+	// kick things off by writing to the writer side of the pipe
+	try!(writer.write(buf::wrap("hello".as_bytes())));
+
+	event_loop.run(MyHandler)
 }
 
-fn player() {
-    let player1 = "a1983";
-    let player2 = "CheHvost";
-    let player3 = "c0deum";
-    let player4 = player1.to_string() + player2;
-    println!("{} {}", player3, player4);
+struct MyHandler;
+
+impl Handler for MyHandler {
+fn readable(&mut self, _loop: &mut EventLoop, token: u64) {
+	println!("The pipe is readable: {}", token);
+}
 }
 
-
-#[test]
-fn test_dota_mast_die() {
-
-}
+//#[test]
+//fn test_dota_mast_die() {
+//
+//}

@@ -1,0 +1,10 @@
+[package]
+name = "dk_server"
+version = "0.1.0"
+authors = ["Gexon"]
+
+[[bin]]
+name = "dk_server"
+
+[dependencies]
+rand="0.3.0"

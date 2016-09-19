@@ -1,0 +1,1 @@
+"C:\Program Files\Rust stable 1.2\bin\cargo.exe" build

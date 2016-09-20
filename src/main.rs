@@ -11,4 +11,6 @@ fn main() {
     };
 
     let server = GameServer::new(&args["hostname"], &args["port"]);
+
+    server.start();
 }

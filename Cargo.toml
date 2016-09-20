@@ -8,3 +8,4 @@ name = "dk_server"
 
 [dependencies]
 rand="0.3.0"
+getopts="*"

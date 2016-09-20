@@ -17,10 +17,15 @@ impl GameServer {
     }
 
     pub fn start(&self) -> bool {
+
+        println!("Дота должна умереть!");
+        println!("Адрес сервера: {}", self.addres);
+
+
         let listener = match TcpListener::bind(&*self.addres) {
             Ok(data) => data,
             Err(e) => {
-                println!("GameServer::start(): {}", e);
+                println!("Ошибка открытия порта: {}", e);
                 return false;
             },
         };
@@ -33,7 +38,7 @@ impl GameServer {
                     });
                 },
                 Err(e) => {
-                    println!("GameServer::start(): {}", e);
+                    println!("Ошибка при запуске сервера: {}", e);
                     return false;
                 }
             }

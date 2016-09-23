@@ -4,13 +4,16 @@ mod server;
 use server::GameServer;
 
 fn main() {
+    let hname: &str = "192.168.0.3";
+    let pname: &str = "6655";
 
     let args = match application::parse_command_line(){
         Some(data) => data,
         None => return,
     };
 
-    let server = GameServer::new(&args["hostname"], &args["port"]);
+
+    let server = GameServer::new(hname, pname);
 
     server.start();
 }

@@ -8,8 +8,8 @@ pub struct GameServer {
 }
 
 impl GameServer {
-    pub fn new(hostname: &String, port: &String) -> GameServer {
-        let addres = hostname.clone() + ":" + &port;
+    pub fn new(hostname: &str, port: &str) -> GameServer {
+        let addres = format!("{}:{}", hostname, port);
 
         GameServer {
             addres: addres,

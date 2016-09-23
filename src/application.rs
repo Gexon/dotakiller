@@ -30,7 +30,7 @@ pub fn parse_command_line() -> Option<HashMap<String, String>> {
 
     let hostname = match matches.opt_present("h") {
         true => matches.opt_str("h").unwrap(),
-        false => "127.0.0.1".to_string(),
+        false => "192.168.0.3".to_string(),
     };
 
     let port = match matches.opt_present("p"){

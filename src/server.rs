@@ -17,7 +17,6 @@ impl GameServer {
     }
 
     pub fn start(&self) -> bool {
-
         println!("Дота должна умереть!");
         println!("Адрес сервера: {}", self.addres);
 

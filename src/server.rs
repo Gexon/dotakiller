@@ -2,6 +2,7 @@ use std::net::{TcpListener, TcpStream};
 use std::thread;
 use std::io::prelude::*;
 use std::io::BufReader;
+use commands;
 
 pub struct GameServer {
     addres: String,
@@ -61,7 +62,16 @@ impl GameServer {
                     _ => (),
                 }
 
-                println!("Передача данных: {}", data);
+                let data = data.trim();
+                let data: Vec<&str> = data.split_whitespace().collect();
+                let command_executed = match data[0] {
+                    "login" => commands::login(reader.get_mut(), &data[1..]),
+                    _ => false,
+                };
+
+                if !command_executed {
+                    println!("Неверная команда");
+                };
             }
         }
 

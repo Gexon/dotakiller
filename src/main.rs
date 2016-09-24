@@ -1,6 +1,7 @@
 extern crate getopts;
-//mod application;
+mod application;
 mod server;
+mod commands;
 use server::GameServer;
 
 fn main() {

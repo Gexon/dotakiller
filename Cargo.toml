@@ -9,3 +9,4 @@ name = "dk_server"
 [dependencies]
 rand="0.3.0"
 getopts="*"
+mysql = "7.1.2"

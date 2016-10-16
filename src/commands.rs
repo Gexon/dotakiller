@@ -1,6 +1,6 @@
 use std::net::TcpStream;
 
-pub fn login(stream: &mut TcpStream, args: &[&str]) -> bool {
+pub fn pos(stream: &mut TcpStream, args: &[&str]) -> bool {
     if args.len() != 2 { return false }
 
     println!("Имя {}, пароль {}", args[0], args[1]);

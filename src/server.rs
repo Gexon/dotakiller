@@ -47,7 +47,7 @@ impl Server {
         try!(self.register(poll));
 
         info!("Запуск сервера, запуск цикла...");
-        println!("dk_server запущен.");
+        println!("Основной-сервер запущен.");
         loop {
             //println!("run loop");
             let cnt = try!(poll.poll(&mut self.events, None));

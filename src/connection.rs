@@ -9,6 +9,8 @@ use byteorder::{ByteOrder, BigEndian};
 use mio::*;
 use mio::tcp::*;
 
+use commands as comm;
+
 /// Обертка вокруг неблокирующих сокетов.
 /// Это Connection не соединяется с Сервером.
 /// Это Connection представляет клиентские подключения,
@@ -19,6 +21,12 @@ pub struct Connection {
 
     // токен для регистрации в опроснике событий
     pub token: Token,
+
+    // токен авторизации. добывается из базы данных по имени пользователя.
+    auth_token: i64,
+
+    // имя пользователя
+    name: Vec<u8>,
 
     // приоритет
     interest: Ready,
@@ -47,6 +55,8 @@ impl Connection {
         Connection {
             sock: sock,
             token: token,
+            auth_token: 0,
+            name: Vec::new(),
             interest: Ready::hup(),
             send_queue: Vec::new(),
             is_idle: true,
@@ -94,10 +104,14 @@ impl Connection {
                 let data: Vec<&str> = data.splitn(2, ' ').collect();
                 match data[0] {
                     "pos" => {
-                        println!("recv>{}", s);
-                        let cmsg: &str = "chat_all";
-                        //let msg: &str = data[1];
-                        let smsg: String = format!("{} {}", cmsg, data[1]);
+                        let (smsg, return_token, return_name, return_reset) = comm::pos(
+                            data[1], &self.auth_token, self.name.as_slice(), &self.is_reset);
+                        println!("{}", smsg);
+                        // возвращаемые значения
+                        self.auth_token = return_token;
+                        self.name = return_name;
+                        self.is_reset = return_reset;
+                        // вектор с сообщением для рассылки.
                         let smsg_len = smsg.len();
                         recv2_buf = Vec::with_capacity(smsg_len);
                         unsafe { recv2_buf.set_len(smsg_len); }

@@ -4,6 +4,7 @@ use std::rc::Rc;
 use mio::*;
 use mio::tcp::*;
 use slab;
+use tinyecs::*;
 
 use connection::Connection;
 
@@ -21,10 +22,13 @@ pub struct Server {
 
     // список событий для обработки
     events: Events,
+
+    // ECS
+    dk_world: World,
 }
 
 impl Server {
-    pub fn new(sock: TcpListener) -> Server {
+    pub fn new(sock: TcpListener, in_dk_world: World) -> Server {
         Server {
             sock: sock,
 
@@ -38,6 +42,9 @@ impl Server {
 
             // Список событий что сервер должен обработать.
             events: Events::with_capacity(1024),
+
+            // ECS
+            dk_world: in_dk_world,
         }
     }
 
@@ -76,6 +83,7 @@ impl Server {
             }
 
             self.tick(poll);
+            self.dk_world.update();
         }
     }
 

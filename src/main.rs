@@ -1,25 +1,28 @@
-// Взято отсюдо https://github.com/hjr3/mob
-
 extern crate byteorder;
 extern crate mio;
 extern crate slab;
 extern crate time;
 
+#[macro_use] extern crate tinyecs;
+
 #[macro_use] extern crate log;
 extern crate env_logger;
-
-mod server;
-mod connection;
-mod commands;
-mod dbqury;
 
 use std::net::SocketAddr;
 
 use mio::*;
 use mio::tcp::*;
 
+use tinyecs::*;
+
 use server::*;
 
+mod server;
+mod connection;
+mod commands;
+mod dbqury;
+mod flora;
+mod ground;
 
 fn main() {
     let hname: &str = "192.168.0.3";
@@ -36,8 +39,15 @@ fn main() {
     // Создам объект опроса который будет использоваться сервером для получения событий
     let mut poll = Poll::new().expect("Ошибка создания опросника 'Poll'");
 
+    // запуск компонентной системы.
+    let mut dk_world = World::new();
+    // инициализация базы.
+    ground::init(&mut dk_world);
+    // инициализация растений.
+    flora::init(&mut dk_world);
+
     // Создаем сервер и запускаем обработку событий, Poll.
     // Опросы событий хранятся внутри сервера.
-    let mut server = Server::new(sock);
+    let mut server = Server::new(sock, dk_world);
     server.run(&mut poll).expect("Ошибка запуска сервера.");
 }

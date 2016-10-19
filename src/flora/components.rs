@@ -7,6 +7,11 @@ pub struct FloraClass;
 
 impl Component for FloraClass {}
 
+pub struct IdHerb{
+    id: i32,
+}
+
+impl Component for IdHerb{}
 
 
 

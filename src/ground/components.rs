@@ -9,9 +9,11 @@ pub struct Name {
 impl Component for Name {}
 
 // репликация клиенту изменений.
-pub struct _Graphic;
+pub struct Graphic{
+    pub need_replication: bool,
+}
 
-impl Component for _Graphic {
+impl Component for Graphic {
     // представление в графической подсистеме
     // репликация клиенту изменений.
 }

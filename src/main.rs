@@ -5,32 +5,36 @@ extern crate time;
 
 #[macro_use] extern crate tinyecs;
 
+#[macro_use] extern crate slog;
+extern crate slog_stream;
+extern crate slog_stdlog;
 #[macro_use] extern crate log;
-extern crate env_logger;
+
 
 use std::net::SocketAddr;
-
+use std::rc::Rc;
 use mio::*;
 use mio::tcp::*;
 
 use tinyecs::*;
 
 use server::*;
+use utility::*;
 
 mod server;
-mod connection;
-mod commands;
-mod dbqury;
+mod utility;
 mod flora;
 mod ground;
 
+
+
 fn main() {
+
+    utility::init();
+
     let hname: &str = "192.168.0.3";
     //let hname: &str = "194.87.237.144";
     let pname: &str = "6655";
-
-    // Регистрируем логгер для дебага и статистики.
-    env_logger::init().expect("Ошибка инициализации логгера");
 
     let address = format!("{}:{}", hname, pname);
     let addr = address.parse::<SocketAddr>().expect("Ошибка получения строки host:port");
@@ -39,15 +43,16 @@ fn main() {
     // Создам объект опроса который будет использоваться сервером для получения событий
     let mut poll = Poll::new().expect("Ошибка создания опросника 'Poll'");
 
-    // запуск компонентной системы.
+    // создаем мир компонентной системы.
     let mut dk_world = World::new();
-    // инициализация базы.
-    ground::init(&mut dk_world);
-    // инициализация растений.
-    flora::init(&mut dk_world);
-
-    // Создаем сервер и запускаем обработку событий, Poll.
-    // Опросы событий хранятся внутри сервера.
+    // Создаем сервер.
     let mut server = Server::new(sock, dk_world);
+
+    // инициализация базы.
+    //ground::init(&mut dk_world, &mut server);
+    // инициализация растений.
+    //flora::init(&mut dk_world);
+
+    // Запускаем обработку событий, Poll - опросы событий хранятся внутри сервера.
     server.run(&mut poll).expect("Ошибка запуска сервера.");
 }

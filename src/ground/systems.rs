@@ -2,7 +2,7 @@
 
 use tinyecs::*;
 
-use ::ground::components::{SpawnPoint, Position, Name};
+use ::ground::components::*;
 
 
 pub struct SpawnSystem;
@@ -33,5 +33,23 @@ impl System for SpawnSystem {
         }
         entity.remove_component::<SpawnPoint>(); // удаляем компонент "Точка спавна/spawn_point"
         entity.refresh();
+    }
+}
+
+pub struct ReplicationSystem;
+
+impl System for ReplicationSystem {
+    // Добавляем систтему "ReplicationSystem" к сущностям содержащих компоненты "NeedReplication"
+    fn aspect(&self) -> Aspect {
+        aspect_all!(Graphic)
+    }
+
+    fn process_one(&mut self, entity: &mut Entity) {
+        let graphic = entity.get_component::<Graphic>();
+        if graphic.need_replication {
+            // рассылаем всем клиентам "updherb idHerb classHerb stateHerb x y"
+
+
+        };
     }
 }

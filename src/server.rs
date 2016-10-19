@@ -43,7 +43,7 @@ impl Server {
             // Список событий что сервер должен обработать.
             events: Events::with_capacity(1024),
 
-            // ECS
+            // ECS.
             dk_world: in_dk_world,
         }
     }

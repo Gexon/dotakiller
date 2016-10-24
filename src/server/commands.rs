@@ -2,7 +2,7 @@ use time;
 use std::str;
 use std::str::FromStr;
 
-use dbqury as db;
+use ::utility::dbqury as db;
 
 // принимаем позицию клиента и рассылаем всем остальным.
 pub fn pos(args: &str, auth_token: &i64, name: &[u8], reset_conn: &bool) -> (String, i64, Vec<u8>, bool) {

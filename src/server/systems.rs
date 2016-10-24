@@ -1,14 +1,113 @@
+// тут будем контакт контачить
+use tinyecs::*;
+
 use std::io::{self, ErrorKind};
 use std::rc::Rc;
+use std::net::SocketAddr;
 
 use mio::*;
 use mio::tcp::*;
 use slab;
-use tinyecs::*;
 
-use connection::Connection;
+use ::server::connection::Connection;
 
 type Slab<T> = slab::Slab<T, Token>;
+
+pub struct ServerClass;
+
+impl Component for ServerClass {}
+
+// новый сервак
+pub struct ServerSystem {
+    server_data: Server,
+    poll: Poll,
+}
+
+impl ServerSystem {
+    pub fn new() -> ServerSystem {
+
+        let hname: &str = "192.168.0.3";
+        //let hname: &str = "194.87.237.144";
+        let pname: &str = "6655";
+
+        let address = format!("{}:{}", hname, pname);
+        let addr = address.parse::<SocketAddr>().expect("Ошибка получения строки host:port");
+        let sock = TcpListener::bind(&addr).expect("Ошибка биндинга адреса");
+
+        // Запускаем обработку событий, Poll - опросы событий хранятся внутри сервера.
+        //server.run(&mut poll).expect("Ошибка запуска сервера.");
+
+        // Создам объект опроса который будет использоваться сервером для получения событий
+        let mut poll = Poll::new().expect("Ошибка создания опросника 'Poll'");
+
+        let mut server = Server {
+            sock: sock,
+
+            // Даем нашему серверу токен с номером большим чем может поместиться в нашей плите 'Slab'.
+            // Политы 'Slab' используються только для внутреннего смещения.
+            token: Token(10_000_000),
+
+            // SERVER is Token(1), после запуска такого сервака
+            // мы сможет подключить не больше 128 клиентов.
+            conns: Slab::with_capacity(128),
+
+            // Список событий что сервер должен обработать.
+            events: Events::with_capacity(1024)
+        };
+
+        server.register(&mut poll).expect("I WANT HANDLE ERROR");
+
+        info!("Основной-сервер запущен.");
+        println!("Основной-сервер запущен.");
+
+        ServerSystem {
+            server_data: server,
+            poll: poll,
+        }
+    }
+}
+
+impl System for ServerSystem {
+    fn aspect(&self) -> Aspect {
+        aspect_all![ServerClass]
+    }
+
+    //impl_process!(self, |_server_class : ServerClass, poll : PollComponent| => {});
+    fn  process_one(&mut self, _entity: &mut Entity) {
+        //let mut poll = self.poll;
+
+        //let cnt = try!(poll.poll(&mut self.server_data.events, None));
+        //let cnt = poll.poll(&mut self.server_data.events, None).expect("do it another day");
+        let cnt = self.poll.poll(&mut self.server_data.events, None).expect("do it another day");
+
+
+        let mut i = 0;
+
+        trace!("обработка событий... cnt={}; len={}", cnt, self.server_data.events.len());
+        //println!("обработка событий... cnt={}; len={}", cnt, self.server_data.events.len());
+
+        // Перебираем уведомления.
+        // Каждое из этих событий дает token для регистрации
+        // (который обычно представляет собой, handle события),
+        // а также информацию о том, какие события происходили (чтение, запись, сигнал, и т. д.)
+        while i < cnt {
+            //println!("run while");
+            // TODO this would be nice if it would turn a Result type. trying to convert this
+            // into a io::Result runs into a problem because .ok_or() expects std::Result and
+            // not io::Result
+            let event = self.server_data.events.get(i).expect("Ошибка получения события");
+
+            trace!("event={:?}; idx={:?}", event, i);
+            //println!("event={:?}; idx={:?}", event, i);
+            self.server_data.ready(&mut self.poll, event.token(), event.kind());
+
+            i += 1;
+        }
+
+        self.server_data.tick(&mut self.poll);
+    }
+}
+
 
 pub struct Server {
     // главное гнездо нашего сервера
@@ -23,70 +122,9 @@ pub struct Server {
     // список событий для обработки
     events: Events,
 
-    // ECS
-    dk_world: World,
 }
 
 impl Server {
-    pub fn new(sock: TcpListener, in_dk_world: World) -> Server {
-        Server {
-            sock: sock,
-
-            // Даем нашему серверу токен с номером большим чем может поместиться в нашей плите 'Slab'.
-            // Плиты 'Slab' используються только для внутреннего смещения.
-            token: Token(10_000_000),
-
-            // SERVER is Token(1), после запуска такого сервака
-            // мы сможет подключить не больше 128 клиентов.
-            conns: Slab::with_capacity(128),
-
-            // Список событий что сервер должен обработать.
-            events: Events::with_capacity(1024),
-
-            // ECS.
-            dk_world: in_dk_world,
-        }
-    }
-
-    /// Старт сервака собственно.
-    /// тут же бесконечный цикл обработки событйи.
-    pub fn run(&mut self, poll: &mut Poll) -> io::Result<()> {
-        try!(self.register(poll));
-
-        info!("Запуск сервера, запуск цикла...");
-        println!("Основной-сервер запущен.");
-        loop {
-            //println!("run loop");
-            let cnt = try!(poll.poll(&mut self.events, None));
-
-            let mut i = 0;
-
-            trace!("обработка событий... cnt={}; len={}", cnt, self.events.len());
-            //println!("обработка событий... cnt={}; len={}", cnt, self.events.len());
-
-            // Перебираем уведомления.
-            // Каждое из этих событий дает token для регистрации
-            // (который обычно представляет собой, handle события),
-            // а также информацию о том, какие события происходили (чтение, запись, сигнал, и т. д.)
-            while i < cnt {
-                //println!("run while");
-                // TODO this would be nice if it would turn a Result type. trying to convert this
-                // into a io::Result runs into a problem because .ok_or() expects std::Result and
-                // not io::Result
-                let event = self.events.get(i).expect("Ошибка получения события");
-
-                trace!("event={:?}; idx={:?}", event, i);
-                //println!("event={:?}; idx={:?}", event, i);
-                self.ready(poll, event.token(), event.kind());
-
-                i += 1;
-            }
-
-            self.tick(poll);
-            self.dk_world.update();
-        }
-    }
-
     /// Регистрация серверного опросника событий.
     ///
     /// This keeps the registration details neatly tucked away inside of our implementation.

@@ -36,9 +36,9 @@ impl System for SpawnSystem {
     }
 }
 
-pub struct ReplicationSystem;
+pub struct _ReplicationSystem;
 
-impl System for ReplicationSystem {
+impl System for _ReplicationSystem {
     // Добавляем систтему "ReplicationSystem" к сущностям содержащих компоненты "NeedReplication"
     fn aspect(&self) -> Aspect {
         aspect_all!(Graphic)

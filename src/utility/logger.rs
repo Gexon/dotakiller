@@ -4,6 +4,9 @@ use std::io;
 use std::fs::OpenOptions;
 
 use slog::DrainExt;
+use slog;
+use slog_stream;
+use slog_stdlog;
 
 struct LogFormat;
 
@@ -14,7 +17,7 @@ impl slog_stream::Format for LogFormat {
               _logger_values: &slog::OwnedKeyValueList)
               -> io::Result<()> {
         let msg = format!("{} - {}\n", rinfo.level(), rinfo.msg());
-        let _ = try!(io.write_all(msg.as_bytes()));
+        try!(io.write_all(msg.as_bytes()));
         Ok(())
     }
 }

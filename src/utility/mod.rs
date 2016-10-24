@@ -1,5 +1,8 @@
 // тут будем хранить весь хлам
 
-use logger::init;
-
 pub mod logger;
+pub mod dbqury;
+
+pub fn init(){
+    logger::init();
+}

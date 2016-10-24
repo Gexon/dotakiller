@@ -9,7 +9,7 @@ use byteorder::{ByteOrder, BigEndian};
 use mio::*;
 use mio::tcp::*;
 
-use commands as comm;
+use ::server::commands as comm;
 
 /// Обертка вокруг неблокирующих сокетов.
 /// Это Connection не соединяется с Сервером.

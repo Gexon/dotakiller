@@ -3,12 +3,14 @@
 use tinyecs::*;
 
 use ::ground::components::*;
+use ::flora::components::FloraClass;
 
 
 pub struct SpawnSystem;
-
+// Система создает объекты в мире.
 impl System for SpawnSystem {
-    // Добавляем систтему "SpawnSystem" к сущностям содержащих компоненты "SpawnPoint", "Position"
+    // Обрабатываем сущности содержащие компоненты "SpawnPoint", "Position"
+    // Аспект - список сущностей, содержащих выбранные компоненты.
     fn aspect(&self) -> Aspect {
         aspect_all!(SpawnPoint, Position)
     }
@@ -18,15 +20,20 @@ impl System for SpawnSystem {
         {
             // берем компонент "Точка спавна/spawn_point"
             let mut spawn_point = entity.get_component::<SpawnPoint>();
+            // вынимаем позицию
+            let position = entity.get_component::<Position>();
 
-            // проверяем наличие заданных спавнов.
+            // проверяем наличие заданных объектов.
             while spawn_point.count > 0 {
-                //if spawn_point.count > 0 {
-                println!("создаем сущность 'Спавнер'");
-                let spawned = world.entity_manager.create_entity();
+                // создаем объект Пальма.
+                println!("Создаем сущность {}", spawn_point.name.to_string());
+                let entity_object = world.entity_manager.create_entity();
                 // добавляем сущности компонент "Имя", имя берем из компонента "spawn_point"
-                spawned.add_component(Name { name: spawn_point.name.to_string() });
-                spawned.refresh();
+                entity_object.add_component(Name { name: spawn_point.name.to_string() });
+                entity_object.add_component(Position{x:position.x, y: position.y});
+                entity_object.add_component(FloraClass);
+                entity_object.add_component(Graphic { need_replication: true });
+                entity_object.refresh();
 
                 spawn_point.count -= 1; //?
             }
@@ -48,8 +55,6 @@ impl System for _ReplicationSystem {
         let graphic = entity.get_component::<Graphic>();
         if graphic.need_replication {
             // рассылаем всем клиентам "updherb idHerb classHerb stateHerb x y"
-
-
         };
     }
 }

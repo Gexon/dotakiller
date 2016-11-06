@@ -19,6 +19,7 @@ pub fn init(dk_world: &mut World) {
         let entity = entity_manager.create_entity();
 
         entity.add_component(ServerClass);
+        //entity.add_component(Graphic);
         entity.refresh();
     }
 }

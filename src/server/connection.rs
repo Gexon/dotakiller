@@ -40,6 +40,9 @@ pub struct Connection {
     // флаг сброса соединения
     is_reset: bool,
 
+    // флаг нового подключения
+    is_newbe: bool,
+
     // флаг чтения получения `WouldBlock`
     // и хранит количество байт что мы должны читать.
     // track whether a read received `WouldBlock` and store the number of
@@ -61,6 +64,7 @@ impl Connection {
             send_queue: Vec::new(),
             is_idle: true,
             is_reset: false,
+            is_newbe: true,
             read_continuation: None,
             write_continuation: false,
         }
@@ -364,14 +368,24 @@ impl Connection {
         self.is_reset
     }
 
-    pub fn mark_idle(&mut self) {
-        trace!("подключение помечено на перерегистрацию(idle); token={:?}", self.token);
-
-        self.is_idle = true;
+    #[inline]
+    pub fn is_newbe(&self) -> bool {
+        self.is_newbe
     }
+
+    pub fn mark_old(&mut self) {
+        self.is_newbe = false;
+    }
+
 
     #[inline]
     pub fn is_idle(&self) -> bool {
         self.is_idle
+    }
+
+    pub fn mark_idle(&mut self) {
+        trace!("подключение помечено на перерегистрацию(idle); token={:?}", self.token);
+
+        self.is_idle = true;
     }
 }

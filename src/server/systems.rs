@@ -10,6 +10,7 @@ use mio::tcp::*;
 use slab;
 
 use ::server::connection::Connection;
+use ::ground::components::*;
 
 type Slab<T> = slab::Slab<T, Token>;
 
@@ -25,8 +26,7 @@ pub struct ServerSystem {
 
 impl ServerSystem {
     pub fn new() -> ServerSystem {
-
-        let hname: &str = "192.168.0.3";
+        let hname: &str = "192.168.0.131";
         //let hname: &str = "194.87.237.144";
         let pname: &str = "6655";
 
@@ -67,44 +67,70 @@ impl ServerSystem {
     }
 }
 
+// работа с сетью. передача данных клиентам.
 impl System for ServerSystem {
     fn aspect(&self) -> Aspect {
-        aspect_all![ServerClass]
+        aspect_all![Graphic]
     }
 
-    //impl_process!(self, |_server_class : ServerClass, poll : PollComponent| => {});
-    fn  process_one(&mut self, _entity: &mut Entity) {
-        //let mut poll = self.poll;
+    // вызывается 1 раз при update, но для каждой сущности свой process_one
+    //fn  process_one(&mut self, _entity: &mut Entity) {
 
-        //let cnt = try!(poll.poll(&mut self.server_data.events, None));
-        //let cnt = poll.poll(&mut self.server_data.events, None).expect("do it another day");
+    // вызывается при update, 1 раз для всех сущностей.
+    fn process_all(&mut self, entities: &mut Vec<&mut Entity>, _world: &mut WorldHandle, _data: &mut DataList) {
         let cnt = self.poll.poll(&mut self.server_data.events, None).expect("do it another day");
-
-
         let mut i = 0;
-
         trace!("обработка событий... cnt={}; len={}", cnt, self.server_data.events.len());
-        //println!("обработка событий... cnt={}; len={}", cnt, self.server_data.events.len());
-
-        // Перебираем уведомления.
-        // Каждое из этих событий дает token для регистрации
+        // Перебираем уведомления. Каждое из этих событий дает token для регистрации
         // (который обычно представляет собой, handle события),
         // а также информацию о том, какие события происходили (чтение, запись, сигнал, и т. д.)
         while i < cnt {
-            //println!("run while");
-            // TODO this would be nice if it would turn a Result type. trying to convert this
-            // into a io::Result runs into a problem because .ok_or() expects std::Result and
-            // not io::Result
             let event = self.server_data.events.get(i).expect("Ошибка получения события");
-
             trace!("event={:?}; idx={:?}", event, i);
-            //println!("event={:?}; idx={:?}", event, i);
             self.server_data.ready(&mut self.poll, event.token(), event.kind());
-
             i += 1;
         }
 
         self.server_data.tick(&mut self.poll);
+
+        // вектор векторов, для primary_replication. в нем храним все объекты с карты.
+        let mut recv_obj: Vec<Vec<u8>> = Vec::new();
+        // определяем наличие свежих подключений, тербующих primary_replication
+        let exist_new_conn = self.server_data.exist_new_conn();
+
+        // перебираем все сущности
+        for entity in entities {
+            let mut graphic = entity.get_component::<Graphic>();
+            let class = entity.get_component::<Name>();
+            let position = entity.get_component::<Position>();
+            // репликация.
+            if graphic.need_replication {
+                // рассылаем всем клиентам "updherb idHerb classHerb stateHerb x y"
+                let s = format!("updherb 1 {} 1 {} {}", class.name, position.x, position.y);
+                let smsg: String = s.to_string();
+                let smsg_len = smsg.len();
+                let mut recv_buf: Vec<u8> = Vec::with_capacity(smsg_len);
+                unsafe { recv_buf.set_len(smsg_len); }
+                recv_buf = smsg.into_bytes();
+                self.server_data.replication(recv_buf.to_vec());
+                graphic.need_replication = false;
+            }
+            // если есть новенькие, собираем все сущности для primary_replication
+            if exist_new_conn {
+                let s = format!("updherb 1 {} 1 {} {}", class.name, position.x, position.y);
+                let smsg: String = s.to_string();
+                let smsg_len = smsg.len();
+                let mut recv_buf: Vec<u8> = Vec::with_capacity(smsg_len);
+                unsafe { recv_buf.set_len(smsg_len); }
+                recv_buf = smsg.into_bytes();
+                recv_obj.push(recv_buf.to_vec());
+            }
+        }
+
+        // первичная рассылка. для вновь подключенных клиентов.
+        if exist_new_conn {
+            self.server_data.primary_replication(&mut recv_obj);
+        }
     }
 }
 
@@ -121,10 +147,84 @@ pub struct Server {
 
     // список событий для обработки
     events: Events,
-
 }
 
 impl Server {
+    /// Рассылаем изменения объектов всем подключенным клиентам.
+    pub fn replication(&mut self, message: Vec<u8>) {
+        let rc_message = Rc::new(message);
+        for c in self.conns.iter_mut() {
+            c.send_message(rc_message.clone())
+                .unwrap_or_else(|e| {
+                    error!("Сбой записи сообщения в очередь {:?}: {:?}", c.token, e);
+                    c.mark_reset();
+                });
+        }
+    }
+
+    /// оперделяем наличие новых соединений.
+    pub fn exist_new_conn(&mut self) -> bool {
+        let mut exist_new: bool = false;
+        for c in self.conns.iter_mut() {
+            if c.is_newbe() {
+                exist_new = true;
+            }
+        }
+        exist_new
+    }
+
+    /// первичная репликация
+    pub fn primary_replication(&mut self, recv_obj: &mut Vec<Vec<u8>>) {
+        while !recv_obj.is_empty() {
+            if let Some(message) = recv_obj.pop() {
+                let rc_message = Rc::new(message);
+                for c in self.conns.iter_mut() {
+                    if c.is_newbe() {
+                        c.send_message(rc_message.clone())
+                            .unwrap_or_else(|e| {
+                                error!("Сбой записи сообщения в очередь {:?}: {:?}", c.token, e);
+                                c.mark_reset();
+                            });
+                        c.mark_old();
+                    }
+                }
+            }
+        }
+
+
+
+        //        let len = recv_obj.len();
+        //        for i in 0..len as isize {
+        //            let message = recv_obj[i];
+        //            let rc_message = Rc::new(message);
+        //            for c in self.conns.iter_mut() {
+        //                if c.is_newbe() {
+        //                    c.send_message(rc_message.clone())
+        //                        .unwrap_or_else(|e| {
+        //                            error!("Сбой записи сообщения в очередь {:?}: {:?}", c.token, e);
+        //                            c.mark_reset();
+        //                        });
+        //                    c.mark_old();
+        //                }
+        //            }
+        //        }
+
+
+        //        for message in recv_obj {
+        //            let rc_message = Rc::new(message);
+        //            for c in self.conns.iter_mut() {
+        //                if c.is_newbe() {
+        //                    c.send_message(rc_message.clone())
+        //                        .unwrap_or_else(|e| {
+        //                            error!("Сбой записи сообщения в очередь {:?}: {:?}", c.token, e);
+        //                            c.mark_reset();
+        //                        });
+        //                    c.mark_old();
+        //                }
+        //            }
+        //        }
+    }
+
     /// Регистрация серверного опросника событий.
     ///
     /// This keeps the registration details neatly tucked away inside of our implementation.

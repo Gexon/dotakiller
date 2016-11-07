@@ -36,7 +36,6 @@ impl Component for Position {}
 
 pub struct SpawnPoint {
     pub name: &'static str,
-    pub count: i32
 }
 
 impl Component for SpawnPoint {}

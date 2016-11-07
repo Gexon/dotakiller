@@ -17,7 +17,7 @@ pub fn pos(args: &str, auth_token: &i64, name: &[u8], reset_conn: &bool) -> (Str
     let mut str_name: String = s.to_string();
 
     // для отладки.
-    println!("recv>{}", args);
+    //println!("recv>{}", args);
 
     // вынимаем из пришедшей строки токен. vec_msg[0] - токен авторизации, vec_msg[1] - позиция игрока (x y)
     let args = args.trim();

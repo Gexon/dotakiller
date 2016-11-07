@@ -8,9 +8,11 @@ use std::net::SocketAddr;
 use mio::*;
 use mio::tcp::*;
 use slab;
+use std::time::Duration;
 
 use ::server::connection::Connection;
 use ::ground::components::*;
+use ::flora::components::FloraState;
 
 type Slab<T> = slab::Slab<T, Token>;
 
@@ -73,24 +75,33 @@ impl System for ServerSystem {
         aspect_all![Graphic]
     }
 
+    fn process_no_entities(&mut self) {
+        println!("instaced buffer render system must work, but no entities!");
+    }
+    fn process_no_data(&mut self) {
+        println!("instaced buffer render system must work, but no data!");
+    }
+
     // вызывается 1 раз при update, но для каждой сущности свой process_one
     //fn  process_one(&mut self, _entity: &mut Entity) {
 
     // вызывается при update, 1 раз для всех сущностей.
     fn process_all(&mut self, entities: &mut Vec<&mut Entity>, _world: &mut WorldHandle, _data: &mut DataList) {
-        let cnt = self.poll.poll(&mut self.server_data.events, None).expect("do it another day");
+        trace!("PROCESS_ALL start.");
+        let cnt = self.poll.poll(&mut self.server_data.events, Some(Duration::from_millis(1000))).expect("do it another day");
+        //let cnt = self.poll.poll(&mut self.server_data.events, None).unwrap();
         let mut i = 0;
-        trace!("обработка событий... cnt={}; len={}", cnt, self.server_data.events.len());
+        //trace!("обработка событий... cnt={}; len={}", cnt, self.server_data.events.len());
         // Перебираем уведомления. Каждое из этих событий дает token для регистрации
         // (который обычно представляет собой, handle события),
         // а также информацию о том, какие события происходили (чтение, запись, сигнал, и т. д.)
         while i < cnt {
+            trace!("PROCESS_ALL while.");
             let event = self.server_data.events.get(i).expect("Ошибка получения события");
-            trace!("event={:?}; idx={:?}", event, i);
+            //trace!("event={:?}; idx={:?}", event, i);
             self.server_data.ready(&mut self.poll, event.token(), event.kind());
             i += 1;
         }
-
         self.server_data.tick(&mut self.poll);
 
         // вектор векторов, для primary_replication. в нем храним все объекты с карты.
@@ -103,10 +114,11 @@ impl System for ServerSystem {
             let mut graphic = entity.get_component::<Graphic>();
             let class = entity.get_component::<Name>();
             let position = entity.get_component::<Position>();
+            let state =  entity.get_component::<FloraState>();
             // репликация.
             if graphic.need_replication {
                 // рассылаем всем клиентам "updherb idHerb classHerb stateHerb x y"
-                let s = format!("updherb 1 {} 1 {} {}", class.name, position.x, position.y);
+                let s = format!("updherb 1 {} {} {} {}", class.name, state.state, position.x, position.y);
                 let smsg: String = s.to_string();
                 let smsg_len = smsg.len();
                 let mut recv_buf: Vec<u8> = Vec::with_capacity(smsg_len);
@@ -114,10 +126,11 @@ impl System for ServerSystem {
                 recv_buf = smsg.into_bytes();
                 self.server_data.replication(recv_buf.to_vec());
                 graphic.need_replication = false;
+                trace!("REPLICATION replication");
             }
             // если есть новенькие, собираем все сущности для primary_replication
             if exist_new_conn {
-                let s = format!("updherb 1 {} 1 {} {}", class.name, position.x, position.y);
+                let s = format!("updherb 1 {} {} {} {}", class.name, state.state, position.x, position.y);
                 let smsg: String = s.to_string();
                 let smsg_len = smsg.len();
                 let mut recv_buf: Vec<u8> = Vec::with_capacity(smsg_len);
@@ -129,6 +142,7 @@ impl System for ServerSystem {
 
         // первичная рассылка. для вновь подключенных клиентов.
         if exist_new_conn {
+            trace!("REPLICATION primary_replication");
             self.server_data.primary_replication(&mut recv_obj);
         }
     }
@@ -190,39 +204,6 @@ impl Server {
                 }
             }
         }
-
-
-
-        //        let len = recv_obj.len();
-        //        for i in 0..len as isize {
-        //            let message = recv_obj[i];
-        //            let rc_message = Rc::new(message);
-        //            for c in self.conns.iter_mut() {
-        //                if c.is_newbe() {
-        //                    c.send_message(rc_message.clone())
-        //                        .unwrap_or_else(|e| {
-        //                            error!("Сбой записи сообщения в очередь {:?}: {:?}", c.token, e);
-        //                            c.mark_reset();
-        //                        });
-        //                    c.mark_old();
-        //                }
-        //            }
-        //        }
-
-
-        //        for message in recv_obj {
-        //            let rc_message = Rc::new(message);
-        //            for c in self.conns.iter_mut() {
-        //                if c.is_newbe() {
-        //                    c.send_message(rc_message.clone())
-        //                        .unwrap_or_else(|e| {
-        //                            error!("Сбой записи сообщения в очередь {:?}: {:?}", c.token, e);
-        //                            c.mark_reset();
-        //                        });
-        //                    c.mark_old();
-        //                }
-        //            }
-        //        }
     }
 
     /// Регистрация серверного опросника событий.
@@ -244,7 +225,7 @@ impl Server {
 
     // конечный такт бесконечного цикла
     fn tick(&mut self, poll: &mut Poll) {
-        trace!("register tick");
+        //trace!("register tick");
         //println!("register tick");
 
         let mut reset_tokens = Vec::new();
@@ -281,7 +262,7 @@ impl Server {
 
     /// обработчик события
     fn ready(&mut self, poll: &mut Poll, token: Token, event: Ready) {
-        debug!("токен {:?} событие = {:?}", token, event);
+        //debug!("токен {:?} событие = {:?}", token, event);
         //println!("токен {:?} событие = {:?}", token, event);
 
         if event.is_error() {
@@ -292,7 +273,7 @@ impl Server {
         }
 
         if event.is_hup() {
-            trace!("Hup event for {:?}", token);
+            //trace!("Hup event for {:?}", token);
             //println!("Hup event for {:?}", token);
             self.find_connection_by_token(token).mark_reset();
             return;
@@ -301,7 +282,7 @@ impl Server {
         // Мы не обнаружили ошибок записи событий для токена нашего сервера.
         // Запись события для прочих токенов, должны передаваться этому подключению.
         if event.is_writable() {
-            trace!("Записываем событие для токена {:?}", token);
+            //trace!("Записываем событие для токена {:?}", token);
             //println!("Записываем событие для токена {:?}", token);
             assert!(self.token != token, "Получение записанного события для Сервера");
 
@@ -324,7 +305,7 @@ impl Server {
         // A read event for any other token should be handed off to that connection.
         // Событие чтения для любого другого токена должны быть передан этому соединению.
         if event.is_readable() {
-            trace!("Читаем событие для токена {:?}", token);
+            //trace!("Читаем событие для токена {:?}", token);
             if self.token == token {
                 self.accept(poll);
             } else {
@@ -353,7 +334,7 @@ impl Server {
     /// Сервер будет отслеживать новое подключение и перенаправлять любые события из опроса
     /// из данного подключения.
     fn accept(&mut self, poll: &mut Poll) {
-        debug!("сервер принимает новый сокет");
+        debug!("Сервер принимает новый сокет");
 
         loop {
             // Отчет об ошибке, если нет сокета, иначе двигаемся дальше,
@@ -372,7 +353,7 @@ impl Server {
 
             let token = match self.conns.vacant_entry() {
                 Some(entry) => {
-                    debug!("регистрация {:?} в опроснике", entry.index());
+                    debug!("регистрация {:?} в пуле", entry.index());
                     let c = Connection::new(sock, entry.index());
                     entry.insert(c).index()
                 }
@@ -401,7 +382,7 @@ impl Server {
     /// После чтения завершится, помещаем буфер приема на все существующие подключения,
     /// чтобы мы могли транслировать.
     fn readable(&mut self, token: Token) -> io::Result<()> {
-        debug!("сервер conn доступен; token={:?}", token);
+        //debug!("сервер conn доступен; token={:?}", token);
 
         while let Some(message) = try!(self.find_connection_by_token(token).readable()) {
             let rc_message = Rc::new(message);

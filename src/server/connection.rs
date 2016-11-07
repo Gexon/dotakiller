@@ -86,13 +86,13 @@ impl Connection {
         };
 
         if msg_len == 0 {
-            debug!("в сообщении 0 байт; token={:?}", self.token);
+            //debug!("в сообщении 0 байт; token={:?}", self.token);
             return Ok(None);
         }
 
         let msg_len = msg_len as usize;
 
-        debug!("Ожидаемая длина сообщения {}", msg_len);
+        //debug!("Ожидаемая длина сообщения {}", msg_len);
         let mut recv_buf: Vec<u8> = Vec::with_capacity(msg_len);
         unsafe { recv_buf.set_len(msg_len); }
 
@@ -101,7 +101,7 @@ impl Connection {
 
         match sock_ref.take(msg_len as u64).read(&mut recv_buf) {
             Ok(n) => {
-                debug!("CONN : считано {} байт", n);
+                //debug!("CONN : считано {} байт", n);
                 let mut recv2_buf: Vec<u8> = Vec::with_capacity(msg_len);
                 let s = str::from_utf8(&recv_buf[..]).unwrap();
                 let data = s.trim();
@@ -110,7 +110,7 @@ impl Connection {
                     "pos" => {
                         let (smsg, return_token, return_name, return_reset) = comm::pos(
                             data[1], &self.auth_token, self.name.as_slice(), &self.is_reset);
-                        println!("{}", smsg);
+                        //println!("{}", smsg);
                         // возвращаемые значения
                         self.auth_token = return_token;
                         self.name = return_name;
@@ -141,7 +141,7 @@ impl Connection {
             }
             Err(e) => {
                 if e.kind() == ErrorKind::WouldBlock {
-                    debug!("CONN : прочитал WouldBlock");
+                    //debug!("CONN : прочитал WouldBlock");
 
                     // Мы вынуждены еще раз попробовать, но мы уже читаем два байта из проволоки,
                     // что определяет Продолжительность
@@ -235,8 +235,8 @@ impl Connection {
                 }
 
                 match self.sock.write(&*buf) {
-                    Ok(n) => {
-                        debug!("CONN : записано {} bytes", n);
+                    Ok(_n) => {
+                        //debug!("CONN : записано {} bytes", n);
                         self.write_continuation = false;
                         Ok(())
                     },
@@ -276,8 +276,8 @@ impl Connection {
         BigEndian::write_u64(&mut send_buf, len as u64);
 
         match self.sock.write(&send_buf) {
-            Ok(n) => {
-                debug!("Отправлена длина сообщения {} bytes", n);
+            Ok(_n) => {
+                //debug!("Отправлена длина сообщения {} bytes", n);
                 Ok(Some(()))
             }
             Err(e) => {
@@ -301,7 +301,7 @@ impl Connection {
     /// Подключение по-прежнему безопасно может иметь интерес чтению событий.
     /// Чтение и запись буфера работают независимо друг от друга.
     pub fn send_message(&mut self, message: Rc<Vec<u8>>) -> io::Result<()> {
-        trace!("connection send_message; token={:?}", self.token);
+        //trace!("connection send_message; token={:?}", self.token);
 
         self.send_queue.push(message);
 
@@ -319,7 +319,7 @@ impl Connection {
     /// This will let our connection accept reads starting next poller tick.
     /// Наше соединение принимает события чтения, начиная со следующего тика обработчика событий.
     pub fn register(&mut self, poll: &mut Poll) -> io::Result<()> {
-        trace!("connection register; token={:?}", self.token);
+        //trace!("connection register; token={:?}", self.token);
 
         self.interest.insert(Ready::readable());
 
@@ -340,7 +340,7 @@ impl Connection {
     /// Re-register interest in read events with poll.
     /// Перерегистрация интересов для нашего опросника.
     pub fn reregister(&mut self, poll: &mut Poll) -> io::Result<()> {
-        trace!("connection reregister; token={:?}", self.token);
+        //trace!("connection reregister; token={:?}", self.token);
 
         poll.reregister(
             &self.sock,
@@ -358,7 +358,7 @@ impl Connection {
 
     /// метим соединение для сброса
     pub fn mark_reset(&mut self) {
-        trace!("connection mark_reset; token={:?}", self.token);
+        //trace!("connection mark_reset; token={:?}", self.token);
 
         self.is_reset = true;
     }
@@ -384,7 +384,7 @@ impl Connection {
     }
 
     pub fn mark_idle(&mut self) {
-        trace!("подключение помечено на перерегистрацию(idle); token={:?}", self.token);
+        //trace!("подключение помечено на перерегистрацию(idle); token={:?}", self.token);
 
         self.is_idle = true;
     }

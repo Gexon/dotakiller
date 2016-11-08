@@ -76,10 +76,10 @@ impl System for ServerSystem {
     }
 
     fn process_no_entities(&mut self) {
-        println!("instaced buffer render system must work, but no entities!");
+        //println!("instaced buffer render system must work, but no entities!");
     }
     fn process_no_data(&mut self) {
-        println!("instaced buffer render system must work, but no data!");
+        //println!("instaced buffer render system must work, but no data!");
     }
 
     // вызывается 1 раз при update, но для каждой сущности свой process_one

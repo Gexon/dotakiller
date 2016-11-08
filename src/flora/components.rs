@@ -8,11 +8,11 @@ pub struct FloraClass;
 
 impl Component for FloraClass {}
 
-pub struct _IdHerb {
-    id: i32,
+pub struct IdHerb {
+    pub id: i64,
 }
 
-impl Component for _IdHerb {}
+impl Component for IdHerb {}
 
 pub struct FloraState {
     pub state: i32,

@@ -19,6 +19,8 @@ mod utility;
 mod flora;
 mod ground;
 
+//const  WORLD_SPEED: &'static i32 = 1;
+static WORLD_SPEED: i64 = 1;
 
 fn main() {
     utility::init(); // запускаем логгер.

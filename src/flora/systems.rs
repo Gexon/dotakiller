@@ -2,43 +2,74 @@
 use tinyecs::*;
 use time::{PreciseTime, Duration};
 
+use WORLD_SPEED;
+
 use ::ground::components::*;
 use ::flora::components::*;
 
 
-pub struct _PlantReproduction;
+pub struct PlantReproduction;
 
-impl System for _PlantReproduction {
+impl System for PlantReproduction {
     // выбираем сущности содержащие компоненты "FloraClass"
     fn aspect(&self) -> Aspect {
         aspect_all![FloraClass]
     }
 
-    fn process_all(&mut self, entities: &mut Vec<&mut Entity>, _world: &mut WorldHandle, _data: &mut DataList) {
+    fn data_aspects(&self) -> Vec<Aspect> {
+        vec![aspect_all![ClassGround]]
+    }
+
+    fn process_all(&mut self, entities: &mut Vec<&mut Entity>, world: &mut WorldHandle, data: &mut DataList) {
         // перебираем все сущности
         for entity in entities {
-            //let mut state = entity.get_component::<FloraState>();
+            let ground = data.unwrap_entity();
+            let wind = ground.get_component::<WindDirection>();
 
+            let mut state = entity.get_component::<FloraState>();
+
+            // если пальма уже жирная, то вбросить семян.
             // пробуем бросить семя через каждые 20 сек
-            //if float_delta > 20f32 {
-            let _position = entity.get_component::<Position>();
-            //let target_x = стрим окончен всем пока!
+            if state.state >= 10 && state.start.to(PreciseTime::now()) > Duration::seconds(20 * WORLD_SPEED) {
+                let position = entity.get_component::<Position>();
+                let mut target_x = position.x;
+                let mut target_y = position.y;
+                // определяем координаты выпавшей семки
+                match wind.direction {
+                    0 => { if position.x < 140f32 { target_x = position.x + 1f32 } },
+                    1 => {
+                        if position.x < 140f32 { target_x = position.x + 1f32 };
+                        if position.y > 0f32 { target_y = position.y - 1f32 };
+                    },
+                    2 => { if position.y > 0f32 { target_y = position.y - 1f32 }; },
+                    3 => {
+                        if position.x > 0f32 { target_x = position.x - 1f32 };
+                        if position.y > 0f32 { target_y = position.y - 1f32 };
+                    },
+                    4 => { if position.x > 0f32 { target_x = position.x - 1f32 } },
+                    5 => {
+                        if position.x > 0f32 { target_x = position.x - 1f32 };
+                        if position.y < 140f32 { target_y = position.y + 1f32 };
+                    },
+                    6 => { if position.y < 140f32 { target_y = position.y + 1f32 }; },
+                    7 => {
+                        if position.x < 140f32 { target_x = position.x + 1f32 };
+                        if position.y < 140f32 { target_y = position.y + 1f32 };
+                    },
+                    _ => println!("странное направление ветра, вы не находите?"),
+                }
 
-
-            {
                 // поручаем спавнеру, засумонить в наш мир пальму.
                 // создаем спавнер
-                //                    let mut entity_manager = dk_world.entity_manager();
-                //                    let entity = entity_manager.create_entity();
-                //
-                //                    entity.add_component(SpawnPoint { name: "palm" });
-                //                    entity.add_component(Position { x: 0f32, y: 0f32 });
-                //                    entity.refresh();
-                //                    println!("Пальма размножилась");
+                let entity_spawner = world.entity_manager.create_entity();
+                entity_spawner.add_component(SpawnPoint { name: "palm", x: target_x, y: target_y });
+                entity_spawner.refresh();
+                println!("Пальма размножилась");
+
+                // после удачного засевания
+                // фиксируем текущее время
+                state.start = PreciseTime::now();
             }
-            //}
-            // фиксируем время
-            //state.start = PreciseTime::now();
         }
     }
 }
@@ -57,7 +88,7 @@ impl System for PlantGrowth {
         let mut state = entity.get_component::<FloraState>();
 
         // инкрементим state, тобиш его рост.
-        if state.start.to(PreciseTime::now()) > Duration::seconds(10) && state.state < 10 {
+        if state.start.to(PreciseTime::now()) > Duration::seconds(10 * WORLD_SPEED) && state.state < 10 {
             let mut graphic = entity.get_component::<Graphic>();
             state.state += 1;
             graphic.need_replication = true;

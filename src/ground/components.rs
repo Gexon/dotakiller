@@ -3,6 +3,8 @@
 use tinyecs::*;
 use time::PreciseTime;
 
+use ::utility::map::Map;
+
 pub struct Name {
     pub name: String
 }
@@ -21,7 +23,7 @@ pub struct WorldLastId {
 impl Component for WorldLastId {}
 // тут будем хранить все объекты на карте.
 pub struct WorldMap {
-    pub flora: [&[f64];3] [u8; 140],
+    pub flora: Map<u8>,
 }
 
 impl Component for WorldMap {

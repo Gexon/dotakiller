@@ -5,8 +5,10 @@ use time::{PreciseTime, Duration};
 
 use WORLD_SPEED;
 
+use ::utility::map::Point;
 use ::ground::components::*;
 use ::flora::components::*;
+
 
 pub struct SpawnSystem;
 // Система создает объекты в мире.
@@ -33,12 +35,12 @@ impl System for SpawnSystem {
             let spawn_point = entity.get_component::<SpawnPoint>();
 
             // проверяем свободно ли место спавна.
-            let target_x = spawn_point.x.trunc() as usize; // Casting
-            let target_y = spawn_point.y.trunc() as usize; // Casting
-            println!("Пробуем создать сущность: x {}, y {}", target_x, target_y);
-            if world_map.flora_x[target_x] == 0 && world_map.flora_y[target_y] == 0 {
-                world_map.flora_x[target_x] = 1;
-                world_map.flora_y[target_y] = 1;
+            let target_point: Point = Point(spawn_point.x.trunc() as i32, spawn_point.y.trunc() as i32); // Casting
+
+            println!("Пробуем создать сущность: x {}, y {}", target_point.0, target_point.1);
+            if world_map.flora[target_point] == 0 && world_map.flora[target_point] == 0 {
+                world_map.flora[target_point] = 1;
+                world_map.flora[target_point] = 1;
 
                 // проверяем наличие заданных объектов.
                 // создаем объект Пальма.

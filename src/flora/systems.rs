@@ -84,7 +84,7 @@ impl System for PlantGrowth {
 
     // эта функция выполняется во время update столько раз, сколько сущностей содержащих компонент FloraState
     fn process_one(&mut self, entity: &mut Entity) {
-        trace!("PLANT GROWTH");
+        //trace!("PLANT GROWTH");
         let mut state = entity.get_component::<FloraState>();
 
         // инкрементим state, тобиш его рост.

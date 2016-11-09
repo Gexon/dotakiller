@@ -88,7 +88,6 @@ impl System for ServerSystem {
 
     // вызывается при update, 1 раз для всех сущностей.
     fn process_all(&mut self, entities: &mut Vec<&mut Entity>, _world: &mut WorldHandle, _data: &mut DataList) {
-        trace!("PROCESS_ALL start.");
         let cnt = self.poll.poll(&mut self.server_data.events, Some(Duration::from_millis(1000))).expect("do it another day");
         //let cnt = self.poll.poll(&mut self.server_data.events, None).unwrap();
         let mut i = 0;
@@ -97,7 +96,6 @@ impl System for ServerSystem {
         // (который обычно представляет собой, handle события),
         // а также информацию о том, какие события происходили (чтение, запись, сигнал, и т. д.)
         while i < cnt {
-            trace!("PROCESS_ALL while.");
             let event = self.server_data.events.get(i).expect("Ошибка получения события");
             //trace!("event={:?}; idx={:?}", event, i);
             self.server_data.ready(&mut self.poll, event.token(), event.kind());
@@ -128,17 +126,17 @@ impl System for ServerSystem {
                 recv_buf = smsg.into_bytes();
                 self.server_data.replication(recv_buf.to_vec());
                 graphic.need_replication = false;
-                trace!("REPLICATION replication");
+                //trace!("REPLICATION replication");
             }
             // если есть новенькие, собираем все сущности для primary_replication
             if exist_new_conn {
                 let s = format!("updherb {} {} {} {} {}", id_herb.id, class.name, state.state, position.x, position.y);
                 let smsg: String = s.to_string();
                 let smsg_len = smsg.len();
-                let mut recv_buf: Vec<u8> = Vec::with_capacity(smsg_len);
-                unsafe { recv_buf.set_len(smsg_len); }
-                recv_buf = smsg.into_bytes();
-                recv_obj.push(recv_buf.to_vec());
+                let mut recv_buf2: Vec<u8> = Vec::with_capacity(smsg_len);
+                unsafe { recv_buf2.set_len(smsg_len); }
+                recv_buf2 = smsg.into_bytes();
+                recv_obj.push(recv_buf2.to_vec());
             }
         }
 
@@ -191,22 +189,23 @@ impl Server {
 
     /// первичная репликация
     pub fn primary_replication(&mut self, recv_obj: &mut Vec<Vec<u8>>) {
-        while !recv_obj.is_empty() {
-            if let Some(message) = recv_obj.pop() {
-                let rc_message = Rc::new(message);
-                for c in self.conns.iter_mut() {
-                    if c.is_newbe() {
+        for c in self.conns.iter_mut() {
+            if c.is_newbe() {
+                while !recv_obj.is_empty() {
+                    if let Some(message) = recv_obj.pop() {
+                        let rc_message = Rc::new(message);
                         c.send_message(rc_message.clone())
                             .unwrap_or_else(|e| {
                                 error!("Сбой записи сообщения в очередь {:?}: {:?}", c.token, e);
                                 c.mark_reset();
                             });
-                        c.mark_old();
                     }
                 }
             }
+            c.mark_old();
         }
     }
+
 
     /// Регистрация серверного опросника событий.
     ///
@@ -286,7 +285,7 @@ impl Server {
         if event.is_writable() {
             //trace!("Записываем событие для токена {:?}", token);
             //println!("Записываем событие для токена {:?}", token);
-            assert!(self.token != token, "Получение записанного события для Сервера");
+            assert! ( self.token != token, "Получение записанного события для Сервера");
 
             let conn = self.find_connection_by_token(token);
 

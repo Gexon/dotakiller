@@ -219,13 +219,13 @@ impl Connection {
                         return Ok(());
                     },
                     Ok(Some(())) => {
-                        let s = str::from_utf8(&buf[..]).unwrap();
-                        let len = s.len();
-                        if len > 0 {
-                            if s != "ping" {
-                                println!("send>{}", s);
-                            }
-                        };
+//                        let s = str::from_utf8(&buf[..]).unwrap();
+//                        let len = s.len();
+//                        if len > 0 {
+//                            if s != "ping" && s != "pos" {
+//                                println!("send>{}", s);
+//                            }
+//                        };
                         ()
                     },
                     Err(e) => {

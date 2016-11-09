@@ -37,7 +37,7 @@ impl System for SpawnSystem {
             // проверяем свободно ли место спавна.
             let target_point: Point = Point(spawn_point.x.trunc() as i32, spawn_point.y.trunc() as i32); // Casting
 
-            //println!("Пробуем создать сущность: x {}, y {}", target_point.0, target_point.1);
+            println!("Пробуем создать сущность: x {}, y {}", target_point.0, target_point.1);
             if world_map.flora[target_point] == 0 {
                 world_map.flora[target_point] = 1;
                 world_map.flora[target_point] = 1;
@@ -72,7 +72,7 @@ impl System for WindDirectionSystem {
     }
 
     fn process_one(&mut self, entity: &mut Entity) {
-        trace!("WIND Direction");
+        //trace!("WIND Direction");
         let mut wind = entity.get_component::<WindDirection>();
 
         // меняем ветер

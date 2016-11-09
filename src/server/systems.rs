@@ -132,7 +132,7 @@ impl System for ServerSystem {
             }
             // если есть новенькие, собираем все сущности для primary_replication
             if exist_new_conn {
-                let s = format!("updherb 1 {} {} {} {}", class.name, state.state, position.x, position.y);
+                let s = format!("updherb {} {} {} {} {}", id_herb.id, class.name, state.state, position.x, position.y);
                 let smsg: String = s.to_string();
                 let smsg_len = smsg.len();
                 let mut recv_buf: Vec<u8> = Vec::with_capacity(smsg_len);

@@ -26,23 +26,7 @@ pub struct WorldMap {
     pub flora: Map<u8>,
 }
 
-impl Component for WorldMap {
-    //    fn foo(a:&[&[f64]],x:&[f64])
-    //    {
-    //        for i in 0..3 {
-    //            for j in 0..4 {
-    //                println!("{}",a[i][j]);
-    //            }
-    //        }
-    //    }
-
-    //        let a:[&[f64];3]=[&[1.1,-0.2, 0.1,1.6],
-    //            &[0.1,-1.2,-0.2,2.3],
-    //            &[0.2,-0.1, 1.1,1.5]];
-    //
-    //let x:[f64;3]=[0.0;3];
-    //        foo(&a,&x);
-}
+impl Component for WorldMap {}
 
 // куда дует ветер. 0 - это типа север(+Х)
 pub struct WindDirection {

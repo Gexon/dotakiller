@@ -30,7 +30,7 @@ impl System for PlantReproduction {
 
             // если пальма уже жирная, то вбросить семян.
             // пробуем бросить семя через каждые 20 сек
-            if state.state >= 10 && state.start.to(PreciseTime::now()) > Duration::seconds(20 * WORLD_SPEED) {
+            if state.state >= 10 && state.start.to(PreciseTime::now()) > Duration::seconds(10 * WORLD_SPEED) {
                 let position = entity.get_component::<Position>();
                 let mut target_x = position.x;
                 let mut target_y = position.y;
@@ -58,13 +58,13 @@ impl System for PlantReproduction {
                     },
                     _ => println!("странное направление ветра, вы не находите?"),
                 }
-                println!("Ветер уносит семена в направлении: {}", wind.direction);
+                //println!("Ветер уносит семена в направлении: {}", wind.direction);
                 // поручаем спавнеру, засумонить в наш мир пальму.
                 // создаем спавнер
                 let entity_spawner = world.entity_manager.create_entity();
                 entity_spawner.add_component(SpawnPoint { name: "palm", x: target_x, y: target_y });
                 entity_spawner.refresh();
-                println!("Пальма размножилась");
+                //println!("Пальма размножилась");
 
                 // после удачного засевания
                 // фиксируем текущее время
@@ -88,11 +88,11 @@ impl System for PlantGrowth {
         let mut state = entity.get_component::<FloraState>();
 
         // инкрементим state, тобиш его рост.
-        if state.start.to(PreciseTime::now()) > Duration::seconds(10 * WORLD_SPEED) && state.state < 10 {
+        if state.start.to(PreciseTime::now()) > Duration::seconds(5 * WORLD_SPEED) && state.state < 10 {
             let mut graphic = entity.get_component::<Graphic>();
             state.state += 1;
             graphic.need_replication = true;
-            println!("Пальма выросла немного");
+            //println!("Пальма выросла немного");
             // фиксируем текущее время
             state.start = PreciseTime::now();
         }

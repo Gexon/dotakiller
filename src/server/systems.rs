@@ -13,6 +13,7 @@ use std::time::Duration;
 use ::server::connection::Connection;
 use ::ground::components::*;
 use ::flora::components::FloraState;
+use ::flora::components::IdHerb;
 
 type Slab<T> = slab::Slab<T, Token>;
 
@@ -114,11 +115,12 @@ impl System for ServerSystem {
             let mut graphic = entity.get_component::<Graphic>();
             let class = entity.get_component::<Name>();
             let position = entity.get_component::<Position>();
-            let state =  entity.get_component::<FloraState>();
+            let state = entity.get_component::<FloraState>();
+            let id_herb = entity.get_component::<IdHerb>();
             // репликация.
             if graphic.need_replication {
                 // рассылаем всем клиентам "updherb idHerb classHerb stateHerb x y"
-                let s = format!("updherb 1 {} {} {} {}", class.name, state.state, position.x, position.y);
+                let s = format!("updherb {} {} {} {} {}", id_herb.id, class.name, state.state, position.x, position.y);
                 let smsg: String = s.to_string();
                 let smsg_len = smsg.len();
                 let mut recv_buf: Vec<u8> = Vec::with_capacity(smsg_len);

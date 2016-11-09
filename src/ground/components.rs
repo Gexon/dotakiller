@@ -21,8 +21,7 @@ pub struct WorldLastId {
 impl Component for WorldLastId {}
 // тут будем хранить все объекты на карте.
 pub struct WorldMap {
-    pub flora_x: [u8; 140],
-    pub flora_y: [u8; 140],
+    pub flora: [&[f64];3] [u8; 140],
 }
 
 impl Component for WorldMap {
@@ -38,8 +37,8 @@ impl Component for WorldMap {
     //        let a:[&[f64];3]=[&[1.1,-0.2, 0.1,1.6],
     //            &[0.1,-1.2,-0.2,2.3],
     //            &[0.2,-0.1, 1.1,1.5]];
-    //        let x:[f64;3]=[0.0;3];
     //
+    //let x:[f64;3]=[0.0;3];
     //        foo(&a,&x);
 }
 

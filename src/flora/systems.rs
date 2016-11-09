@@ -58,7 +58,7 @@ impl System for PlantReproduction {
                     },
                     _ => println!("странное направление ветра, вы не находите?"),
                 }
-
+                println!("Ветер уносит семена в направлении: {}", wind.direction);
                 // поручаем спавнеру, засумонить в наш мир пальму.
                 // создаем спавнер
                 let entity_spawner = world.entity_manager.create_entity();

@@ -35,7 +35,7 @@ impl System for SpawnSystem {
             // проверяем свободно ли место спавна.
             let target_x = spawn_point.x.trunc() as usize; // Casting
             let target_y = spawn_point.y.trunc() as usize; // Casting
-
+            println!("Пробуем создать сущность: x {}, y {}", target_x, target_y);
             if world_map.flora_x[target_x] == 0 && world_map.flora_y[target_y] == 0 {
                 world_map.flora_x[target_x] = 1;
                 world_map.flora_y[target_y] = 1;

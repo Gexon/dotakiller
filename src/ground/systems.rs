@@ -82,7 +82,7 @@ impl System for WindDirectionSystem {
         let mut wind = entity.get_component::<WindDirection>();
 
         // меняем ветер
-        if wind.start.to(PreciseTime::now()) > Duration::seconds(60 * WORLD_SPEED) {
+        if wind.start.to(PreciseTime::now()) > Duration::seconds(16 * WORLD_SPEED) {
             if wind.direction == 7 { wind.direction = 0 } else { wind.direction += 1; }
             //println!("Ветер меняет направление на {}", wind.direction);
             // фиксируем текущее время

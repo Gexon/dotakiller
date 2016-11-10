@@ -83,7 +83,7 @@ impl System for PlantReproductionSystem {
                     state.reproduction_time = PreciseTime::now();
                     // считаем время до умершвления
                     state.dead += 1;
-                    if state.dead > 12 {
+                    if state.dead > 6 {
                         // проверяем, не пора ли пальме в валхаллу
                         entity.add_component(Dead); // пальме пора умереть.
                         entity.remove_component::<Reproduction>(); // выключаем рост.
@@ -168,7 +168,7 @@ impl System for PlantDeadSystem {
                     // создаем спавнер
                     let entity_spawner = world.entity_manager.create_entity();
                     entity_spawner.add_component(SpawnPoint { name: "cactus", x: position.x, y: position.y });
-                    //entity_spawner.refresh();
+                    entity_spawner.refresh();
                 }
             }
         }

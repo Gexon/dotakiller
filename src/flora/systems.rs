@@ -4,16 +4,18 @@ use time::{PreciseTime, Duration};
 
 use WORLD_SPEED;
 
+use ::utility::map::Point;
 use ::ground::components::*;
 use ::flora::components::*;
 
 
-pub struct PlantReproduction;
+pub struct PlantReproductionSystem;
 
-impl System for PlantReproduction {
+/// Пальма размножается
+impl System for PlantReproductionSystem {
     // выбираем сущности содержащие компоненты "FloraClass"
     fn aspect(&self) -> Aspect {
-        aspect_all![FloraClass]
+        aspect_all!(FloraClass, Reproduction)
     }
 
     fn data_aspects(&self) -> Vec<Aspect> {
@@ -29,8 +31,9 @@ impl System for PlantReproduction {
             let mut state = entity.get_component::<FloraState>();
 
             // если пальма уже жирная, то вбросить семян.
-            // пробуем бросить семя через каждые 20 сек
-            if state.state >= 10 && state.start.to(PreciseTime::now()) > Duration::seconds(10 * WORLD_SPEED) {
+            // пробуем бросить семя через каждые 10 сек
+            if state.reproduction_time.to(PreciseTime::now()) > Duration::seconds(10 * WORLD_SPEED) {
+                let name = entity.get_component::<Name>();
                 let position = entity.get_component::<Position>();
                 let mut target_x = position.x;
                 let mut target_y = position.y;
@@ -68,18 +71,27 @@ impl System for PlantReproduction {
 
                 // после удачного засевания
                 // фиксируем текущее время
-                state.start = PreciseTime::now();
+                state.reproduction_time = PreciseTime::now();
+                // считаем время до умершвления
+                state.dead += 1;
+                if state.dead > 6 || name.name == "cactus" {
+                    // проверяем, не пора ли пальме в валхаллу
+                    entity.add_component(Dead); // пальме пора умереть.
+                    entity.remove_component::<Reproduction>(); // выключаем рост.
+                    entity.refresh();
+                }
             }
         }
     }
 }
 
-pub struct PlantGrowth;
+pub struct PlantGrowthSystem;
 
-impl System for PlantGrowth {
+/// Пальма растет
+impl System for PlantGrowthSystem {
     // выбираем сущности содержащие компоненты "FloraState"
     fn aspect(&self) -> Aspect {
-        aspect_all!(FloraClass)
+        aspect_all!(FloraClass, Growth)
     }
 
     // эта функция выполняется во время update столько раз, сколько сущностей содержащих компонент FloraState
@@ -88,14 +100,63 @@ impl System for PlantGrowth {
         let mut state = entity.get_component::<FloraState>();
 
         // инкрементим state, тобиш его рост.
-        if state.start.to(PreciseTime::now()) > Duration::seconds(5 * WORLD_SPEED) && state.state < 10 {
+        if state.growth_time.to(PreciseTime::now()) > Duration::seconds(5 * WORLD_SPEED) {
             let mut graphic = entity.get_component::<Graphic>();
-            state.state += 1;
-            graphic.need_replication = true;
+            if state.state < 10 {
+                state.state += 1;
+                graphic.need_replication = true;
+            }
             //println!("Пальма выросла немного");
             // фиксируем текущее время
-            state.start = PreciseTime::now();
+            state.growth_time = PreciseTime::now();
+            // фиксируем таймер для отрупнения
+            if state.state == 10 {
+                entity.add_component(Reproduction); // пальме пора чпокаться.
+                entity.remove_component::<Growth>(); // выключаем рост.
+                entity.refresh();
+            }
         }
     }
 }
 
+pub struct PlantDeadSystem;
+
+/// Убиваем пальму
+impl System for PlantDeadSystem {
+    // выбираем сущности содержащие компоненты "FloraState"
+    fn aspect(&self) -> Aspect {
+        aspect_all!(FloraClass, Dead)
+    }
+
+    fn data_aspects(&self) -> Vec<Aspect> {
+        vec![aspect_all![ClassGround]]
+    }
+
+    // эта функция выполняется во время update столько раз, сколько сущностей содержащих компонент FloraState
+    fn process_all(&mut self, entities: &mut Vec<&mut Entity>, world: &mut WorldHandle, data: &mut DataList) {
+        let ground = data.unwrap_entity();
+        let mut world_map = ground.get_component::<WorldMap>();
+
+        // перебираем все сущности
+        for entity in entities {
+            let mut state = entity.get_component::<FloraState>();
+            let mut graphic = entity.get_component::<Graphic>();
+            state.state = 0;
+            graphic.need_replication = true;
+            let id_herb = entity.get_component::<IdHerb>();
+            println!("Пальма {} крякнула", id_herb.id);
+
+
+            let position = entity.get_component::<Position>();
+            // помечаем место как пустое
+            let target_point: Point = Point(position.x.trunc() as i32, position.y.trunc() as i32); // Casting
+            world_map.flora[target_point] = 0;
+
+            // поручаем спавнеру, засумонить в наш мир пальму.
+            // создаем спавнер
+            let entity_spawner = world.entity_manager.create_entity();
+            entity_spawner.add_component(SpawnPoint { name: "cactus", x: position.x, y: position.y });
+            entity_spawner.refresh();
+        }
+    }
+}

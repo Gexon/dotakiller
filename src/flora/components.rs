@@ -16,7 +16,9 @@ impl Component for IdHerb {}
 
 pub struct FloraState {
     pub state: i32,
-    pub start: PreciseTime,
+    pub growth_time: PreciseTime,
+    pub reproduction_time: PreciseTime,
+    pub dead: i32,
 }
 
 impl Component for FloraState {}

@@ -2,16 +2,16 @@
 use tinyecs::*;
 
 use ::ground::components::SpawnPoint;
-use ::flora::systems::PlantGrowth;
-use ::flora::systems::PlantReproduction;
+use ::flora::systems::*;
 
 pub mod components;
 mod systems;
 
 pub fn init(dk_world: &mut World) {
     // добавляем в мир систему роста растений.
-    dk_world.set_system(PlantGrowth);
-    dk_world.set_system(PlantReproduction);
+    dk_world.set_system(PlantGrowthSystem);
+    dk_world.set_system(PlantReproductionSystem);
+    dk_world.set_system(PlantDeadSystem);
 
     {
         // поручаем спавнеру, засумонить в наш мир пальму.

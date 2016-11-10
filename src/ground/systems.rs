@@ -37,7 +37,7 @@ impl System for SpawnSystem {
             // проверяем свободно ли место спавна.
             let target_point: Point = Point(spawn_point.x.trunc() as i32, spawn_point.y.trunc() as i32); // Casting
 
-            println!("Пробуем создать сущность: x {}, y {}", target_point.0, target_point.1);
+            //println!("Пробуем создать сущность: x {}, y {}", target_point.0, target_point.1);
             if world_map.flora[target_point] == 0 {
                 world_map.flora[target_point] = 1;
                 world_map.flora[target_point] = 1;
@@ -48,8 +48,14 @@ impl System for SpawnSystem {
                 entity_object.add_component(Name { name: spawn_point.name.to_string() });
                 entity_object.add_component(Position { x: spawn_point.x, y: spawn_point.y });
                 entity_object.add_component(FloraClass);
+                entity_object.add_component(Growth);
                 entity_object.add_component(Graphic { need_replication: true });
-                entity_object.add_component(FloraState { state: 1, start: PreciseTime::now() });
+                entity_object.add_component(FloraState {
+                    state: 1,
+                    growth_time: PreciseTime::now(),
+                    reproduction_time: PreciseTime::now(),
+                    dead: 0,
+                });
                 entity_object.add_component(IdHerb { id: last_id.flora_id });
                 entity_object.refresh();
                 let id_herb = entity_object.get_component::<IdHerb>();
@@ -78,7 +84,7 @@ impl System for WindDirectionSystem {
         // меняем ветер
         if wind.start.to(PreciseTime::now()) > Duration::seconds(60 * WORLD_SPEED) {
             if wind.direction == 7 { wind.direction = 0 } else { wind.direction += 1; }
-            println!("Ветер меняет направление на {}", wind.direction);
+            //println!("Ветер меняет направление на {}", wind.direction);
             // фиксируем текущее время
             wind.start = PreciseTime::now();
         }

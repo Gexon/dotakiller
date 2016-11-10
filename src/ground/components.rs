@@ -69,3 +69,18 @@ pub struct SpawnPoint {
 }
 
 impl Component for SpawnPoint {}
+
+/// Все что должно расти - должно расти.
+pub struct Growth;
+
+impl Component for Growth {}
+
+/// Все что должно размножаться.
+pub struct Reproduction;
+
+impl Component for Reproduction {}
+
+/// Все что должно умереть.
+pub struct Dead;
+
+impl Component for Dead {}

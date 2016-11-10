@@ -127,6 +127,7 @@ impl System for ServerSystem {
                 self.server_data.replication(recv_buf.to_vec());
                 graphic.need_replication = false;
                 //trace!("REPLICATION replication");
+                if state.state == 0 { entity.delete() }
             }
             // если есть новенькие, собираем все сущности для primary_replication
             if exist_new_conn {
@@ -152,13 +153,10 @@ impl System for ServerSystem {
 pub struct Server {
     // главное гнездо нашего сервера
     sock: TcpListener,
-
     // токен нашего сервера. мы отслеживаем его здесь вместо `const SERVER = Token(0)`.
     token: Token,
-
     // список подключений нашего сервера _accepted_ by
     conns: Slab<Connection>,
-
     // список событий для обработки
     events: Events,
 }

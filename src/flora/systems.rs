@@ -28,12 +28,12 @@ impl System for PlantReproductionSystem {
             let ground = data.unwrap_entity();
             let wind = ground.get_component::<WindDirection>();
 
+            let name = entity.get_component::<Name>();
             let mut state = entity.get_component::<FloraState>();
 
             // если пальма уже жирная, то вбросить семян.
             // пробуем бросить семя через каждые 10 сек
-            if state.reproduction_time.to(PreciseTime::now()) > Duration::seconds(10 * WORLD_SPEED) {
-                let name = entity.get_component::<Name>();
+            if state.reproduction_time.to(PreciseTime::now()) > Duration::seconds(10 * WORLD_SPEED) && name.name != "cactus" {
                 let position = entity.get_component::<Position>();
                 let mut target_x = position.x;
                 let mut target_y = position.y;
@@ -74,7 +74,15 @@ impl System for PlantReproductionSystem {
                 state.reproduction_time = PreciseTime::now();
                 // считаем время до умершвления
                 state.dead += 1;
-                if state.dead > 6 || name.name == "cactus" {
+                if state.dead > 6 {
+                    // проверяем, не пора ли пальме в валхаллу
+                    entity.add_component(Dead); // пальме пора умереть.
+                    entity.remove_component::<Reproduction>(); // выключаем рост.
+                    entity.refresh();
+                }
+            } else if name.name == "cactus" {
+                state.dead += 1;
+                if state.dead > 24 {
                     // проверяем, не пора ли пальме в валхаллу
                     entity.add_component(Dead); // пальме пора умереть.
                     entity.remove_component::<Reproduction>(); // выключаем рост.
@@ -139,12 +147,13 @@ impl System for PlantDeadSystem {
 
         // перебираем все сущности
         for entity in entities {
+            let name = entity.get_component::<Name>();
             let mut state = entity.get_component::<FloraState>();
             let mut graphic = entity.get_component::<Graphic>();
             state.state = 0;
             graphic.need_replication = true;
             let id_herb = entity.get_component::<IdHerb>();
-            println!("Пальма {} крякнула", id_herb.id);
+            println!("{} {} крякнула", name.name, id_herb.id);
 
 
             let position = entity.get_component::<Position>();
@@ -152,11 +161,13 @@ impl System for PlantDeadSystem {
             let target_point: Point = Point(position.x.trunc() as i32, position.y.trunc() as i32); // Casting
             world_map.flora[target_point] = 0;
 
-            // поручаем спавнеру, засумонить в наш мир пальму.
-            // создаем спавнер
-            let entity_spawner = world.entity_manager.create_entity();
-            entity_spawner.add_component(SpawnPoint { name: "cactus", x: position.x, y: position.y });
-            entity_spawner.refresh();
+            if name.name != "cactus" {
+                // поручаем спавнеру, засумонить в наш мир пальму.
+                // создаем спавнер
+                let entity_spawner = world.entity_manager.create_entity();
+                entity_spawner.add_component(SpawnPoint { name: "cactus", x: position.x, y: position.y });
+                entity_spawner.refresh();
+            }
         }
     }
 }

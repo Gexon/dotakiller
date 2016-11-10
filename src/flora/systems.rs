@@ -33,7 +33,7 @@ impl System for PlantReproductionSystem {
 
             // если пальма уже жирная, то вбросить семян.
             // пробуем бросить семя через каждые 10 сек
-            if state.reproduction_time.to(PreciseTime::now()) > Duration::seconds(10 * WORLD_SPEED) && name.name != "cactus" {
+            if state.reproduction_time.to(PreciseTime::now()) > Duration::seconds(10 * WORLD_SPEED) {
                 if name.name == "cactus" {
                     state.dead += 1;
                     if state.dead > 6 {

@@ -73,7 +73,7 @@ impl ServerSystem {
 // работа с сетью. передача данных клиентам.
 impl System for ServerSystem {
     fn aspect(&self) -> Aspect {
-        aspect_all![Graphic]
+        aspect_all!(Replication)
     }
 
     fn process_no_entities(&mut self) {
@@ -110,28 +110,22 @@ impl System for ServerSystem {
 
         // перебираем все сущности
         for entity in entities {
-            let mut graphic = entity.get_component::<Graphic>();
             let class = entity.get_component::<Name>();
             let position = entity.get_component::<Position>();
             let state = entity.get_component::<FloraState>();
             let id_herb = entity.get_component::<IdHerb>();
             // репликация.
-            if graphic.need_replication {
-                // рассылаем всем клиентам "updherb idHerb classHerb stateHerb x y"
-                let s = format!("updherb {} {} {} {} {}", id_herb.id, class.name, state.state, position.x, position.y);
-                let smsg: String = s.to_string();
-                let smsg_len = smsg.len();
-                let mut recv_buf: Vec<u8> = Vec::with_capacity(smsg_len);
-                unsafe { recv_buf.set_len(smsg_len); }
-                recv_buf = smsg.into_bytes();
-                self.server_data.replication(recv_buf.to_vec());
-                graphic.need_replication = false;
-                //trace!("REPLICATION replication");
-                if state.state == 0 {
-                    entity.delete();
-                    entity.refresh();
-                }
-            }
+            // рассылаем всем клиентам "updherb idHerb classHerb stateHerb x y"
+            let s = format!("updherb {} {} {} {} {}", id_herb.id, class.name, state.state, position.x, position.y);
+            let smsg: String = s.to_string();
+            let smsg_len = smsg.len();
+            let mut recv_buf: Vec<u8> = Vec::with_capacity(smsg_len);
+            unsafe { recv_buf.set_len(smsg_len); }
+            recv_buf = smsg.into_bytes();
+            self.server_data.replication(recv_buf.to_vec());
+            entity.remove_component::<Replication>(); // убираем компонент репликации.
+            // trace!("REPLICATION replication");
+
             // если есть новенькие, собираем все сущности для primary_replication
             if exist_new_conn {
                 let s = format!("updherb {} {} {} {} {}", id_herb.id, class.name, state.state, position.x, position.y);

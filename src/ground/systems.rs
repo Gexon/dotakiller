@@ -49,7 +49,7 @@ impl System for SpawnSystem {
                 entity_object.add_component(Position { x: spawn_point.x, y: spawn_point.y });
                 entity_object.add_component(FloraClass);
                 entity_object.add_component(Growth);
-                entity_object.add_component(Graphic { need_replication: true });
+                entity_object.add_component(Replication); // требуется репликация.
                 entity_object.add_component(FloraState {
                     state: 1,
                     growth_time: PreciseTime::now(),

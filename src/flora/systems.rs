@@ -8,10 +8,9 @@ use ::utility::map::Point;
 use ::ground::components::*;
 use ::flora::components::*;
 
-
+/// Пальма размножается
 pub struct PlantReproductionSystem;
 
-/// Пальма размножается
 impl System for PlantReproductionSystem {
     // выбираем сущности содержащие компоненты "FloraClass"
     fn aspect(&self) -> Aspect {
@@ -74,7 +73,8 @@ impl System for PlantReproductionSystem {
                 state.reproduction_time = PreciseTime::now();
                 // считаем время до умершвления
                 state.dead += 1;
-                if state.dead > 6 {//13
+                if state.dead > 6 {
+                    //13
                     // проверяем, не пора ли пальме в валхаллу
                     entity.add_component(Dead); // пальме пора умереть.
                     entity.remove_component::<Reproduction>(); // выключаем рост.
@@ -85,9 +85,9 @@ impl System for PlantReproductionSystem {
     }
 }
 
+/// Пальма растет
 pub struct PlantGrowthSystem;
 
-/// Пальма растет
 impl System for PlantGrowthSystem {
     // выбираем сущности содержащие компоненты "FloraState"
     fn aspect(&self) -> Aspect {
@@ -100,11 +100,10 @@ impl System for PlantGrowthSystem {
         let mut state = entity.get_component::<FloraState>();
 
         // инкрементим state, тобиш его рост.
-        if state.growth_time.to(PreciseTime::now()) > Duration::seconds(1 * WORLD_SPEED) {
-            let mut graphic = entity.get_component::<Graphic>();
+        if state.growth_time.to(PreciseTime::now()) > Duration::seconds(WORLD_SPEED) {
             if state.state < 10 {
                 state.state += 1;
-                graphic.need_replication = true;
+                entity.add_component(Replication); // требуется репликация.
             }
             //println!("Пальма выросла немного");
             // фиксируем текущее время
@@ -119,11 +118,11 @@ impl System for PlantGrowthSystem {
     }
 }
 
+/// Убиваем пальму
 pub struct PlantDeadSystem;
 
-/// Убиваем пальму
 impl System for PlantDeadSystem {
-    // выбираем сущности содержащие компоненты "FloraState"
+    // выбираем сущности содержащие компоненты FloraClass, Dead
     fn aspect(&self) -> Aspect {
         aspect_all!(FloraClass, Dead)
     }
@@ -139,30 +138,44 @@ impl System for PlantDeadSystem {
 
         // перебираем все сущности
         for entity in entities {
-            let name = entity.get_component::<Name>();
+            let name = entity.get_component::<Name>(); // удалить, только для лога
+            let id_herb = entity.get_component::<IdHerb>(); // удалить, только для лога
+
             let mut state = entity.get_component::<FloraState>();
-            let mut graphic = entity.get_component::<Graphic>();
-            if state.state != 0 {
-                state.state = 0;
-                graphic.need_replication = true;
-                let id_herb = entity.get_component::<IdHerb>();
-                println!("{} {} крякнула", name.name, id_herb.id);
+            let position = entity.get_component::<Position>();
 
-                let position = entity.get_component::<Position>();
-                // помечаем место как пустое
-                let target_point: Point = Point(position.x.trunc() as i32, position.y.trunc() as i32); // Casting
-                world_map.flora[target_point] = 0;
+            // помечаем место как пустое
+            let target_point: Point = Point(position.x.trunc() as i32, position.y.trunc() as i32); // Casting
+            world_map.flora[target_point] = 0;
 
-                if name.name != "cactus" {
-                    // поручаем спавнеру, засумонить в наш мир кактус.
-                    // создаем спавнер
-                    let entity_spawner = world.entity_manager.create_entity();
-                    entity_spawner.add_component(SpawnPoint { name: "cactus", x: position.x, y: position.y });
-                    entity_spawner.refresh();
-                }
+            if name.name != "cactus" {
+                // поручаем спавнеру, засумонить в наш мир кактус.
+                // создаем спавнер
+                let entity_spawner = world.entity_manager.create_entity();
+                entity_spawner.add_component(SpawnPoint { name: "cactus", x: position.x, y: position.y });
+                entity_spawner.refresh();
             }
 
-
+            state.state = 0; // помечаем состояние как труп.
+            entity.add_component(Replication); // требуется репликация.
+            entity.add_component(Remove); // требуется убрать с полей.
+            println!("{} {} крякнула", name.name, id_herb.id);
         }
+    }
+}
+
+/// Убираем с поляны пальму
+pub struct PlantRemoveSystem;
+
+impl System for PlantRemoveSystem {
+    // выбираем сущности содержащие компоненты "FloraState"
+    fn aspect(&self) -> Aspect {
+        aspect_all!(FloraClass, Remove)
+    }
+
+    // эта функция выполняется во время update столько раз, сколько сущностей содержащих компонент FloraState
+    fn process_one(&mut self, entity: &mut Entity) {
+        entity.delete();
+        // entity.refresh();
     }
 }

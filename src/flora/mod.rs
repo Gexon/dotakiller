@@ -12,6 +12,7 @@ pub fn init(dk_world: &mut World) {
     dk_world.set_system(PlantGrowthSystem);
     dk_world.set_system(PlantReproductionSystem);
     dk_world.set_system(PlantDeadSystem);
+    dk_world.set_system(PlantRemoveSystem);
 
     {
         // поручаем спавнеру, засумонить в наш мир пальму.

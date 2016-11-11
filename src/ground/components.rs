@@ -37,11 +37,11 @@ pub struct WindDirection {
 impl Component for WindDirection {}
 
 // репликация клиенту изменений.
-pub struct Graphic {
+pub struct _Graphic {
     //pub need_replication: bool,
 }
 
-impl Component for Graphic {
+impl Component for _Graphic {
     // представление в графической подсистеме
     // репликация клиенту изменений.
 }
@@ -80,10 +80,15 @@ pub struct Reproduction;
 
 impl Component for Reproduction {}
 
-/// Все что должно умереть.
+/// Помечаем как мертвый и реплицируем.
 pub struct Dead;
 
 impl Component for Dead {}
+
+/// Удаляем из поляны.
+pub struct Remove;
+
+impl Component for Remove {}
 
 /// Репликация
 pub struct Replication;

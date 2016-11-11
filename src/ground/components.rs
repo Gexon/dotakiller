@@ -38,7 +38,7 @@ impl Component for WindDirection {}
 
 // репликация клиенту изменений.
 pub struct Graphic {
-    pub need_replication: bool,
+    //pub need_replication: bool,
 }
 
 impl Component for Graphic {
@@ -84,3 +84,8 @@ impl Component for Reproduction {}
 pub struct Dead;
 
 impl Component for Dead {}
+
+/// Репликация
+pub struct Replication;
+
+impl Component for Replication {}

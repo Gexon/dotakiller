@@ -33,16 +33,8 @@ impl System for PlantReproductionSystem {
 
             // если пальма уже жирная, то вбросить семян.
             // пробуем бросить семя через каждые 10 сек
-            if state.reproduction_time.to(PreciseTime::now()) > Duration::seconds(10 * WORLD_SPEED) {
-                if name.name == "cactus" {
-                    state.dead += 1;
-                    if state.dead > 6 {
-                        // проверяем, не пора ли пальме в валхаллу
-                        entity.add_component(Dead); // пальме пора умереть.
-                        entity.remove_component::<Reproduction>(); // выключаем рост.
-                        entity.refresh();
-                    }
-                } else {
+            if state.reproduction_time.to(PreciseTime::now()) > Duration::seconds(5 * WORLD_SPEED) {
+                if name.name != "cactus" {
                     let position = entity.get_component::<Position>();
                     let mut target_x = position.x;
                     let mut target_y = position.y;
@@ -77,18 +69,16 @@ impl System for PlantReproductionSystem {
                     entity_spawner.add_component(SpawnPoint { name: "palm", x: target_x, y: target_y });
                     entity_spawner.refresh();
                     //println!("Пальма размножилась");
-
-                    // после удачного засевания
-                    // фиксируем текущее время
-                    state.reproduction_time = PreciseTime::now();
-                    // считаем время до умершвления
-                    state.dead += 1;
-                    if state.dead > 6 {
-                        // проверяем, не пора ли пальме в валхаллу
-                        entity.add_component(Dead); // пальме пора умереть.
-                        entity.remove_component::<Reproduction>(); // выключаем рост.
-                        entity.refresh();
-                    }
+                }
+                // фиксируем текущее время
+                state.reproduction_time = PreciseTime::now();
+                // считаем время до умершвления
+                state.dead += 1;
+                if state.dead > 6 {//13
+                    // проверяем, не пора ли пальме в валхаллу
+                    entity.add_component(Dead); // пальме пора умереть.
+                    entity.remove_component::<Reproduction>(); // выключаем рост.
+                    entity.refresh();
                 }
             }
         }
@@ -110,7 +100,7 @@ impl System for PlantGrowthSystem {
         let mut state = entity.get_component::<FloraState>();
 
         // инкрементим state, тобиш его рост.
-        if state.growth_time.to(PreciseTime::now()) > Duration::seconds(2 * WORLD_SPEED) {
+        if state.growth_time.to(PreciseTime::now()) > Duration::seconds(1 * WORLD_SPEED) {
             let mut graphic = entity.get_component::<Graphic>();
             if state.state < 10 {
                 state.state += 1;
@@ -171,6 +161,8 @@ impl System for PlantDeadSystem {
                     entity_spawner.refresh();
                 }
             }
+
+
         }
     }
 }

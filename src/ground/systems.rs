@@ -9,9 +9,9 @@ use ::utility::map::Point;
 use ::ground::components::*;
 use ::flora::components::*;
 
-
+/// Система создает объекты в мире.
 pub struct SpawnSystem;
-// Система создает объекты в мире.
+
 impl System for SpawnSystem {
     // Обрабатываем сущности содержащие компоненты "SpawnPoint", "Position"
     // Аспект - список сущностей, содержащих выбранные компоненты.
@@ -69,7 +69,7 @@ impl System for SpawnSystem {
     }
 }
 
-// система меняет направление вветра
+/// система меняет направление вветра
 pub struct WindDirectionSystem;
 
 impl System for WindDirectionSystem {
@@ -82,7 +82,7 @@ impl System for WindDirectionSystem {
         let mut wind = entity.get_component::<WindDirection>();
 
         // меняем ветер
-        if wind.start.to(PreciseTime::now()) > Duration::seconds(16 * WORLD_SPEED) {
+        if wind.start.to(PreciseTime::now()) > Duration::seconds(8 * WORLD_SPEED) {
             if wind.direction == 7 { wind.direction = 0 } else { wind.direction += 1; }
             //println!("Ветер меняет направление на {}", wind.direction);
             // фиксируем текущее время

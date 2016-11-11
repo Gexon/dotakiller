@@ -104,6 +104,7 @@ impl System for PlantGrowthSystem {
             if state.state < 10 {
                 state.state += 1;
                 entity.add_component(Replication); // требуется репликация.
+                entity.refresh();
             }
             //println!("Пальма выросла немного");
             // фиксируем текущее время
@@ -157,8 +158,10 @@ impl System for PlantDeadSystem {
             }
 
             state.state = 0; // помечаем состояние как труп.
+            entity.remove_component::<Dead>(); //
             entity.add_component(Replication); // требуется репликация.
             entity.add_component(Remove); // требуется убрать с полей.
+            entity.refresh();
             println!("{} {} крякнула", name.name, id_herb.id);
         }
     }
@@ -175,7 +178,8 @@ impl System for PlantRemoveSystem {
 
     // эта функция выполняется во время update столько раз, сколько сущностей содержащих компонент FloraState
     fn process_one(&mut self, entity: &mut Entity) {
-        entity.delete();
-        // entity.refresh();
+        entity.remove_component::<Remove>(); //
+        //entity.delete();
+        entity.refresh();
     }
 }

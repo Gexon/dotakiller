@@ -14,6 +14,7 @@ use ::server::connection::Connection;
 use ::ground::components::*;
 use ::flora::components::FloraState;
 use ::flora::components::IdHerb;
+use ::flora::components::FloraClass;
 
 type Slab<T> = slab::Slab<T, Token>;
 
@@ -73,15 +74,15 @@ impl ServerSystem {
 // работа с сетью. передача данных клиентам.
 impl System for ServerSystem {
     fn aspect(&self) -> Aspect {
-        aspect_all!(Replication)
+        aspect_all!(FloraClass)
     }
 
-    fn process_no_entities(&mut self) {
-        //println!("instaced buffer render system must work, but no entities!");
-    }
-    fn process_no_data(&mut self) {
-        //println!("instaced buffer render system must work, but no data!");
-    }
+    //    fn process_no_entities(&mut self) {
+    //        //println!("instaced buffer render system must work, but no entities!");
+    //    }
+    //    fn process_no_data(&mut self) {
+    //        //println!("instaced buffer render system must work, but no data!");
+    //    }
 
     // вызывается 1 раз при update, но для каждой сущности свой process_one
     //fn  process_one(&mut self, _entity: &mut Entity) {
@@ -110,22 +111,25 @@ impl System for ServerSystem {
 
         // перебираем все сущности
         for entity in entities {
+            let id_herb = entity.get_component::<IdHerb>();
             let class = entity.get_component::<Name>();
             let position = entity.get_component::<Position>();
             let state = entity.get_component::<FloraState>();
-            let id_herb = entity.get_component::<IdHerb>();
-            // репликация.
-            // рассылаем всем клиентам "updherb idHerb classHerb stateHerb x y"
-            let s = format!("updherb {} {} {} {} {}", id_herb.id, class.name, state.state, position.x, position.y);
-            let smsg: String = s.to_string();
-            let smsg_len = smsg.len();
-            let mut recv_buf: Vec<u8> = Vec::with_capacity(smsg_len);
-            unsafe { recv_buf.set_len(smsg_len); }
-            recv_buf = smsg.into_bytes();
-            self.server_data.replication(recv_buf.to_vec());
-            entity.remove_component::<Replication>(); // убираем компонент репликации.
-            // trace!("REPLICATION replication");
 
+            if entity.has_component::<Replication>() {
+                // репликация.
+                // рассылаем всем клиентам "updherb idHerb classHerb stateHerb x y"
+                let s = format!("updherb {} {} {} {} {}", id_herb.id, class.name, state.state, position.x, position.y);
+                let smsg: String = s.to_string();
+                let smsg_len = smsg.len();
+                let mut recv_buf: Vec<u8> = Vec::with_capacity(smsg_len);
+                unsafe { recv_buf.set_len(smsg_len); }
+                recv_buf = smsg.into_bytes();
+                self.server_data.replication(recv_buf.to_vec());
+                entity.remove_component::<Replication>(); // убираем компонент репликации.
+                entity.refresh();
+                // trace!("REPLICATION replication");
+            }
             // если есть новенькие, собираем все сущности для primary_replication
             if exist_new_conn {
                 let s = format!("updherb {} {} {} {} {}", id_herb.id, class.name, state.state, position.x, position.y);

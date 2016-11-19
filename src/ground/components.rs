@@ -21,6 +21,8 @@ pub struct WorldLastId {
 }
 
 impl Component for WorldLastId {}
+
+
 // тут будем хранить все объекты на карте.
 pub struct WorldMap {
     pub flora: Map<u8>,

@@ -10,6 +10,8 @@ use mio::tcp::*;
 use slab;
 use std::time::Duration;
 
+use SERVER_IP;
+
 use ::server::connection::Connection;
 use ::ground::components::*;
 use ::flora::components::FloraState;
@@ -30,8 +32,7 @@ pub struct ServerSystem {
 
 impl ServerSystem {
     pub fn new() -> ServerSystem {
-        let hname: &str = "192.168.0.131";
-        //let hname: &str = "194.87.237.144";
+        let hname: &str = SERVER_IP;
         let pname: &str = "6655";
 
         let address = format!("{}:{}", hname, pname);
@@ -89,7 +90,7 @@ impl System for ServerSystem {
 
     // вызывается при update, 1 раз для всех сущностей.
     fn process_all(&mut self, entities: &mut Vec<&mut Entity>, _world: &mut WorldHandle, _data: &mut DataList) {
-        let cnt = self.poll.poll(&mut self.server_data.events, Some(Duration::from_millis(1000))).expect("do it another day");
+        let cnt = self.poll.poll(&mut self.server_data.events, Some(Duration::from_millis(100))).expect("do it another day");
         //let cnt = self.poll.poll(&mut self.server_data.events, None).unwrap();
         let mut i = 0;
         //trace!("обработка событий... cnt={}; len={}", cnt, self.server_data.events.len());

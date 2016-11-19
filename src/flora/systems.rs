@@ -179,7 +179,7 @@ impl System for PlantRemoveSystem {
     // эта функция выполняется во время update столько раз, сколько сущностей содержащих компонент FloraState
     fn process_one(&mut self, entity: &mut Entity) {
         entity.remove_component::<Remove>(); //
-        //entity.delete();
+        entity.delete();
         entity.refresh();
     }
 }

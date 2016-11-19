@@ -1,0 +1,5 @@
+Порты
+6655 - dk_server/replication
+6656 - loginserver
+6657 - chatserver
+6658 - dk_server/monsterserver

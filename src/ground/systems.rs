@@ -65,7 +65,6 @@ impl System for SpawnSystem {
 
             entity.remove_component::<SpawnPoint>(); // удаляем компонент "Точка спавна/spawn_point"
             entity.delete();
-            entity.refresh();
         }
     }
 }

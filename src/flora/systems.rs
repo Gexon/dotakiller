@@ -180,6 +180,5 @@ impl System for PlantRemoveSystem {
     fn process_one(&mut self, entity: &mut Entity) {
         entity.remove_component::<Remove>(); //
         entity.delete();
-        entity.refresh();
     }
 }

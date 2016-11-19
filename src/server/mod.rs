@@ -1,16 +1,16 @@
 // работа с подключениями
 use tinyecs::*;
 
-use ::server::systems::*;
+use ::server::replicationserver::*;
 
-mod systems;
+mod replicationserver;
 mod connection;
 mod commands;
 
 pub fn init(dk_world: &mut World) {
     {
         // Создаем сервер.
-        dk_world.set_system(ServerSystem::new());
+        dk_world.set_system(ReplicationServerSystem::new());
 
         // создам сущность с сервером внутри.
         let mut entity_manager = dk_world.entity_manager();

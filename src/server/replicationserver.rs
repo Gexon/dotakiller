@@ -24,14 +24,14 @@ pub struct ServerClass;
 
 impl Component for ServerClass {}
 
-// новый сервак
-pub struct ServerSystem {
-    server_data: Server,
+// сервер репликации
+pub struct ReplicationServerSystem {
+    server_data: ReplicationServer,
     poll: Poll,
 }
 
-impl ServerSystem {
-    pub fn new() -> ServerSystem {
+impl ReplicationServerSystem {
+    pub fn new() -> ReplicationServerSystem {
         let hname: &str = SERVER_IP;
         let pname: &str = "6655";
 
@@ -45,7 +45,7 @@ impl ServerSystem {
         // Создам объект опроса который будет использоваться сервером для получения событий
         let mut poll = Poll::new().expect("Ошибка создания опросника 'Poll'");
 
-        let mut server = Server {
+        let mut server = ReplicationServer {
             sock: sock,
 
             // Даем нашему серверу токен с номером большим чем может поместиться в нашей плите 'Slab'.
@@ -65,7 +65,7 @@ impl ServerSystem {
         info!("Основной-сервер запущен.");
         println!("Основной-сервер запущен.");
 
-        ServerSystem {
+        ReplicationServerSystem {
             server_data: server,
             poll: poll,
         }
@@ -73,7 +73,7 @@ impl ServerSystem {
 }
 
 // работа с сетью. передача данных клиентам.
-impl System for ServerSystem {
+impl System for ReplicationServerSystem {
     fn aspect(&self) -> Aspect {
         aspect_all!(FloraClass)
     }
@@ -152,7 +152,7 @@ impl System for ServerSystem {
 }
 
 
-pub struct Server {
+pub struct ReplicationServer {
     // главное гнездо нашего сервера
     sock: TcpListener,
     // токен нашего сервера. мы отслеживаем его здесь вместо `const SERVER = Token(0)`.
@@ -163,7 +163,7 @@ pub struct Server {
     events: Events,
 }
 
-impl Server {
+impl ReplicationServer {
     /// Рассылаем изменения объектов всем подключенным клиентам.
     pub fn replication(&mut self, message: Vec<u8>) {
         let rc_message = Rc::new(message);

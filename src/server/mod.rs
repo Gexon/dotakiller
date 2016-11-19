@@ -4,6 +4,7 @@ use tinyecs::*;
 use ::server::replicationserver::*;
 
 mod replicationserver;
+mod monsterserver;
 mod connection;
 mod commands;
 

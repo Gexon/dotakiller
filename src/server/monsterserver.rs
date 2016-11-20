@@ -2,9 +2,10 @@
 
 use tinyecs::*;
 
-use std::net::TcpStream;
+use std::net::{TcpStream, TcpListener};
 use std::io::{BufReader, BufWriter};
 use std::io::prelude::*;
+use std::time::Duration;
 
 use bincode::SizeLimit;
 use bincode::rustc_serialize::{encode, decode};
@@ -14,6 +15,14 @@ use SERVER_IP;
 //use ::ground::components::*;
 use ::server::components::MonsterServerClass;
 
+macro_rules! t {
+        ($e:expr) => {
+            match $e {
+                Ok(t) => t,
+                Err(e) => panic!("received error for `{}`: {}", stringify!($e), e),
+            }
+        }
+    }
 
 // структура приемник монстра
 #[derive(RustcEncodable, RustcDecodable, PartialEq)]
@@ -34,10 +43,16 @@ impl MonsterServerSystem {
         let hostname: &str = SERVER_IP;
         let port: &str = "6658";
         let address = format!("{}:{}", hostname, port);
+        //let listener = TcpListener::bind(&*address).unwrap();
+        let listener = TcpListener::bind(&*address).expect("Ошибка биндинга адреса");
+        info!("Порт открыт для приема подключений Монстер-сервера.");
 
-        let stream = TcpStream::connect(&*address).unwrap();
-        info!("Монстер-сервер запущен. Подключен к главному серверу.");
-        println!("Монстер-сервер запущен. Подключен к главному серверу.");
+        info!("Ожидаем подключения Монстер-сервера.");
+        println!("Ожидаем подключения Монстер-сервера.");
+        let stream = t!(listener.accept()).0;
+        t!(stream.set_read_timeout(Some(Duration::from_millis(1000))));
+        info!("Приняли подключение Монстер-сервера.");
+        println!("Приняли подключение Монстер-сервера.");
 
         let server = MonsterServer {
             stream: stream,
@@ -65,7 +80,8 @@ impl System for MonsterServerSystem {
     }
 }
 
-/// Монстр-сервер
+
+/// Монстр-сервер поток
 pub struct MonsterServer {
     stream: TcpStream,
 }
@@ -88,6 +104,7 @@ impl MonsterServer {
     }
 
     fn read(&mut self) -> MonsterExport {
+        //fn read(&mut self, buf: &mut [u8]) -> io::Result<usize>
         let mut buf = vec![];
         let mut reader = BufReader::new(&self.stream);
         reader.read(&mut buf).unwrap();

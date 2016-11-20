@@ -14,7 +14,6 @@ use std::time::Duration;
 use SERVER_IP;
 
 use ::server::connection::Connection;
-use ::server::components::ReplicationServerClass;
 use ::ground::components::*;
 use ::flora::components::FloraState;
 use ::flora::components::IdHerb;
@@ -31,10 +30,10 @@ pub struct ReplicationServerSystem {
 
 impl ReplicationServerSystem {
     pub fn new() -> ReplicationServerSystem {
-        let hname: &str = SERVER_IP;
-        let pname: &str = "6655";
+        let hostname: &str = SERVER_IP;
+        let port: &str = "6655";
 
-        let address = format!("{}:{}", hname, pname);
+        let address = format!("{}:{}", hostname, port);
         let addr = address.parse::<SocketAddr>().expect("Ошибка получения строки host:port");
         let sock = TcpListener::bind(&addr).expect("Ошибка биндинга адреса");
 
@@ -77,9 +76,9 @@ impl System for ReplicationServerSystem {
         aspect_all!(FloraClass)
     }
 
-    fn data_aspects(&self) -> Vec<Aspect> {
-        vec![aspect_all![ReplicationServerClass]]
-    }
+//    fn data_aspects(&self) -> Vec<Aspect> {
+//        vec![aspect_all![ReplicationServerClass]]
+//    }
 
     fn process_no_entities(&mut self) {
         //println!("instaced buffer render system must work, but no entities!");

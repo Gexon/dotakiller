@@ -2,9 +2,11 @@
 use tinyecs::*;
 
 use ::server::replicationserver::*;
+use ::server::components::*;
 
 mod replicationserver;
 mod monsterserver;
+mod components;
 mod connection;
 mod commands;
 
@@ -18,7 +20,7 @@ pub fn init(dk_world: &mut World) {
         let entity = entity_manager.create_entity();
 
         // рудимент.
-        entity.add_component(ServerClass);
+        entity.add_component(ReplicationServerClass);
         entity.refresh();
     }
 }

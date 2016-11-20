@@ -1,4 +1,5 @@
 // тут будем контакт контачить
+
 use tinyecs::*;
 
 use std::io::{self, ErrorKind};
@@ -13,6 +14,7 @@ use std::time::Duration;
 use SERVER_IP;
 
 use ::server::connection::Connection;
+use ::server::components::ReplicationServerClass;
 use ::ground::components::*;
 use ::flora::components::FloraState;
 use ::flora::components::IdHerb;
@@ -20,9 +22,6 @@ use ::flora::components::FloraClass;
 
 type Slab<T> = slab::Slab<T, Token>;
 
-pub struct ServerClass;
-
-impl Component for ServerClass {}
 
 // сервер репликации
 pub struct ReplicationServerSystem {
@@ -78,12 +77,16 @@ impl System for ReplicationServerSystem {
         aspect_all!(FloraClass)
     }
 
-    //    fn process_no_entities(&mut self) {
-    //        //println!("instaced buffer render system must work, but no entities!");
-    //    }
-    //    fn process_no_data(&mut self) {
-    //        //println!("instaced buffer render system must work, but no data!");
-    //    }
+    fn data_aspects(&self) -> Vec<Aspect> {
+        vec![aspect_all![ReplicationServerClass]]
+    }
+
+    fn process_no_entities(&mut self) {
+        //println!("instaced buffer render system must work, but no entities!");
+    }
+    fn process_no_data(&mut self) {
+        //println!("instaced buffer render system must work, but no data!");
+    }
 
     // вызывается 1 раз при update, но для каждой сущности свой process_one
     //fn  process_one(&mut self, _entity: &mut Entity) {

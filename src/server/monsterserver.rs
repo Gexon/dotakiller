@@ -33,7 +33,7 @@ macro_rules! t {
 // структура приемник монстра
 #[derive(RustcEncodable, RustcDecodable, PartialEq)]
 struct MonsterExport {
-    id: u64,
+    id: i64,
     x: f32,
     y: f32,
 }

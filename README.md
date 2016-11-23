@@ -24,3 +24,10 @@
 
 http://sc2tv.ru/channel/gexon - тут можете наблюдать процесс набора кода, ну или попыток его набрать ХД
 http://forum.sc2tv.ru/threads/85238 - форум и описание проекта.
+
+Благодарю @ozkriff, @alexander-irbis, @not-fl3, @shmutalov
+за консультации и помошь в исправлении багов.
+
+Спасибо @serejkaaa512 за ссылки на прикольные видеоролики=)
+ http://intorust.com/tutorial/ownership/
+

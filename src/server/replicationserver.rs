@@ -87,6 +87,11 @@ impl System for ReplicationServerSystem {
         //println!("instaced buffer render system must work, but no data!");
     }
 
+    // получение разных аспектов
+//    fn data_aspects(&mut self) -> Vec<Aspect> {
+//        vec!(aspect_all![FirstAspectComponent, FirstAspectComponent2], aspect_all![SecondAspectComponent, SecondAspectComponent2])
+//    }
+
     // вызывается 1 раз при update, но для каждой сущности свой process_one
     //fn  process_one(&mut self, _entity: &mut Entity) {
 

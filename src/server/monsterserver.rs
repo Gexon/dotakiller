@@ -85,11 +85,11 @@ impl System for MonsterServerSystem {
     }
 
     fn process_all(&mut self, entities: &mut Vec<&mut Entity>, _world: &mut WorldHandle, _data: &mut DataList) {
-        println!("Готовимся принять данные от Монстра-сервера.");
+        //println!("Готовимся принять данные от Монстра-сервера.");
         let monster_array = match self.server_data.read() {
             Ok(data) => data,
-            Err(e) => {
-                println!("Ошибка получения данных {}", e);
+            Err(_) => {
+                //println!("Ошибка получения данных {}", e);
                 return},
         };
 
@@ -130,17 +130,13 @@ impl MonsterServer {
     }
 
     fn read(&mut self) -> io::Result<MonsterArray> {
-        // создаем читателя
-        //let mut len_reader = BufReader::new(&self.stream);
-        //let mut reader_len = BufReader::with_capacity(8, &self.stream);
-
         // готовим вектор для примема размера входящих данных
         let mut buf_len = [0u8; 8];
         // принимаем сообщение о размере входящих данных.
         let bytes = match self.reader.read(&mut buf_len) {
             Ok(n_read) => {
-                let s = str::from_utf8(&buf_len[..]).unwrap();
-                println!("Содержимое сообщения о длине входящих данных:{:?}, количество считанных байт:{}", s, n_read);
+                //let s = str::from_utf8(&buf_len[..]).unwrap();
+                //println!("Содержимое сообщения о длине входящих данных:{:?}, количество считанных байт:{}", s, n_read);
                 n_read
             },
             Err(e) => {
@@ -163,22 +159,16 @@ impl MonsterServer {
         let mut recv_buf: Vec<u8> = Vec::with_capacity(msg_len);
         unsafe { recv_buf.set_len(msg_len); }
         // прием данных
-        //let mut reader_data = BufReader::with_capacity(msg_len, &self.stream);
         match self.reader.read(&mut recv_buf) {
             Ok(n) => {
                 debug!("CONN : считано {} байт", n);
                 println!("CONN : считано {} байт", n);
-                let s = str::from_utf8(&recv_buf[..]).unwrap();
-                println!("Содержимое принятых данных:{:?}", s);
                 if n < msg_len as usize {
                     println!("Не осилил достаточно байт");
                 }
-                //let monster_array: MonsterArray =
-                //Some(decode(&recv_buf[..]).unwrap())
                 Ok(decode(&recv_buf[..]).unwrap())
             }
             Err(e) => {
-                //Err(NetError::DataReading)
                 Err(e)
             }
         }

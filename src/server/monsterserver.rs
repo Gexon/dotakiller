@@ -81,7 +81,7 @@ impl MonsterServerSystem {
         let writer_stream = stream.try_clone().unwrap();
 
         let server = MonsterServer {
-            reader: BufReader::new(stream),
+            _reader: BufReader::new(stream),
             _writer: BufWriter::new(writer_stream),
         };
 
@@ -99,20 +99,31 @@ impl System for MonsterServerSystem {
 
     fn process_all(&mut self, entities: &mut Vec<&mut Entity>, _world: &mut WorldHandle, _data: &mut DataList) {
         //println!("Готовимся принять данные от Монстра-сервера.");
-        let monster_array_import = match self.server_data.read() {
-            Ok(data) => data,
-            Err(_) => {
-                //println!("Ошибка получения данных {}", e);
-                return},
-        };
+//        let monster_array_import = match self.server_data._read() {
+//            Ok(data) => data,
+//            Err(_) => {
+//                //println!("Ошибка получения данных {}", e);
+//                return},
+//        };
 
-        if !monster_array_import.entities.is_empty() {
-            let monster_entities = monster_array_import.entities;
-            for monster in monster_entities {
-                let in_monster: MonsterImport = monster;
-                println!("Приняли монстра {}, x {}, y {}", in_monster.id, in_monster.x, in_monster.y);
-            }
-        } else { println!("От Монстра-сервера пришли пустые данные."); }
+        println!("Передаем данные Монстр-серверу.");
+        let monster_export = MonsterExport {
+            id: 0, damage: 1
+        };
+        let monster_array = MonsterArrayExport {
+            entities: vec![monster_export]
+        };
+        self.server_data.write(monster_array);
+
+
+        // обрабатываем полученные данные
+//        if !monster_array_import.entities.is_empty() {
+//            let monster_entities = monster_array_import.entities;
+//            for monster in monster_entities {
+//                let in_monster: MonsterImport = monster;
+//                println!("Приняли монстра {}, x {}, y {}", in_monster.id, in_monster.x, in_monster.y);
+//            }
+//        } else { println!("От Монстра-сервера пришли пустые данные."); }
 
         for _entity in entities {
             //entity.remove_component::<MonsterServerClass>();
@@ -125,28 +136,30 @@ impl System for MonsterServerSystem {
 /// Монстр-сервер поток
 pub struct MonsterServer {
     // stream: TcpStream,
-    reader: BufReader<TcpStream>,
+    _reader: BufReader<TcpStream>,
     _writer: BufWriter<TcpStream>,
 }
 
 impl MonsterServer {
-    fn _write(&mut self) {
+    fn write(&mut self, monster_array: MonsterArrayExport) {
         // @AlexNav73 - спс за ссылку и помощь в освоении этой сериализации!
-        let monster_export = MonsterExport {
-            id: 0, damage: 0
-        };
-        let encoded: Vec<u8> = encode(&monster_export, SizeLimit::Infinite).unwrap();
+        let encoded: Vec<u8> = encode(&monster_array, SizeLimit::Infinite).unwrap();
 
-        //let mut writer = BufWriter::new(&self.stream);
+        let len = encoded.len();
+        let mut send_buf = [0u8; 8];
+        BigEndian::write_u64(&mut send_buf, len as u64);
+
+        let _ = self._writer.write(&send_buf);
         let _ = self._writer.write(&encoded);
         self._writer.flush().unwrap();      // <------------ добавили проталкивание буферизованных данных в поток
+        println!("Длина отправленных данных {}", len);
     }
 
-    fn read(&mut self) -> io::Result<MonsterArrayImport> {
+    fn _read(&mut self) -> io::Result<MonsterArrayImport> {
         // готовим вектор для примема размера входящих данных
         let mut buf_len = [0u8; 8];
         // принимаем сообщение о размере входящих данных.
-        let bytes = match self.reader.read(&mut buf_len) {
+        let bytes = match self._reader.read(&mut buf_len) {
             Ok(n_read) => {
                 //let s = str::from_utf8(&buf_len[..]).unwrap();
                 //println!("Содержимое сообщения о длине входящих данных:{:?}, количество считанных байт:{}", s, n_read);
@@ -172,7 +185,7 @@ impl MonsterServer {
         let mut recv_buf: Vec<u8> = Vec::with_capacity(msg_len);
         unsafe { recv_buf.set_len(msg_len); }
         // прием данных
-        match self.reader.read(&mut recv_buf) {
+        match self._reader.read(&mut recv_buf) {
             Ok(n) => {
                 debug!("CONN : считано {} байт", n);
                 println!("CONN : считано {} байт", n);

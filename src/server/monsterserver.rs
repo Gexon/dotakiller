@@ -32,17 +32,30 @@ macro_rules! t {
 
 // структура приемник монстра
 #[derive(RustcEncodable, RustcDecodable, PartialEq)]
-struct MonsterExport {
+struct MonsterImport {
     id: i64,
     x: f32,
     y: f32,
 }
 
+// структура отдачник монстра
 #[derive(RustcEncodable, RustcDecodable, PartialEq)]
-struct MonsterArray {
-    entities: Vec<MonsterExport>
+struct MonsterExport {
+    id: u64,
+    damage: u64,
 }
 
+// массив/вектор принятых монстров
+#[derive(RustcEncodable, RustcDecodable, PartialEq)]
+struct MonsterArrayImport {
+    entities: Vec<MonsterImport>
+}
+
+// массив/вектор отдающихся монстров
+#[derive(RustcEncodable, RustcDecodable, PartialEq)]
+struct MonsterArrayExport {
+    entities: Vec<MonsterExport>
+}
 
 /// система монстр-сервер
 pub struct MonsterServerSystem {
@@ -86,17 +99,17 @@ impl System for MonsterServerSystem {
 
     fn process_all(&mut self, entities: &mut Vec<&mut Entity>, _world: &mut WorldHandle, _data: &mut DataList) {
         //println!("Готовимся принять данные от Монстра-сервера.");
-        let monster_array = match self.server_data.read() {
+        let monster_array_import = match self.server_data.read() {
             Ok(data) => data,
             Err(_) => {
                 //println!("Ошибка получения данных {}", e);
                 return},
         };
 
-        if !monster_array.entities.is_empty() {
-            let monster_entities = monster_array.entities;
+        if !monster_array_import.entities.is_empty() {
+            let monster_entities = monster_array_import.entities;
             for monster in monster_entities {
-                let in_monster: MonsterExport = monster;
+                let in_monster: MonsterImport = monster;
                 println!("Приняли монстра {}, x {}, y {}", in_monster.id, in_monster.x, in_monster.y);
             }
         } else { println!("От Монстра-сервера пришли пустые данные."); }
@@ -120,7 +133,7 @@ impl MonsterServer {
     fn _write(&mut self) {
         // @AlexNav73 - спс за ссылку и помощь в освоении этой сериализации!
         let monster_export = MonsterExport {
-            id: 0, x: 50f32, y: 50f32,
+            id: 0, damage: 0
         };
         let encoded: Vec<u8> = encode(&monster_export, SizeLimit::Infinite).unwrap();
 
@@ -129,7 +142,7 @@ impl MonsterServer {
         self._writer.flush().unwrap();      // <------------ добавили проталкивание буферизованных данных в поток
     }
 
-    fn read(&mut self) -> io::Result<MonsterArray> {
+    fn read(&mut self) -> io::Result<MonsterArrayImport> {
         // готовим вектор для примема размера входящих данных
         let mut buf_len = [0u8; 8];
         // принимаем сообщение о размере входящих данных.

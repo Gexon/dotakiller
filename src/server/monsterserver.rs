@@ -124,7 +124,7 @@ impl System for MonsterServerSystem {
 
 /// Монстр-сервер поток
 pub struct MonsterServer {
-    //stream: TcpStream,
+    // stream: TcpStream,
     reader: BufReader<TcpStream>,
     _writer: BufWriter<TcpStream>,
 }

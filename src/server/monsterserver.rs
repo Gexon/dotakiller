@@ -41,6 +41,7 @@ struct MonsterImport {
 // структура отдачник монстра
 #[derive(RustcEncodable, RustcDecodable, PartialEq)]
 struct MonsterExport {
+    p_type: u64,
     id: u64,
     damage: u64,
 }
@@ -106,9 +107,9 @@ impl System for MonsterServerSystem {
 //                return},
 //        };
 
-        println!("Передаем данные Монстр-серверу.");
+        println!("Передаем idle Монстр-серверу.");
         let monster_export = MonsterExport {
-            id: 0, damage: 1
+            p_type: 0, id: 0, damage: 1 // p_type = 0 idle
         };
         let monster_array = MonsterArrayExport {
             entities: vec![monster_export]
@@ -151,8 +152,9 @@ impl MonsterServer {
 
         let _ = self._writer.write(&send_buf);
         let _ = self._writer.write(&encoded);
-        self._writer.flush().unwrap();      // <------------ добавили проталкивание буферизованных данных в поток
-        println!("Длина отправленных данных {}", len);
+        self._writer.flush().expect("Ошибка передачи данных, возможно отвалился монстр-сервер");      // <------------ добавили проталкивание буферизованных данных в поток
+        //self._writer.flush().unwrap();      // <------------ добавили проталкивание буферизованных данных в поток
+        //println!("Длина отправленных данных {}", len);
     }
 
     fn _read(&mut self) -> io::Result<MonsterArrayImport> {

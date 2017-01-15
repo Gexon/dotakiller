@@ -138,7 +138,7 @@ impl System for ReplicationServerSystem {
                 entity.refresh();
                 // trace!("REPLICATION replication");
             }
-            // если есть новенькие, собираем все сущности для primary_replication
+            // если есть новенькие клиенты, собираем все сущности для primary_replication
             if exist_new_conn {
                 let s = format!("updherb {} {} {} {} {}", id_herb.id, class.name, state.state, position.x, position.y);
                 let smsg: String = s.to_string();
@@ -147,12 +147,18 @@ impl System for ReplicationServerSystem {
                 unsafe { recv_buf2.set_len(smsg_len); }
                 recv_buf2 = smsg.into_bytes();
                 recv_obj.push(recv_buf2.to_vec());
+                // отсылаем по 500 штук.
+                if recv_obj.len() > 500 {
+                    trace!("REPLICATION primary_replication_500");
+                    self.server_data.primary_replication(&mut recv_obj);
+
+                }
             }
         }
 
         // первичная рассылка. для вновь подключенных клиентов.
         if exist_new_conn {
-            trace!("REPLICATION primary_replication");
+            trace!("REPLICATION primary_replication_final");
             self.server_data.primary_replication(&mut recv_obj);
         }
     }

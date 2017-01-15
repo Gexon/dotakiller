@@ -117,7 +117,7 @@ impl System for ReplicationServerSystem {
         // определяем наличие свежих подключений, тербующих primary_replication
         let exist_new_conn = self.server_data.exist_new_conn();
 
-        // перебираем все сущности
+        // перебираем все сущности.
         for entity in entities {
             let id_herb = entity.get_component::<IdHerb>();
             let class = entity.get_component::<Name>();

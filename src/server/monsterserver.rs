@@ -12,7 +12,7 @@ use std::str;
 
 use byteorder::{ByteOrder, BigEndian};
 
-use bincode::SizeLimit;
+use bincode::SizeLimit; // @AlexNav73 - спс за ссылку и помощь в освоении этой сериализации!
 use bincode::rustc_serialize::{encode, decode};
 
 use SERVER_IP;
@@ -33,6 +33,7 @@ macro_rules! t {
 // структура приемник монстра
 #[derive(RustcEncodable, RustcDecodable, PartialEq)]
 struct MonsterImport {
+    p_type: u8,
     id: i64,
     x: f32,
     y: f32,
@@ -41,7 +42,7 @@ struct MonsterImport {
 // структура отдачник монстра
 #[derive(RustcEncodable, RustcDecodable, PartialEq)]
 struct MonsterExport {
-    p_type: u64,
+    p_type: u8,
     id: u64,
     damage: u64,
 }
@@ -82,8 +83,8 @@ impl MonsterServerSystem {
         let writer_stream = stream.try_clone().unwrap();
 
         let server = MonsterServer {
-            _reader: BufReader::new(stream),
-            _writer: BufWriter::new(writer_stream),
+            reader: BufReader::new(stream),
+            writer: BufWriter::new(writer_stream),
         };
 
         MonsterServerSystem {
@@ -98,15 +99,8 @@ impl System for MonsterServerSystem {
         aspect_all!(MonsterServerClass)
     }
 
-    fn process_all(&mut self, entities: &mut Vec<&mut Entity>, _world: &mut WorldHandle, _data: &mut DataList) {
-        //println!("Готовимся принять данные от Монстра-сервера.");
-//        let monster_array_import = match self.server_data._read() {
-//            Ok(data) => data,
-//            Err(_) => {
-//                //println!("Ошибка получения данных {}", e);
-//                return},
-//        };
-
+    fn process_all(&mut self, _entities: &mut Vec<&mut Entity>, _world: &mut WorldHandle, _data: &mut DataList) {
+        // тут все на соплях, если вдрух и этот и тот сервер ждут сообщений с сокета - тогда ппц.
         println!("Передаем idle Монстр-серверу.");
         let monster_export = MonsterExport {
             p_type: 0, id: 0, damage: 1 // p_type = 0 idle
@@ -116,20 +110,27 @@ impl System for MonsterServerSystem {
         };
         self.server_data.write(monster_array);
 
+        //println!("Готовимся принять данные от Монстра-сервера.");
+        let monster_array_import = match self.server_data.read() {
+            Ok(data) => data,
+            Err(e) => {
+                println!("Ошибка получения данных {}", e);
+                return
+            },
+        };
 
         // обрабатываем полученные данные
-//        if !monster_array_import.entities.is_empty() {
-//            let monster_entities = monster_array_import.entities;
-//            for monster in monster_entities {
-//                let in_monster: MonsterImport = monster;
-//                println!("Приняли монстра {}, x {}, y {}", in_monster.id, in_monster.x, in_monster.y);
-//            }
-//        } else { println!("От Монстра-сервера пришли пустые данные."); }
-
-        for _entity in entities {
-            //entity.remove_component::<MonsterServerClass>();
-            //entity.refresh();
-        }
+        if !monster_array_import.entities.is_empty() {
+            let monster_entities = monster_array_import.entities;
+            for monster in monster_entities {
+                let in_monster: MonsterImport = monster;
+                if in_monster.p_type == 0 {
+                    println!("Приняли idle"); //TODO переделать, иначе будет работать со скоростью монстр-сервера.
+                } else {
+                    println!("Приняли монстра {}, x {}, y {}", in_monster.id, in_monster.x, in_monster.y);
+                }
+            }
+        } else { println!("От Монстра-сервера пришли пустые данные."); }
     }
 }
 
@@ -137,31 +138,30 @@ impl System for MonsterServerSystem {
 /// Монстр-сервер поток
 pub struct MonsterServer {
     // stream: TcpStream,
-    _reader: BufReader<TcpStream>,
-    _writer: BufWriter<TcpStream>,
+    reader: BufReader<TcpStream>,
+    writer: BufWriter<TcpStream>,
 }
 
 impl MonsterServer {
     fn write(&mut self, monster_array: MonsterArrayExport) {
-        // @AlexNav73 - спс за ссылку и помощь в освоении этой сериализации!
         let encoded: Vec<u8> = encode(&monster_array, SizeLimit::Infinite).unwrap();
 
         let len = encoded.len();
         let mut send_buf = [0u8; 8];
         BigEndian::write_u64(&mut send_buf, len as u64);
 
-        let _ = self._writer.write(&send_buf);
-        let _ = self._writer.write(&encoded);
-        self._writer.flush().expect("Ошибка передачи данных, возможно отвалился монстр-сервер");      // <------------ добавили проталкивание буферизованных данных в поток
+        let _ = self.writer.write(&send_buf);
+        let _ = self.writer.write(&encoded);
+        self.writer.flush().expect("Ошибка передачи данных, возможно отвалился монстр-сервер");      // <------------ добавили проталкивание буферизованных данных в поток
         //self._writer.flush().unwrap();      // <------------ добавили проталкивание буферизованных данных в поток
         //println!("Длина отправленных данных {}", len);
     }
 
-    fn _read(&mut self) -> io::Result<MonsterArrayImport> {
+    fn read(&mut self) -> io::Result<MonsterArrayImport> {
         // готовим вектор для примема размера входящих данных
         let mut buf_len = [0u8; 8];
         // принимаем сообщение о размере входящих данных.
-        let bytes = match self._reader.read(&mut buf_len) {
+        let bytes = match self.reader.read(&mut buf_len) {
             Ok(n_read) => {
                 //let s = str::from_utf8(&buf_len[..]).unwrap();
                 //println!("Содержимое сообщения о длине входящих данных:{:?}, количество считанных байт:{}", s, n_read);
@@ -181,16 +181,16 @@ impl MonsterServer {
         // превращаем в нормальный вид длину входящих данных.
         let msg_len = BigEndian::read_u64(buf_len.as_ref());
         let msg_len = msg_len as usize;
-        debug!("Ожидаемая длина сообщения {}", msg_len);
-        println!("Ожидаемая длина сообщения {}", msg_len);
+        //debug!("Ожидаемая длина сообщения {}", msg_len);
+        //println!("Ожидаемая длина сообщения {}", msg_len);
         // подготавливаем вектор для принимаемых данных.
         let mut recv_buf: Vec<u8> = Vec::with_capacity(msg_len);
         unsafe { recv_buf.set_len(msg_len); }
         // прием данных
-        match self._reader.read(&mut recv_buf) {
+        match self.reader.read(&mut recv_buf) {
             Ok(n) => {
-                debug!("CONN : считано {} байт", n);
-                println!("CONN : считано {} байт", n);
+                //debug!("CONN : считано {} байт", n);
+                //println!("CONN : считано {} байт", n);
                 if n < msg_len as usize {
                     println!("Не осилил достаточно байт");
                 }

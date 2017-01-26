@@ -22,7 +22,7 @@ mod ground;
 
 const  SERVER_IP: &'static str = "192.168.0.131";
 //const  SERVER_IP: &'static str = "194.87.237.144";
-static WORLD_SPEED: i64 = 100;
+static WORLD_SPEED: i64 = 10;
 
 fn main() {
     utility::init(); // запускаем логгер.

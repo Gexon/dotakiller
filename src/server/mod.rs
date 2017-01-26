@@ -15,14 +15,13 @@ pub fn init(dk_world: &mut World) {
     {
         // Создаем сервера:
         dk_world.set_system(ReplicationServerSystem::new());
-        dk_world.set_system(MonsterServerSystem::new());
+        //dk_world.set_system(MonsterServerSystem::new());
 
         // создам сущность с сервером внутри.
         let mut entity_manager = dk_world.entity_manager();
         let entity = entity_manager.create_entity();
 
-        // рудимент.
-        entity.add_component(MonsterServerClass);
+        entity.add_component(ReplicationServerClass);
         entity.refresh();
     }
 }

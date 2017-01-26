@@ -101,7 +101,7 @@ impl System for MonsterServerSystem {
 
     fn process_all(&mut self, _entities: &mut Vec<&mut Entity>, _world: &mut WorldHandle, _data: &mut DataList) {
         // тут все на соплях, если вдрух и этот и тот сервер ждут сообщений с сокета - тогда ппц.
-        println!("Передаем idle Монстр-серверу.");
+        //println!("Передаем idle Монстр-серверу.");
         let monster_export = MonsterExport {
             p_type: 0, id: 0, damage: 1 // p_type = 0 idle
         };
@@ -125,7 +125,7 @@ impl System for MonsterServerSystem {
             for monster in monster_entities {
                 let in_monster: MonsterImport = monster;
                 if in_monster.p_type == 0 {
-                    println!("Приняли idle"); //TODO переделать, иначе будет работать со скоростью монстр-сервера.
+                    //println!("Приняли idle"); //TODO переделать, иначе будет работать со скоростью монстр-сервера.
                 } else {
                     println!("Приняли монстра {}, x {}, y {}", in_monster.id, in_monster.x, in_monster.y);
                 }

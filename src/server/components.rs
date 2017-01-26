@@ -6,9 +6,9 @@ use tinyecs::*;
 
 
 // компонент сервера репликации
-pub struct _ReplicationServerClass;
+pub struct ReplicationServerClass;
 
-impl Component for _ReplicationServerClass {}
+impl Component for ReplicationServerClass {}
 
 // компонент монстра-сервера
 pub struct MonsterServerClass;

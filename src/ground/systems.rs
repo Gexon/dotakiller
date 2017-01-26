@@ -40,7 +40,7 @@ impl System for SpawnSystem {
             //println!("Пробуем создать сущность: x {}, y {}", target_point.0, target_point.1);
             if world_map.flora[target_point] == 0 {
                 world_map.flora[target_point] = 1;
-                world_map.flora[target_point] = 1;
+                //world_map.flora[target_point] = 1;
 
                 // проверяем наличие заданных объектов.
                 // создаем объект Пальма.

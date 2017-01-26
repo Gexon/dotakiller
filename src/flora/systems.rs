@@ -73,11 +73,20 @@ impl System for PlantReproductionSystem {
                 state.reproduction_time = PreciseTime::now();
                 // считаем время до умершвления
                 state.dead += 1;
+                if name.name == "cactus" {
+                    if state.dead > 60 {
+                        //13
+                        // проверяем, не пора ли cactusu в валхаллу
+                        entity.add_component(Dead); // пальме пора умереть.
+                        entity.remove_component::<Reproduction>(); // выключаем размножение.
+                        entity.refresh();
+                    }
+                }
                 if state.dead > 6 {
                     //13
                     // проверяем, не пора ли пальме в валхаллу
                     entity.add_component(Dead); // пальме пора умереть.
-                    entity.remove_component::<Reproduction>(); // выключаем рост.
+                    entity.remove_component::<Reproduction>(); // выключаем размножение.
                     entity.refresh();
                 }
             }
@@ -110,7 +119,7 @@ impl System for PlantGrowthSystem {
             // фиксируем текущее время
             state.growth_time = PreciseTime::now();
             // фиксируем таймер для отрупнения
-            if state.state == 10 {
+            if state.state >= 10 {
                 entity.add_component(Reproduction); // пальме пора чпокаться.
                 entity.remove_component::<Growth>(); // выключаем рост.
                 entity.refresh();
@@ -132,7 +141,7 @@ impl System for PlantDeadSystem {
         vec![aspect_all![ClassGround]]
     }
 
-    // эта функция выполняется во время update столько раз, сколько сущностей содержащих компонент FloraState
+    // эта функция выполняется 1 раз.
     fn process_all(&mut self, entities: &mut Vec<&mut Entity>, world: &mut WorldHandle, data: &mut DataList) {
         let ground = data.unwrap_entity();
         let mut world_map = ground.get_component::<WorldMap>();
@@ -173,12 +182,13 @@ pub struct PlantRemoveSystem;
 impl System for PlantRemoveSystem {
     // выбираем сущности содержащие компоненты "FloraState"
     fn aspect(&self) -> Aspect {
-        aspect_all!(FloraClass, Remove)
+        aspect_all![FloraClass, Remove].except::<Replication>()
     }
 
     // эта функция выполняется во время update столько раз, сколько сущностей содержащих компонент FloraState
     fn process_one(&mut self, entity: &mut Entity) {
-        entity.remove_component::<Remove>(); //
+        //entity.remove_component::<Remove>(); // хз, надо ли?
+        //entity.remove_component::<FloraClass>(); // если мы удаляем всю сущность целиком однако.
         entity.delete();
     }
 }

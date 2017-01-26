@@ -14,6 +14,7 @@ use std::time::Duration;
 use SERVER_IP;
 
 use ::server::connection::Connection;
+use ::server::components::ReplicationServerClass;
 use ::ground::components::*;
 use ::flora::components::FloraState;
 use ::flora::components::IdHerb;
@@ -73,30 +74,30 @@ impl ReplicationServerSystem {
 // работа с сетью. передача данных клиентам.
 impl System for ReplicationServerSystem {
     fn aspect(&self) -> Aspect {
-        aspect_all!(FloraClass)
+        aspect_all!(ReplicationServerClass)
     }
 
-//    fn data_aspects(&self) -> Vec<Aspect> {
-//        vec![aspect_all![ReplicationServerClass]]
-//    }
+    fn data_aspects(&self) -> Vec<Aspect> {
+        vec![aspect_all![FloraClass].optional()]
+    }
 
-    fn process_no_entities(&mut self) {
-        //println!("instaced buffer render system must work, but no entities!");
-    }
-    fn process_no_data(&mut self) {
-        //println!("instaced buffer render system must work, but no data!");
-    }
+    //    fn process_no_entities(&mut self) {
+    //        //println!("instaced buffer render system must work, but no entities!");
+    //    }
+    //    fn process_no_data(&mut self) {
+    //        //println!("instaced buffer render system must work, but no data!");
+    //    }
 
     // получение разных аспектов
-//    fn data_aspects(&mut self) -> Vec<Aspect> {
-//        vec!(aspect_all![FirstAspectComponent, FirstAspectComponent2], aspect_all![SecondAspectComponent, SecondAspectComponent2])
-//    }
+    //    fn data_aspects(&mut self) -> Vec<Aspect> {
+    //        vec!(aspect_all![FirstAspectComponent, FirstAspectComponent2], aspect_all![SecondAspectComponent, SecondAspectComponent2])
+    //    }
 
     // вызывается 1 раз при update, но для каждой сущности свой process_one
     //fn  process_one(&mut self, _entity: &mut Entity) {
 
-    // вызывается при update, 1 раз для всех сущностей.
-    fn process_all(&mut self, entities: &mut Vec<&mut Entity>, _world: &mut WorldHandle, _data: &mut DataList) {
+    // process_d вызывается при update, 1 раз для каждой сущности из fn aspect(&self).
+    fn process_d(&mut self, _entity: &mut Entity, data: &mut DataList) {
         let cnt = self.poll.poll(&mut self.server_data.events, Some(Duration::from_millis(100))).expect("do it another day");
         //let cnt = self.poll.poll(&mut self.server_data.events, None).unwrap();
         let mut i = 0;
@@ -118,6 +119,7 @@ impl System for ReplicationServerSystem {
         let exist_new_conn = self.server_data.exist_new_conn();
 
         // перебираем все сущности.
+        let entities = data.unwrap_all(); // тут лежит вся флора.
         for entity in entities {
             let id_herb = entity.get_component::<IdHerb>();
             let class = entity.get_component::<Name>();
@@ -151,7 +153,6 @@ impl System for ReplicationServerSystem {
                 if recv_obj.len() > 500 {
                     trace!("REPLICATION primary_replication_500");
                     self.server_data.primary_replication(&mut recv_obj);
-
                 }
             }
         }

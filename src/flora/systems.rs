@@ -81,8 +81,7 @@ impl System for PlantReproductionSystem {
                         entity.remove_component::<Reproduction>(); // выключаем размножение.
                         entity.refresh();
                     }
-                }
-                if state.dead > 6 {
+                } else if state.dead > 6 {
                     //13
                     // проверяем, не пора ли пальме в валхаллу
                     entity.add_component(Dead); // пальме пора умереть.

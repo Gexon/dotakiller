@@ -1,7 +1,7 @@
 // let a = ::module::components::Position::new();
 use tinyecs::*;
 
-use ::ground::components::SpawnPoint;
+use ::ground::components::SpawnFlora;
 use ::flora::systems::*;
 
 pub mod components;
@@ -21,7 +21,7 @@ pub fn init(dk_world: &mut World) {
         let entity_spawner = entity_manager.create_entity();
 
         let delta: f32 = count as f32;
-        entity_spawner.add_component(SpawnPoint { name: "palm", x: 10f32 + delta, y: 10f32 + delta });
+        entity_spawner.add_component(SpawnFlora { name: "palm", x: 10f32 + delta, y: 10f32 + delta });
         entity_spawner.refresh();
     }
 }

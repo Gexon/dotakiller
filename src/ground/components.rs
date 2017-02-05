@@ -5,19 +5,33 @@ use time::PreciseTime;
 
 use ::utility::map::Map;
 
+
+pub struct ClassGround;
+
+impl Component for ClassGround {}
+
+
+/// Координаты на полигоне.
+pub struct Position {
+    pub x: f32,
+    pub y: f32,
+}
+
+impl Component for Position {}
+
+
+/// имя
 pub struct Name {
     pub name: String
 }
 
 impl Component for Name {}
 
-pub struct ClassGround;
-
-impl Component for ClassGround {}
 
 // храним последние id
 pub struct WorldLastId {
     pub flora_id: i64,
+    pub monster_id: i64,
 }
 
 impl Component for WorldLastId {}
@@ -26,6 +40,7 @@ impl Component for WorldLastId {}
 // тут будем хранить все объекты на карте.
 pub struct WorldMap {
     pub flora: Map<u8>,
+    pub monster: Map<u8>,
 }
 
 impl Component for WorldMap {}
@@ -57,20 +72,26 @@ impl Component for _Physic {
     // биология тут же будет
 }
 
-pub struct Position {
-    pub x: f32,
-    pub y: f32,
-}
 
-impl Component for Position {}
-
-pub struct SpawnPoint {
+/// Для спавна травы
+pub struct SpawnFlora {
     pub name: &'static str,
     pub x: f32,
     pub y: f32,
 }
 
-impl Component for SpawnPoint {}
+impl Component for SpawnFlora {}
+
+
+/// Для спавна монстров
+pub struct SpawnMonster {
+    pub name: &'static str,
+    pub x: f32,
+    pub y: f32,
+}
+
+impl Component for SpawnMonster {}
+
 
 /// Все что должно расти - должно расти.
 pub struct Growth;

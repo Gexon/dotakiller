@@ -8,15 +8,16 @@ use WORLD_SPEED;
 use ::utility::map::Point;
 use ::ground::components::*;
 use ::flora::components::*;
+use ::monster::components::*;
 
-/// Система создает объекты в мире.
-pub struct SpawnSystem;
+/// Система создает растения в мире.
+pub struct SpawnFloraSystem;
 
-impl System for SpawnSystem {
+impl System for SpawnFloraSystem {
     // Обрабатываем сущности содержащие компоненты "SpawnPoint", "Position"
     // Аспект - список сущностей, содержащих выбранные компоненты.
     fn aspect(&self) -> Aspect {
-        aspect_all!(SpawnPoint)
+        aspect_all!(SpawnFlora)
     }
 
     fn data_aspects(&self) -> Vec<Aspect> {
@@ -32,7 +33,7 @@ impl System for SpawnSystem {
         // перебираем все сущности
         for entity in entities {
             // берем компонент "Точка спавна/spawn_point"
-            let spawn_point = entity.get_component::<SpawnPoint>();
+            let spawn_point = entity.get_component::<SpawnFlora>();
 
             // проверяем свободно ли место спавна.
             let target_point: Point = Point(spawn_point.x.trunc() as i32, spawn_point.y.trunc() as i32); // Casting
@@ -40,7 +41,6 @@ impl System for SpawnSystem {
             //println!("Пробуем создать сущность: x {}, y {}", target_point.0, target_point.1);
             if world_map.flora[target_point] == 0 {
                 world_map.flora[target_point] = 1;
-                //world_map.flora[target_point] = 1;
 
                 // проверяем наличие заданных объектов.
                 // создаем объект Пальма.
@@ -56,18 +56,77 @@ impl System for SpawnSystem {
                     reproduction_time: PreciseTime::now(),
                     dead: 0,
                 });
-                entity_object.add_component(IdHerb { id: last_id.flora_id });
+                entity_object.add_component(HerbId { id: last_id.flora_id });
                 entity_object.refresh();
-                let id_herb = entity_object.get_component::<IdHerb>();
+                let id_herb = entity_object.get_component::<HerbId>();
                 println!("Создаем сущность {} {}", spawn_point.name.to_string(), id_herb.id);
                 last_id.flora_id += 1;
             }
 
-            entity.remove_component::<SpawnPoint>(); // удаляем компонент "Точка спавна/spawn_point"
+            entity.remove_component::<SpawnFlora>(); // удаляем компонент "Точка спавна/spawn_point"
             entity.delete();
         }
     }
 }
+
+
+/// Система создает монстров в мире.
+pub struct SpawnMonsterSystem;
+
+impl System for SpawnMonsterSystem {
+    // Обрабатываем сущности содержащие компоненты "SpawnPoint", "Position"
+    // Аспект - список сущностей, содержащих выбранные компоненты.
+    fn aspect(&self) -> Aspect {
+        aspect_all!(SpawnMonster)
+    }
+
+    fn data_aspects(&self) -> Vec<Aspect> {
+        vec![aspect_all![ClassGround]]
+    }
+
+    // обработчик, вызывается при update, process_all - 1 раз вызывается.
+    fn process_all(&mut self, entities: &mut Vec<&mut Entity>, world: &mut WorldHandle, data: &mut DataList) {
+        let ground = data.unwrap_entity();
+        let mut last_id = ground.get_component::<WorldLastId>();
+        let mut world_map = ground.get_component::<WorldMap>();
+
+        // перебираем все сущности
+        for entity in entities {
+            // берем компонент "Точка спавна/spawn_point"
+            let spawn_point = entity.get_component::<SpawnMonster>();
+
+            // проверяем свободно ли место спавна.
+            let target_point: Point = Point(spawn_point.x.trunc() as i32, spawn_point.y.trunc() as i32); // Casting
+
+            //println!("Пробуем создать сущность: x {}, y {}", target_point.0, target_point.1);
+            if world_map.monster[target_point] == 0 {
+                world_map.monster[target_point] = 1;
+                //world_map.monster[target_point] = 1;
+
+                // проверяем наличие заданных объектов.
+                // создаем объект Монстр.
+                let entity_object = world.entity_manager.create_entity();
+                entity_object.add_component(Name { name: spawn_point.name.to_string() });
+                entity_object.add_component(Position { x: spawn_point.x, y: spawn_point.y });
+                entity_object.add_component(MonsterClass);
+                entity_object.add_component(Replication); // произошли изменения монстра.
+                entity_object.add_component(MonsterId { id: last_id.monster_id });
+                entity_object.add_component(SelectionTree::new());
+                entity_object.add_component(BehaviourState { state: 0 });
+                entity_object.add_component(BehaviourEvent { event: 0 });
+                entity_object.add_component(MonsterAttributes { power: 1000 });
+                entity_object.refresh();
+                let monster_id = entity_object.get_component::<MonsterId>();
+                println!("Создаем сущность {} {}", spawn_point.name.to_string(), monster_id.id);
+                last_id.monster_id += 1;
+            }
+
+            entity.remove_component::<SpawnMonster>(); // удаляем компонент "Точка спавна/spawn_point"
+            entity.delete();
+        }
+    }
+}
+
 
 /// система меняет направление вветра
 pub struct WindDirectionSystem;

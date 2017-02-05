@@ -17,7 +17,7 @@ use bincode::rustc_serialize::{encode, decode};
 
 use SERVER_IP;
 
-//use ::ground::components::*;
+use ::ground::components::MonsterClass;
 use ::server::components::MonsterServerClass;
 
 macro_rules! t {
@@ -99,9 +99,17 @@ impl System for MonsterServerSystem {
         aspect_all!(MonsterServerClass)
     }
 
-    fn process_all(&mut self, _entities: &mut Vec<&mut Entity>, _world: &mut WorldHandle, _data: &mut DataList) {
-        // тут все на соплях, если вдрух и этот и тот сервер ждут сообщений с сокета - тогда ппц.
-        //println!("Передаем idle Монстр-серверу.");
+    fn data_aspects(&self) -> Vec<Aspect> {
+        vec![aspect_all![MonsterClass]]
+    }
+
+    fn process_all(&mut self, _entities: &mut Vec<&mut Entity>, _world: &mut WorldHandle, data: &mut DataList) {
+        let monsters = data.unwrap_all();
+        let monster_exist = false;
+
+        // Тут все на соплях, если вдрух и этот и тот сервер ждут сообщений с сокета - тогда ппц.
+        /// Внимание! Важно, не менять порядок приема-передачи пакетов, иначе писец.
+        // Передаем idle Монстр-серверу. -----------------------------------------------------------
         let monster_export = MonsterExport {
             p_type: 0, id: 0, damage: 1 // p_type = 0 idle
         };
@@ -110,23 +118,25 @@ impl System for MonsterServerSystem {
         };
         self.server_data.write(monster_array);
 
-        //println!("Готовимся принять данные от Монстра-сервера.");
+        // Принимаем данные от Монстра-сервера. ----------------------------------------------------
         let monster_array_import = match self.server_data.read() {
-            Ok(data) => data,
+            Ok(data) => data, // monster_array_import - это структура, внутри поле entities c вектором
             Err(e) => {
                 println!("Ошибка получения данных {}", e);
                 return
             },
         };
+        // Конец блока приема-передачи, можно расслабить булки. ------------------------------------
 
         // обрабатываем полученные данные
         if !monster_array_import.entities.is_empty() {
-            let monster_entities = monster_array_import.entities;
+            let monster_entities = monster_array_import.entities; // entities - это один(!) вектор. entities: Vec<MonsterImport>
             for monster in monster_entities {
                 let in_monster: MonsterImport = monster;
                 if in_monster.p_type == 0 {
                     //println!("Приняли idle"); //TODO переделать, иначе будет работать со скоростью монстр-сервера.
                 } else {
+
                     println!("Приняли монстра {}, x {}, y {}", in_monster.id, in_monster.x, in_monster.y);
                 }
             }

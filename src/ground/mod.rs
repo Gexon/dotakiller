@@ -14,7 +14,8 @@ pub mod systems;
 
 pub fn init(dk_world: &mut World) {
     // добавляем в мир систему спавна.
-    dk_world.set_system(SpawnSystem);
+    dk_world.set_system(SpawnFloraSystem);
+    dk_world.set_system(SpawnMonsterSystem);
     dk_world.set_system(WindDirectionSystem);
 
     {
@@ -23,9 +24,15 @@ pub fn init(dk_world: &mut World) {
         let entity = entity_manager.create_entity();
 
         entity.add_component(ClassGround);
-        entity.add_component(WorldMap { flora: Map::new_empty(Size(140, 140), 0u8, 0u8) });
+        entity.add_component(WorldMap {
+            flora: Map::new_empty(Size(140, 140), 0u8, 0u8),
+            monster: Map::new_empty(Size(140, 140), 0u8, 0u8),
+        });
         entity.add_component(WindDirection { direction: 0, start: PreciseTime::now() });
-        entity.add_component(WorldLastId { flora_id: 0 });
+        entity.add_component(WorldLastId {
+            flora_id: 0,
+            monster_id: 0,
+        });
         entity.refresh();
     }
 }

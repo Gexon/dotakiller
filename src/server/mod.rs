@@ -2,11 +2,11 @@
 use tinyecs::*;
 
 use ::server::replicationserver::ReplicationServerSystem;
-use ::server::monsterserver::MonsterServerSystem;
+//use ::server::monsterserver::MonsterServerSystem;
 use ::server::components::*;
 
 mod replicationserver;
-mod monsterserver;
+//mod monsterserver;
 mod components;
 mod connection;
 mod commands;
@@ -15,7 +15,7 @@ pub fn init(dk_world: &mut World) {
     {
         // Создаем сервера:
         dk_world.set_system(ReplicationServerSystem::new());
-        dk_world.set_system(MonsterServerSystem::new());
+        //dk_world.set_system(MonsterServerSystem::new());
 
         // создам сущность с компонентами сервер такой-то внутри.
         let mut entity_manager = dk_world.entity_manager();

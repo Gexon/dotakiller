@@ -12,11 +12,11 @@ impl Component for FloraClass {}
 
 
 /// уникальный номер растения
-pub struct IdHerb {
+pub struct HerbId {
     pub id: i64,
 }
 
-impl Component for IdHerb {}
+impl Component for HerbId {}
 
 
 /// информация о состоянии растения

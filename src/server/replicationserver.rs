@@ -17,8 +17,10 @@ use ::server::connection::Connection;
 use ::server::components::ReplicationServerClass;
 use ::ground::components::*;
 use ::flora::components::FloraState;
-use ::flora::components::IdHerb;
+use ::flora::components::HerbId;
 use ::flora::components::FloraClass;
+use ::monster::components::MonsterId;
+use ::monster::components::MonsterClass;
 
 type Slab<T> = slab::Slab<T, Token>;
 
@@ -71,6 +73,7 @@ impl ReplicationServerSystem {
     }
 }
 
+
 // работа с сетью. передача данных клиентам.
 impl System for ReplicationServerSystem {
     fn aspect(&self) -> Aspect {
@@ -78,26 +81,11 @@ impl System for ReplicationServerSystem {
     }
 
     fn data_aspects(&self) -> Vec<Aspect> {
-        vec![aspect_all![FloraClass].optional()]
+        vec![aspect_all![FloraClass].optional(), aspect_all![MonsterClass].optional()]
     }
 
-    //    fn process_no_entities(&mut self) {
-    //        //println!("instaced buffer render system must work, but no entities!");
-    //    }
-    //    fn process_no_data(&mut self) {
-    //        //println!("instaced buffer render system must work, but no data!");
-    //    }
-
-    // получение разных аспектов
-    //    fn data_aspects(&mut self) -> Vec<Aspect> {
-    //        vec!(aspect_all![FirstAspectComponent, FirstAspectComponent2], aspect_all![SecondAspectComponent, SecondAspectComponent2])
-    //    }
-
-    // вызывается 1 раз при update, но для каждой сущности свой process_one
-    //fn  process_one(&mut self, _entity: &mut Entity) {
-
-    // process_d вызывается при update, 1 раз для каждой сущности из fn aspect(&self).
-    fn process_d(&mut self, _entity: &mut Entity, data: &mut DataList) {
+    // Вынимаем аспекты макросом, т.к. там безумие в коде.
+    impl_process!(self, _entity, | _replication_server_class: ReplicationServerClass | with (_floras, _monsters) => {
         let cnt = self.poll.poll(&mut self.server_data.events, Some(Duration::from_millis(100))).expect("do it another day");
         //let cnt = self.poll.poll(&mut self.server_data.events, None).unwrap();
         let mut i = 0;
@@ -118,15 +106,14 @@ impl System for ReplicationServerSystem {
         // определяем наличие свежих подключений, тербующих primary_replication
         let exist_new_conn = self.server_data.exist_new_conn();
 
-        // перебираем все сущности.
-        let entities = data.unwrap_all(); // тут лежит вся флора.
-        for entity in entities {
-            let id_herb = entity.get_component::<IdHerb>();
-            let class = entity.get_component::<Name>();
-            let position = entity.get_component::<Position>();
-            let state = entity.get_component::<FloraState>();
 
-            if entity.has_component::<Replication>() {
+        for flora in _floras {
+            let id_herb = flora.get_component::<HerbId>();
+            let class = flora.get_component::<Name>();
+            let position = flora.get_component::<Position>();
+            let state = flora.get_component::<FloraState>();
+
+            if flora.has_component::<Replication>() {
                 // репликация.
                 // рассылаем всем клиентам "updherb idHerb classHerb stateHerb x y"
                 let s = format!("updherb {} {} {} {} {}", id_herb.id, class.name, state.state, position.x, position.y);
@@ -136,9 +123,8 @@ impl System for ReplicationServerSystem {
                 unsafe { recv_buf.set_len(smsg_len); }
                 recv_buf = smsg.into_bytes();
                 self.server_data.replication(recv_buf.to_vec());
-                entity.remove_component::<Replication>(); // убираем компонент репликации.
-                entity.refresh();
-                // trace!("REPLICATION replication");
+                flora.remove_component::<Replication>(); // убираем компонент репликации.
+                flora.refresh();
             }
             // если есть новенькие клиенты, собираем все сущности для primary_replication
             if exist_new_conn {
@@ -157,12 +143,66 @@ impl System for ReplicationServerSystem {
             }
         }
 
+        for monster in _monsters {
+            let id_monstr = monster.get_component::<MonsterId>();
+            let position = monster.get_component::<Position>();
+            let class = monster.get_component::<Name>();
+            let state = monster.get_component::<FloraState>();
+
+            if monster.has_component::<Replication>() {
+                // репликация монстров.
+                // рассылаем всем клиентам "updherb idHerb classHerb stateHerb x y"
+
+                let s = format!("updmonstr {} {} {} {} {}", id_monstr.id, class.name, state.state, position.x, position.y);
+                let smsg: String = s.to_string();
+                let smsg_len = smsg.len();
+                let mut recv_buf: Vec<u8> = Vec::with_capacity(smsg_len);
+                unsafe { recv_buf.set_len(smsg_len); }
+                recv_buf = smsg.into_bytes();
+                self.server_data.replication(recv_buf.to_vec());
+
+                monster.remove_component::<Replication>(); // убираем компонент репликации.
+                monster.refresh();
+            }
+        }
+
         // первичная рассылка. для вновь подключенных клиентов.
         if exist_new_conn {
             trace!("REPLICATION primary_replication_final");
             self.server_data.primary_replication(&mut recv_obj);
         }
-    }
+
+    });
+
+
+    //    fn process_no_entities(&mut self) {
+    //        //println!("instaced buffer render system must work, but no entities!");
+    //    }
+    //    fn process_no_data(&mut self) {
+    //        //println!("instaced buffer render system must work, but no data!");
+    //    }
+
+    // получение разных аспектов
+    //    fn data_aspects(&mut self) -> Vec<Aspect> {
+    //        vec!(aspect_all![FirstAspectComponent, FirstAspectComponent2], aspect_all![SecondAspectComponent, SecondAspectComponent2])
+    //    }
+
+
+    // складываем разные аспекты в разные вектора.
+    // fn data_aspects(&self) -> Vec<Aspect> { vec![aspect_all![FloraClass].optional(), aspect_all![MonsterClass].optional()] }
+
+
+
+    // вызывается 1 раз при update, но для каждой сущности свой process_one
+    //fn  process_one(&mut self, _entity: &mut Entity) {
+
+    // process_d вызывается при update, 1 раз для каждой сущности из fn aspect(&self).
+    //    fn process_d(&mut self, _entity: &mut Entity, data: &mut DataList) {
+    //        // перебираем все сущности.
+    //        let entities = data.unwrap_all(); // тут лежит вся флора.
+    //        for entity in entities {
+    //        }
+    //    }
 }
 
 

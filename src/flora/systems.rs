@@ -22,6 +22,7 @@ impl System for PlantReproductionSystem {
     }
 
     fn process_all(&mut self, entities: &mut Vec<&mut Entity>, world: &mut WorldHandle, data: &mut DataList) {
+
         // перебираем все сущности
         for entity in entities {
             let ground = data.unwrap_entity();
@@ -65,7 +66,7 @@ impl System for PlantReproductionSystem {
                     // поручаем спавнеру, засумонить в наш мир пальму.
                     // создаем спавнер
                     let entity_spawner = world.entity_manager.create_entity();
-                    entity_spawner.add_component(SpawnPoint { name: "palm", x: target_x, y: target_y });
+                    entity_spawner.add_component(SpawnFlora { name: "palm", x: target_x, y: target_y });
                     entity_spawner.refresh();
                     //println!("Пальма размножилась");
                 }
@@ -148,7 +149,7 @@ impl System for PlantDeadSystem {
         // перебираем все сущности
         for entity in entities {
             let name = entity.get_component::<Name>(); // удалить, только для лога
-            let id_herb = entity.get_component::<IdHerb>(); // удалить, только для лога
+            let id_herb = entity.get_component::<HerbId>(); // удалить, только для лога
 
             let mut state = entity.get_component::<FloraState>();
             let position = entity.get_component::<Position>();
@@ -161,7 +162,7 @@ impl System for PlantDeadSystem {
                 // поручаем спавнеру, засумонить в наш мир кактус.
                 // создаем спавнер
                 let entity_spawner = world.entity_manager.create_entity();
-                entity_spawner.add_component(SpawnPoint { name: "cactus", x: position.x, y: position.y });
+                entity_spawner.add_component(SpawnFlora { name: "cactus", x: position.x, y: position.y });
                 entity_spawner.refresh();
             }
 

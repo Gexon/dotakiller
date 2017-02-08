@@ -3,7 +3,7 @@
 use tinyecs::*;
 use time::{PreciseTime, Duration};
 
-use WORLD_SPEED;
+use GROUND_SPEED;
 
 use ::utility::map::Point;
 use ::ground::components::*;
@@ -111,8 +111,13 @@ impl System for SpawnMonsterSystem {
                 entity_object.add_component(Replication); // произошли изменения монстра.
                 entity_object.add_component(MonsterState {
                     state: 1,
+                    event_last: 0,
                     growth_time: PreciseTime::now(),
                     reproduction_time: PreciseTime::now(),
+                    behavior_time: PreciseTime::now(),
+                    bios_time: PreciseTime::now(),
+                    event_time: PreciseTime::now(),
+                    selector_time: PreciseTime::now(),
                     dead: 0,
                 });
                 entity_object.add_component(MonsterId { id: last_id.monster_id });
@@ -146,7 +151,7 @@ impl System for WindDirectionSystem {
         let mut wind = entity.get_component::<WindDirection>();
 
         // меняем ветер
-        if wind.start.to(PreciseTime::now()) > Duration::seconds(8 * WORLD_SPEED) {
+        if wind.start.to(PreciseTime::now()) > Duration::seconds(8 * GROUND_SPEED) {
             if wind.direction == 7 { wind.direction = 0 } else { wind.direction += 1; }
             //println!("Ветер меняет направление на {}", wind.direction);
             // фиксируем текущее время

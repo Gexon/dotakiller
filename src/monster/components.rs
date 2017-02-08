@@ -23,8 +23,13 @@ impl Component for MonsterId {}
 /// информация о состоянии монстра
 pub struct MonsterState {
     pub state: i32,
+    pub event_last: u32,
     pub growth_time: PreciseTime,
     pub reproduction_time: PreciseTime,
+    pub bios_time: PreciseTime,
+    pub event_time: PreciseTime,
+    pub behavior_time: PreciseTime,
+    pub selector_time: PreciseTime,
     pub dead: i32,
 }
 

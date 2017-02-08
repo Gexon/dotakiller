@@ -27,7 +27,9 @@ mod ground;
 
 const SERVER_IP: &'static str = "192.168.0.131";
 //const  SERVER_IP: &'static str = "194.87.237.144";
-static WORLD_SPEED: i64 = 1;
+static GROUND_SPEED: i64 = 10;
+static FLORA_SPEED: i64 = 1000;
+static MONSTER_SPEED: i64 = 1;
 // 1_000_000ns = 1ms
 static TICK_MAX_TIME: u64 = 50;//Duration::milliseconds(50);
 

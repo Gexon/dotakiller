@@ -2,7 +2,7 @@
 use tinyecs::*;
 use time::{PreciseTime, Duration};
 
-use WORLD_SPEED;
+use FLORA_SPEED;
 
 use ::utility::map::Point;
 use ::ground::components::*;
@@ -22,7 +22,6 @@ impl System for PlantReproductionSystem {
     }
 
     fn process_all(&mut self, entities: &mut Vec<&mut Entity>, world: &mut WorldHandle, data: &mut DataList) {
-
         // перебираем все сущности
         for entity in entities {
             let ground = data.unwrap_entity();
@@ -33,7 +32,7 @@ impl System for PlantReproductionSystem {
 
             // если пальма уже жирная, то вбросить семян.
             // пробуем бросить семя через каждые 10 сек
-            if state.reproduction_time.to(PreciseTime::now()) > Duration::seconds(5 * WORLD_SPEED) {
+            if state.reproduction_time.to(PreciseTime::now()) > Duration::seconds(5 * FLORA_SPEED) {
                 if name.name != "cactus" {
                     let position = entity.get_component::<Position>();
                     let mut target_x = position.x;
@@ -70,8 +69,6 @@ impl System for PlantReproductionSystem {
                     entity_spawner.refresh();
                     //println!("Пальма размножилась");
                 }
-                // фиксируем текущее время
-                state.reproduction_time = PreciseTime::now();
                 // считаем время до умершвления
                 state.dead += 1;
                 if name.name == "cactus" {
@@ -89,6 +86,8 @@ impl System for PlantReproductionSystem {
                     entity.remove_component::<Reproduction>(); // выключаем размножение.
                     entity.refresh();
                 }
+                // фиксируем текущее время
+                state.reproduction_time = PreciseTime::now();
             }
         }
     }
@@ -109,21 +108,20 @@ impl System for PlantGrowthSystem {
         let mut state = entity.get_component::<FloraState>();
 
         // инкрементим state, тобиш его рост.
-        if state.growth_time.to(PreciseTime::now()) > Duration::seconds(WORLD_SPEED) {
+        if state.growth_time.to(PreciseTime::now()) > Duration::seconds(FLORA_SPEED) {
             if state.state < 10 {
                 state.state += 1;
                 entity.add_component(Replication); // требуется репликация.
                 entity.refresh();
             }
-            //println!("Пальма выросла немного");
-            // фиксируем текущее время
-            state.growth_time = PreciseTime::now();
             // фиксируем таймер для отрупнения
             if state.state >= 10 {
                 entity.add_component(Reproduction); // пальме пора чпокаться.
                 entity.remove_component::<Growth>(); // выключаем рост.
                 entity.refresh();
             }
+            // фиксируем текущее время
+            state.growth_time = PreciseTime::now();
         }
     }
 }

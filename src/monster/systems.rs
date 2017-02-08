@@ -94,10 +94,12 @@ http://www.pvsm.ru/robototehnika/161885/print/
 use tinyecs::*;
 use time::{PreciseTime, Duration};
 
-use WORLD_SPEED;
+use MONSTER_SPEED;
 
 use ::ground::components::Replication;
 use ::ground::components::Position;
+use ::ground::components::ClassGround;
+use ::ground::components::WindDirection;
 use ::monster::components::*;
 
 
@@ -133,37 +135,44 @@ impl System for SelectorSystem {
     //    }
 
     fn process_one(&mut self, entity: &mut Entity) {
-        let mut selection_tree = entity.get_component::<SelectionTree>();
-        let mut behaviour_state = entity.get_component::<BehaviourState>(); // состояние
-        let behaviour_event = entity.get_component::<BehaviourEvent>(); // события
+        let mut monster_state = entity.get_component::<MonsterState>();
+        if monster_state.selector_time.to(PreciseTime::now()) > Duration::seconds(MONSTER_SPEED) {
+            let mut selection_tree = entity.get_component::<SelectionTree>();
+            let mut behaviour_state = entity.get_component::<BehaviourState>(); // состояние
+            let behaviour_event = entity.get_component::<BehaviourEvent>(); // события
 
-        let len = selection_tree.selector.len();
-        if len > 0 {
-            // ткущий узел.
-            if selection_tree.curr_selector < 0i32 {
-                selection_tree.curr_selector = 0i32;
-                println!("ошибка/инициализация текущего указателя, теперь он {}", 0i32);
-            } else {
-                /*event, state
-                let sel = vec![[6, 2], [5, 1]];*/
-                let index: usize = selection_tree.curr_selector as usize;
-                let curr_cell = selection_tree.selector[index]; //[6, 2]
-                let v_event = curr_cell[0];
-                let v_state = curr_cell[1];
-                // проверить нет ли ошибки в селекторе/программаторе. или первый запуск/инициализация.
-                let curr_event = behaviour_event.event; // считываем текущий событие/event
-                if curr_event == v_event {
-                    // меняем состояние, на соответствующее.
-                    behaviour_state.state = v_state;
-                    println!("обнаружено событие {}", v_event);
-                    println!("переключаю состояние на {}", v_state);
-                    // сдвигаем curr_selector, переходим к сл. ячейке.
-                    let shl: i32 = (len - 1) as i32;
-                    if selection_tree.curr_selector < shl { selection_tree.curr_selector += 1; } else {
-                        selection_tree.curr_selector = 0;
+            let len = selection_tree.selector.len();
+            if len > 0 {
+                // ткущий узел.
+                if selection_tree.curr_selector < 0i32 {
+                    selection_tree.curr_selector = 0i32;
+                    println!("ошибка/инициализация текущего указателя, теперь он {}", 0i32);
+                } else {
+                    /*event, state
+                    let sel = vec![[6, 2], [5, 1]];*/
+                    let index: usize = selection_tree.curr_selector as usize;
+                    let curr_cell = selection_tree.selector[index]; //[6, 2]
+                    let v_event = curr_cell[0];
+                    let v_state = curr_cell[1];
+                    // проверить нет ли ошибки в селекторе/программаторе. или первый запуск/инициализация.
+                    let curr_event = behaviour_event.event; // считываем текущий событие/event
+                    if curr_event == v_event {
+                        // меняем состояние, на соответствующее.
+                        behaviour_state.state = v_state;
+                        println!("обнаружено событие {}", v_event);
+                        println!("переключаю состояние на {}", v_state);
+                        // сдвигаем curr_selector, переходим к сл. ячейке.
+                        let shl: i32 = (len - 1) as i32;
+                        if selection_tree.curr_selector < shl { selection_tree.curr_selector += 1; } else {
+                            selection_tree.curr_selector = 0;
+                        }
                     }
                 }
             }
+
+
+            // фиксируем текущее время
+            monster_state.selector_time = PreciseTime::now();
         }
     }
 }
@@ -171,16 +180,18 @@ impl System for SelectorSystem {
 /// Активатор. Приводит в действие.
 // считывает состояние и выполняет его, либо продолжает выполнение.
 // система поведения.
-pub struct BehaviorSystem {
-    pub behavior_time: PreciseTime,
-}
+pub struct BehaviorSystem;
 
 impl System for BehaviorSystem {
     fn aspect(&self) -> Aspect {
         aspect_all!(MonsterClass, BehaviourState, Position)
     }
 
-    fn process_one(&mut self, entity: &mut Entity) {
+    fn data_aspects(&self) -> Vec<Aspect> {
+        vec![aspect_all![ClassGround]]
+    }
+
+    fn process_d(&mut self, entity: &mut Entity, data: &mut DataList) {
         // смотрит текущее состояние и выполняет действие.
         // тут заставляем монстра ходить, пить, искать.
         //    0.  Инициализация, ошибка.
@@ -192,23 +203,67 @@ impl System for BehaviorSystem {
         //    6.  Прием воды.
         //    7.  Перемещение к цели.
         //    8.  Проверка достижения цели.
-        if self.behavior_time.to(PreciseTime::now()) > Duration::seconds(5 * WORLD_SPEED) {
+        let mut monster_state = entity.get_component::<MonsterState>();
+        if monster_state.behavior_time.to(PreciseTime::now()) > Duration::seconds(2 * MONSTER_SPEED) {
             let behaviour_state = entity.get_component::<BehaviourState>(); // состояние
             let mut position = entity.get_component::<Position>();
+            let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+            // сумоним ветер
+            let ground = data.unwrap_entity();
+            let wind = ground.get_component::<WindDirection>();
+            //
             match behaviour_state.state {
                 1 => {
-                    println!("...zzz...");
+                    println!("...zzz...монстр {}", monster_id.id);
                 },
                 2 => {
                     // тут заставляем монстра ходить туда-сюда, бесцельно, куда подует)
-                    if position.x > (position.y * 2f32) && position.y < 139f32 {
-                        position.y += 1f32;
-                    } else if position.x < 139f32 {
-                        position.x += 1f32;
+                    match wind.direction {
+                        0 => {
+                            if position.x < 140f32 {
+                                position.x += 1f32;
+                            }
+                        },
+                        1 => {
+                            if position.x > position.y * 2f32 && position.x < 140f32 {
+                                position.x += 1f32;
+                            }
+                        },
+                        2 => {
+                            if position.y > 0f32 {
+                                position.y -= 1f32;
+                            }
+                        },
+                        3 => {
+                            if position.y < position.x * 2f32 && position.y > 0f32 {
+                                position.y -= 1f32;
+                            }
+                        },
+                        4 => {
+                            if position.x > 0f32 {
+                                position.x -= 1f32;
+                            }
+                        },
+                        5 => {
+                            if position.x < position.y * 2f32 && position.x > 0f32 {
+                                position.x -= 1f32;
+                            }
+                        },
+                        6 => {
+                            if position.y < 140f32 {
+                                position.y += 1f32;
+                            }
+                        },
+                        7 => {
+                            if position.y > position.x * 2f32 && position.y < 140f32 {
+                                position.y += 1f32;
+                            }
+                        },
+                        _ => println!("странное направление ветра, вы не находите?"),
                     }
                     entity.add_component(Replication); // произошли изменения монстра.
                     entity.refresh();
-                    println!("x:{}, y:{}", position.x, position.y);
+                    println!("x:{}, y:{}, монстр {}", position.x, position.y, monster_id.id);
                     /*  движение по овальной траектории.
                         x = x_+x_radius*cos(r_ang+2);
                         y = y_+y_radius*sin(r_ang);
@@ -229,18 +284,14 @@ impl System for BehaviorSystem {
                 _ => {},
             }
             // фиксируем текущее время
-            self.behavior_time = PreciseTime::now();
+            monster_state.behavior_time = PreciseTime::now();
         }
     }
 }
 
 /// Генерация событий
 // Создаем события, проверяем параметры.
-pub struct EventSystem {
-    pub event_time: PreciseTime,
-    pub event_last: u32,
-    // 0 - инициализация/ошибка
-}
+pub struct EventSystem;
 
 impl System for EventSystem {
     fn aspect(&self) -> Aspect {
@@ -257,26 +308,27 @@ impl System for EventSystem {
         //    6.  Нет событий.
         //    7.  Монстр насытился.
         //    8.  Монстр напился.
-        if self.event_time.to(PreciseTime::now()) > Duration::seconds(WORLD_SPEED) {
+        let mut monster_state = entity.get_component::<MonsterState>();
+        if monster_state.event_time.to(PreciseTime::now()) > Duration::seconds(MONSTER_SPEED) {
             let mut behaviour_event = entity.get_component::<BehaviourEvent>(); // события
             let monster_attr = entity.get_component::<MonsterAttributes>(); // события
+            let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
             if behaviour_event.event == 0 {
                 // проверяем ошибки/инициализация
                 behaviour_event.event = 6;
-                println!("ошибка/инициализация текущего события, теперь он {}", 6);
-            } else if monster_attr.power < 960 && self.event_last != 5 {
+                println!("ошибка/инициализация текущего события монстра {}, теперь он {}", monster_id.id, 6);
+            } else if monster_attr.power < 960 && monster_state.event_last != 5 {
                 behaviour_event.event = 5; // наступает событие - УСТАЛ
-                self.event_last = behaviour_event.event;
-                println!("Новое событие: монстр устал.");
-            } else if monster_attr.power > 990 && self.event_last != 6 {
+                monster_state.event_last = behaviour_event.event;
+                println!("Новое событие: монстр {} устал.", monster_id.id);
+            } else if monster_attr.power > 990 && monster_state.event_last != 6 {
                 behaviour_event.event = 6;
-                self.event_last = behaviour_event.event;
-                println!("Новое событие: монстр отдохнул.");
+                monster_state.event_last = behaviour_event.event;
+                println!("Новое событие: монстр {} отдохнул.", monster_id.id);
             }
 
-
             // фиксируем текущее время
-            self.event_time = PreciseTime::now();
+            monster_state.event_time = PreciseTime::now();
         }
     }
 }
@@ -284,9 +336,7 @@ impl System for EventSystem {
 
 /// Bio Systems, будем умершвлять тут монстра.
 // пересчет характеристик, значений жизнедеятельности монстра.
-pub struct BioSystems {
-    pub bios_time: PreciseTime,
-}
+pub struct BioSystems;
 
 impl System for BioSystems {
     fn aspect(&self) -> Aspect {
@@ -294,19 +344,21 @@ impl System for BioSystems {
     }
 
     fn process_one(&mut self, entity: &mut Entity) {
-        if self.bios_time.to(PreciseTime::now()) > Duration::seconds(2 * WORLD_SPEED) {
+        let mut monster_state = entity.get_component::<MonsterState>();
+        if monster_state.bios_time.to(PreciseTime::now()) > Duration::seconds(2 * MONSTER_SPEED) {
             let mut monster_attr = entity.get_component::<MonsterAttributes>();
             let behaviour_state = entity.get_component::<BehaviourState>(); // состояние
+            let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
             if monster_attr.power > 0 {
                 if behaviour_state.state == 1 {
                     monster_attr.power += 1;
                 } else {
                     monster_attr.power -= 1;
                 }
-                println!("power {}", monster_attr.power);
+                println!("power {}, монстр {}", monster_attr.power, monster_id.id);
             }
             // фиксируем текущее время
-            self.bios_time = PreciseTime::now();
+            monster_state.bios_time = PreciseTime::now();
         }
     }
 }

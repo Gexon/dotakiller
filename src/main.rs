@@ -5,7 +5,7 @@ extern crate time;
 
 #[macro_use]
 extern crate tinyecs;
-use time::{PreciseTime, Duration};
+//use time::{PreciseTime, Duration};
 
 #[macro_use]
 extern crate slog;
@@ -28,6 +28,8 @@ mod ground;
 const SERVER_IP: &'static str = "192.168.0.131";
 //const  SERVER_IP: &'static str = "194.87.237.144";
 static WORLD_SPEED: i64 = 1;
+// 1_000_000ns = 1ms
+static TICK_MAX_TIME: u64 = 50;//Duration::milliseconds(50);
 
 fn main() {
     utility::init(); // запускаем логгер.
@@ -36,20 +38,19 @@ fn main() {
     ground::init(&mut dk_world);    // инициализация основ мира.
     flora::init(&mut dk_world);     // инициализация растений.
     monster::init(&mut dk_world);     // инициализация монстров.
-    let mut event_time: PreciseTime;
+    let mut event_time: std::time::Instant;//PreciseTime;
+    let max_time = std::time::Duration::from_millis(TICK_MAX_TIME);
     loop {
         // засекаю время.
-        event_time = PreciseTime::now();
+        event_time = std::time::Instant::now();//PreciseTime::now();
         dk_world.update(); // основной цикл ECS.
         // смотрю сколько потратил.
-        if event_time.to(PreciseTime::now()) > Duration::milliseconds(100) {
-            // если update() > 100ms то ворнинг.
-            trace!("Main loop > 100ms");
+        if std::time::Instant::now().duration_since(event_time) < max_time {
+            // надо спать разницу между time_max и временем затраченным на полезную работу
+            std::thread::sleep(max_time - std::time::Instant::now().duration_since(event_time));
         } else {
-            std::thread::sleep(std::time::Duration::from_millis(100));
+            trace!("Main loop > TICK_MAX_TIME");
+            std::thread::sleep(std::time::Duration::from_millis(1));
         }
-        std::thread::sleep(std::time::Duration::from_millis(100));
-        // пауза должна составить 200мс. в штатном режиме.
-        // при перегрузке 100мс.
     }
 }

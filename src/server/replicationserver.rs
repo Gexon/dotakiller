@@ -85,9 +85,16 @@ impl System for ReplicationServerSystem {
         vec![aspect_all![FloraClass].optional(), aspect_all![MonsterClass].optional()]
     }
 
+    //    fn process_no_entities(&mut self) {
+    //        //println!("instaced buffer render system must work, but no entities!");
+    //    }
+    //    fn process_no_data(&mut self) {
+    //        //println!("instaced buffer render system must work, but no data!");
+    //    }
+
     // Вынимаем аспекты макросом, т.к. там безумие в коде.
     impl_process!(self, _entity, | _replication_server_class: ReplicationServerClass | with (_floras, _monsters) => {
-        let cnt = self.poll.poll(&mut self.server_data.events, Some(Duration::from_millis(100))).expect("do it another day");
+        let cnt = self.poll.poll(&mut self.server_data.events, Some(Duration::from_millis(10))).expect("do it another day");
         //let cnt = self.poll.poll(&mut self.server_data.events, None).unwrap();
         let mut i = 0;
         //trace!("обработка событий... cnt={}; len={}", cnt, self.server_data.events.len());
@@ -176,12 +183,7 @@ impl System for ReplicationServerSystem {
     });
 
 
-    //    fn process_no_entities(&mut self) {
-    //        //println!("instaced buffer render system must work, but no entities!");
-    //    }
-    //    fn process_no_data(&mut self) {
-    //        //println!("instaced buffer render system must work, but no data!");
-    //    }
+
 
     // получение разных аспектов
     //    fn data_aspects(&mut self) -> Vec<Aspect> {

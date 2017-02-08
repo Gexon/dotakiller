@@ -21,6 +21,7 @@ use ::flora::components::HerbId;
 use ::flora::components::FloraClass;
 use ::monster::components::MonsterId;
 use ::monster::components::MonsterClass;
+use ::monster::components::MonsterState;
 
 type Slab<T> = slab::Slab<T, Token>;
 
@@ -145,9 +146,9 @@ impl System for ReplicationServerSystem {
 
         for monster in _monsters {
             let id_monstr = monster.get_component::<MonsterId>();
-            let position = monster.get_component::<Position>();
             let class = monster.get_component::<Name>();
-            let state = monster.get_component::<FloraState>();
+            let state = monster.get_component::<MonsterState>();
+            let position = monster.get_component::<Position>();
 
             if monster.has_component::<Replication>() {
                 // репликация монстров.

@@ -101,7 +101,6 @@ impl System for SpawnMonsterSystem {
             //println!("Пробуем создать сущность: x {}, y {}", target_point.0, target_point.1);
             if world_map.monster[target_point] == 0 {
                 world_map.monster[target_point] = 1;
-                //world_map.monster[target_point] = 1;
 
                 // проверяем наличие заданных объектов.
                 // создаем объект Монстр.
@@ -110,6 +109,12 @@ impl System for SpawnMonsterSystem {
                 entity_object.add_component(Position { x: spawn_point.x, y: spawn_point.y });
                 entity_object.add_component(MonsterClass);
                 entity_object.add_component(Replication); // произошли изменения монстра.
+                entity_object.add_component(MonsterState {
+                    state: 1,
+                    growth_time: PreciseTime::now(),
+                    reproduction_time: PreciseTime::now(),
+                    dead: 0,
+                });
                 entity_object.add_component(MonsterId { id: last_id.monster_id });
                 entity_object.add_component(SelectionTree::new());
                 entity_object.add_component(BehaviourState { state: 0 });

@@ -1,6 +1,7 @@
 // описание компонент монстра
 
 use tinyecs::*;
+use time::{PreciseTime};
 
 use ::utility::map::Map;
 
@@ -17,6 +18,17 @@ pub struct MonsterId {
 }
 
 impl Component for MonsterId {}
+
+
+/// информация о состоянии монстра
+pub struct MonsterState {
+    pub state: i32,
+    pub growth_time: PreciseTime,
+    pub reproduction_time: PreciseTime,
+    pub dead: i32,
+}
+
+impl Component for MonsterState {}
 
 
 /// характеристики монстра и его текущее состояние

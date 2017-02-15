@@ -130,14 +130,18 @@ impl System for PerceptionSystem {
             let world_map = ground.get_component::<WorldMap>();
             // проверяем свободно ли место спавна.
             let position = entity.get_component::<Position>();
+            let mut behaviour_event = entity.get_component::<BehaviourEvent>(); // события
+            let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
             for x in -2..3 {
                 for y in -2..3 {
                     let pos_x: i32 = (position.x.trunc() + x as f32) as i32;
                     let pos_y: i32 = (position.y.trunc() + y as f32) as i32;
                     let scan_point: Point = Point(pos_x, pos_y); // Casting
-                    if world_map.flora[scan_point] == 1 {
-                        // еда!
-                        println!("Обнаружена еда!");
+                    if world_map.flora[scan_point] == 1 && monster_state.event_last != 1 {
+                        // переключаем событие на 1-Обнаружена еда.
+                        behaviour_event.event = 1; // наступает событие обнаружена еда
+                        monster_state.event_last = behaviour_event.event;
+                        println!("Новое событие: монстр {} обнаружил еду!", monster_id.id);
                     }
                 }
             }
@@ -161,13 +165,13 @@ impl System for EventSystem {
 
     fn process_one(&mut self, entity: &mut Entity) {
         //    0.  Инициализация, ошибка.
-        //    1.  Обнаружена еда.
+        //    1.  Обнаружена еда.+
         //    2.  Обнаружена вода.
-        //    3.  Наступил голод.
+        //    3.  Наступил голод.+
         //    4.  Наступила жажда.
-        //    5.  Утомился.
-        //    6.  Нет событий.
-        //    7.  Монстр насытился.
+        //    5.  Утомился.+
+        //    6.  Нет событий.+
+        //    7.  Монстр насытился.+
         //    8.  Монстр напился.
         let mut monster_state = entity.get_component::<MonsterState>();
         if monster_state.event_time.to(PreciseTime::now()) > Duration::seconds(MONSTER_SPEED) {
@@ -351,12 +355,12 @@ impl System for BehaviorSystem {
                         y = y_+y_radius*sin(r_ang);
 
                         X1 = X + R * 0.5;
-		                Y1 = Y + 1.3 * R * 0.8;
-		                0.5 это синус 30
-		                0.8 это косинус 30
-		                R - хз. например 20 клеток.
-		                X, Y - это текущие координаты.
-		            */
+                        Y1 = Y + 1.3 * R * 0.8;
+                        0.5 это синус 30
+                        0.8 это косинус 30
+                        R - хз. например 20 клеток.
+                        X, Y - это текущие координаты.
+                    */
                     //                    let x1: f32 = position.x + 20f32 * 0.5;
                     //                    let y1: f32 = position.y + 1.3f32 * 20f32 *0.8;
                     //                    position.x = x1;
@@ -387,16 +391,16 @@ impl System for BehaviorSystem {
                             position.x += monster_attr.speed as f32;// перемещаемся к этой точке по Х
                         }
                     } else if position.x > monster_state.target_point.x &&
-                        position.x > monster_attr.speed  as f32{
+                        position.x > monster_attr.speed as f32 {
                         position.x -= monster_attr.speed as f32;
                     }
 
                     if position.y < monster_state.target_point.y {
-                        if position.y < (140i32 - monster_attr.speed) as f32{
+                        if position.y < (140i32 - monster_attr.speed) as f32 {
                             position.x += monster_attr.speed as f32;// перемещаемся к этой точке по У
                         }
                     } else if position.y > monster_state.target_point.y &&
-                        position.y > monster_attr.speed as f32{
+                        position.y > monster_attr.speed as f32 {
                         position.y -= monster_attr.speed as f32;
                     }
                 },
@@ -442,7 +446,7 @@ impl System for BioSystems {
     }
 }
 
-/// Поиск пути
+// Поиск пути
 /*
 - для поиска пути, предложить проложить путь по шаблону(прямой путь, обход слева, обход справа), если шаблон не проходим, выполнить поиск пути.
 Сначала нужно создать два списка: список узлов, которые еще не проверены (Unchecked), и список уже проверенных узлов (Checked). Каждый список включает узел расположения, предполагаемое расстояние до цели и ссылку на родительский объект (узел, который поместил данный узел в список). Изначально списки пусты.

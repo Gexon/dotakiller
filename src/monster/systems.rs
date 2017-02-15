@@ -91,18 +91,59 @@ http://www.pvsm.ru/robototehnika/161885/print/
  Узлы инверсии выполняют функцию оператора NOT.
 */
 
+/*
+Основные типы узлов в дереве поведения:
+    Action Node (действие)
+    Просто некоторая функция, которая должна выполниться при посещении данного узла.
+
+    Condition (условие)
+    Обычно служит для того, чтобы определить, выполнять или нет следующие за ним узлы. При true вернет Success, а при false возвращает Fail.
+
+    Sequencer (последовательность)
+    Выполняет все вложенные узлы по порядку, пока какой-либо из них не завершится неудачей (в таком случае возвращает Fail), либо пока все они успешно не завершатся (тогда возвращает Success).
+
+    Selector (селектор)
+    В отличие от Sequencer, прекращает обработку, как только любой вложенный узел вернет Success.
+
+    Iterator (итератор — выполняет роль цикла for)
+    Используется для выполнения в цикле серии действий некоторое число раз.
+
+    Parallel Node
+    Выполняет все свои дочерние узлы «одновременно». Здесь не имеется ввиду, что узлы выполняются несколькими потоками. Просто создается иллюзия параллельного выполнения, аналогично корутинам в Unity3d.
+    http://www.pvsm.ru/arhitektura-prilozhenij/88642
+
+*/
+
 use tinyecs::*;
 use time::{PreciseTime, Duration};
 
 use MONSTER_SPEED;
 
 use ::utility::map::Point;
+use ::utility::enums::*;
 use ::ground::components::Replication;
 use ::ground::components::Position;
 use ::ground::components::ClassGround;
 use ::ground::components::WindDirection;
 use ::ground::components::WorldMap;
 use ::monster::components::*;
+
+
+/// Список
+pub enum _NodeType {
+    //функция, которая должна выполниться при посещении данного узла.
+    Action,
+    //чтобы определить, выполнять или нет следующие за ним узлы
+    Condition,
+    //последовательность, до первого узла Fail, либо выполняет все и возвращает Success
+    Sequencer,
+    //до первого узла возвращающего Success
+    Selector,
+    //роль цикла for
+    Iterator,
+    // пока не использую
+    Parallel,
+}
 
 
 /// Система восприятия
@@ -132,23 +173,24 @@ impl System for PerceptionSystem {
             let position = entity.get_component::<Position>();
             let mut behaviour_event = entity.get_component::<BehaviourEvent>(); // события
             let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
-            for x in -2..3 {
+            'outer: for x in -2..3 {
                 for y in -2..3 {
                     let pos_x: i32 = (position.x.trunc() + x as f32) as i32;
                     let pos_y: i32 = (position.y.trunc() + y as f32) as i32;
                     let scan_point: Point = Point(pos_x, pos_y); // Casting
-                    if world_map.flora[scan_point] == 1 && monster_state.event_last != 1 {
+                    if !monster_state.view_food && world_map.flora[scan_point] == 1 {
                         // переключаем событие на 1-Обнаружена еда.
-                        behaviour_event.event = 1; // наступает событие обнаружена еда
-                        monster_state.event_last = behaviour_event.event;
+                        behaviour_event.event = BehaviorEventEnum::FoundFood; // наступает событие обнаружена еда
+                        monster_state.view_food = true;
                         println!("Новое событие: монстр {} обнаружил еду!", monster_id.id);
+                        break 'outer;
                     }
                 }
             }
 
 
             // фиксируем текущее время
-            monster_state.selector_time = PreciseTime::now();
+            monster_state.perception_time = PreciseTime::now();
         }
     }
 }
@@ -178,25 +220,25 @@ impl System for EventSystem {
             let mut behaviour_event = entity.get_component::<BehaviourEvent>(); // события
             let monster_attr = entity.get_component::<MonsterAttributes>(); // события
             let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
-            if behaviour_event.event == 0 {
+            if behaviour_event.event == BehaviorEventEnum::Init {
                 // проверяем ошибки/инициализация
-                behaviour_event.event = 6;
+                behaviour_event.event = BehaviorEventEnum::NoEvent;
                 println!("ошибка/инициализация текущего события монстра {}, теперь он {}", monster_id.id, 6);
-            } else if monster_attr.power < 960 && monster_state.event_last != 5 {
-                behaviour_event.event = 5; // наступает событие - УСТАЛ
-                monster_state.event_last = behaviour_event.event;
+            } else if !monster_state.low_power && monster_attr.power < monster_attr.danger_power {
+                behaviour_event.event = BehaviorEventEnum::ComeTired; // наступает событие - УСТАЛ
+                monster_state.low_power = true;
                 println!("Новое событие: монстр {} устал.", monster_id.id);
-            } else if monster_attr.power > 990 && monster_state.event_last != 6 {
-                behaviour_event.event = 6;
-                monster_state.event_last = behaviour_event.event;
+            } else if monster_state.low_power && monster_attr.power > 990 {
+                behaviour_event.event = BehaviorEventEnum::NoEvent;
+                monster_state.low_power = false;
                 println!("Новое событие: монстр {} отдохнул.", monster_id.id);
-            } else if monster_attr.hungry < 960 && monster_state.event_last != 3 {
-                behaviour_event.event = 3; // наступает событие - ГОЛОД
-                monster_state.event_last = behaviour_event.event;
+            } else if !monster_state.low_food && monster_attr.hungry < monster_attr.danger_hungry {
+                behaviour_event.event = BehaviorEventEnum::ComeHungry; // наступает событие - ГОЛОД
+                monster_state.low_food = true;
                 println!("Новое событие: монстр {} голоден.", monster_id.id);
-            } else if monster_attr.hungry > 990 && monster_state.event_last != 7 {
-                behaviour_event.event = 7;
-                monster_state.event_last = behaviour_event.event;
+            } else if monster_state.low_food && monster_attr.hungry > 990 {
+                behaviour_event.event = BehaviorEventEnum::EatFull;
+                monster_state.low_food = false;
                 println!("Новое событие: монстр {} сыт.", monster_id.id);
             }
 
@@ -229,28 +271,26 @@ impl System for SelectorSystem {
                 // ткущий узел.
                 if selection_tree.curr_selector < 0i32 {
                     selection_tree.curr_selector = 0i32;
-                    println!("ошибка/инициализация текущего указателя, теперь он {}", 0i32);
+                    println!("ошибка/инициализация текущего выбиральщика, теперь он {}", 0i32);
                 } else {
-                    println!("текущий указатель {}", selection_tree.curr_selector);
+                    println!("текущий выбиральщик {}", selection_tree.curr_selector);
                     /*event, state
                     let sel = vec![[6, 2], [5, 1], ...];*/
                     let index: usize = selection_tree.curr_selector as usize;
                     let curr_cell = selection_tree.selector[index]; //[6, 2]
                     let v_event = curr_cell[0];
                     let v_state = curr_cell[1];
-                    // проверить нет ли ошибки в селекторе/программаторе. или первый запуск/инициализация.
-                    let curr_event = behaviour_event.event; // считываем текущий событие/event
-                    if curr_event == v_event {
+                    if behaviour_event.event as u32 == v_event {
                         // меняем состояние, на соответствующее.
-                        behaviour_state.state = v_state;
+                        behaviour_state.state = get_behavior_state_enum(v_state);
                         println!("обнаружено событие {}", v_event);
                         println!("переключаю состояние на {}", v_state);
-                        // сдвигаем curr_selector, переходим к сл. ячейке.
-                        let shl: i32 = (len - 1) as i32;
-                        if selection_tree.curr_selector < shl { selection_tree.curr_selector += 1; } else {
-                            selection_tree.curr_selector = 0;
-                        }
                     }
+                }
+                // сдвигаем curr_selector, переходим к сл. ячейке.
+                let shl: i32 = (len - 1) as i32;
+                if selection_tree.curr_selector < shl { selection_tree.curr_selector += 1; } else {
+                    selection_tree.curr_selector = 0;
                 }
             }
 
@@ -299,10 +339,10 @@ impl System for BehaviorSystem {
             //
             let delta: f32 = monster_attr.speed as f32;
             match behaviour_state.state {
-                1 => {
+                BehaviorStateEnum::Sleep => {
                     println!("...zzz...монстр {}", monster_id.id);
                 },
-                2 => {
+                BehaviorStateEnum::Walk => {
                     // тут заставляем монстра ходить туда-сюда, бесцельно, куда подует)
                     match wind.direction {
                         0 => {
@@ -367,7 +407,7 @@ impl System for BehaviorSystem {
                     //                    position.y = y1;
                     //                    println!("x:{}, y:{}", position.x, position.y);
                 },
-                3 => {
+                BehaviorStateEnum::FindFood => {
                     // поиск пищи.
                     if monster_attr.speed == 1 { monster_attr.speed = 2 }
                     // перемещаемся по дуге, расставляя целевые точки пути.
@@ -429,7 +469,7 @@ impl System for BioSystems {
             let behaviour_state = entity.get_component::<BehaviourState>(); // состояние
             let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
             // power
-            if behaviour_state.state == 1 {
+            if behaviour_state.state as u32 == 1 {
                 monster_attr.power += 1;
             } else {
                 monster_attr.power -= monster_attr.speed;

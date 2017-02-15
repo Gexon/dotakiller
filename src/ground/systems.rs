@@ -6,6 +6,7 @@ use time::{PreciseTime, Duration};
 use GROUND_SPEED;
 
 use ::utility::map::Point;
+use ::utility::enums::*;
 use ::ground::components::*;
 use ::flora::components::*;
 use ::monster::components::*;
@@ -111,7 +112,9 @@ impl System for SpawnMonsterSystem {
                 entity_object.add_component(Replication); // произошли изменения монстра.
                 entity_object.add_component(MonsterState {
                     state: 1,
-                    event_last: 0,
+                    low_power: false,
+                    low_food: false,
+                    view_food: false,
                     growth_time: PreciseTime::now(),
                     reproduction_time: PreciseTime::now(),
                     behavior_time: PreciseTime::now(),
@@ -126,12 +129,14 @@ impl System for SpawnMonsterSystem {
                 });
                 entity_object.add_component(MonsterId { id: last_id.monster_id });
                 entity_object.add_component(SelectionTree::new());
-                entity_object.add_component(BehaviourState { state: 0 });
-                entity_object.add_component(BehaviourEvent { event: 0 });
+                entity_object.add_component(BehaviourState { state: BehaviorStateEnum::Init });
+                entity_object.add_component(BehaviourEvent { event: BehaviorEventEnum::Init });
                 entity_object.add_component(MonsterAttributes {
                     speed: 1,
                     power: 1000,
                     hungry: 1000,
+                    danger_power: 960,
+                    danger_hungry: 960,
                 });
                 entity_object.refresh();
                 let monster_id = entity_object.get_component::<MonsterId>();

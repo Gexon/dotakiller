@@ -4,6 +4,7 @@ use tinyecs::*;
 use time::{PreciseTime};
 
 use ::utility::map::Map;
+use ::utility::enums::*;
 
 /// Координаты на полигоне.
 pub struct PositionM {
@@ -28,7 +29,10 @@ impl Component for MonsterId {}
 /// информация о состоянии монстра
 pub struct MonsterState {
     pub state: i32,
-    pub event_last: u32,
+    pub low_power: bool,
+    pub low_food: bool,
+    pub view_food: bool,
+
     pub growth_time: PreciseTime,
     pub reproduction_time: PreciseTime,
     pub bios_time: PreciseTime,
@@ -50,6 +54,8 @@ pub struct MonsterAttributes {
     pub speed: i32,
     pub power: i32,
     pub hungry: i32,
+    pub danger_power: i32,
+    pub danger_hungry: i32,
 }
 
 impl Component for MonsterAttributes {}
@@ -78,19 +84,9 @@ impl Component for _BehaviourGlobalState {}
 
 /// Сосотояние монстра, для Behaviour Tree
 pub struct BehaviourState {
-    //    Всего 6 состояний:
-    //    0.  Инициализация, ошибка.
-    //    1.  Сон. Монстр ждет, в этот момент с ним ничего не происходит.
-    //    2.  Бодрствование. Случайное перемещение по полигону.
-    //    3.  Поиск пищи.
-    //    4.  Поиск воды.
-    //    5.  Прием пищи.
-    //    6.  Прием воды.
-    //    7.  Перемещение к цели.
-    //    8.  Проверка достижения цели.(?)
     // и здесь тоже может быть только одно состояние.
     //  и кто-то должен его переключать =)
-    pub state: u32,
+    pub state: BehaviorStateEnum,
 }
 
 impl Component for BehaviourState {}
@@ -98,20 +94,10 @@ impl Component for BehaviourState {}
 
 /// Событий происходящее с монстром, для Behaviour Tree
 pub struct BehaviourEvent {
-    //    Всего 6 событий:
-    //    0.  Инициализация, ошибка.
-    //    1.  Обнаружена еда.
-    //    2.  Обнаружена вода.
-    //    3.  Наступил голод.
-    //    4.  Наступила жажда.
-    //    5.  Утомился.
-    //    6.  Нет событий.
-    //    7.  Монстр насытился.
-    //    8.  Монстр напился.
     // видимо может быть только одно событие,
     // и обработчик событий loop event при отсутствии событий у монстра,
     // выставляет ему "6. Нет событий"
-    pub event: u32,
+    pub event: BehaviorEventEnum,
 }
 
 impl Component for BehaviourEvent {}
@@ -148,7 +134,12 @@ impl SelectionTree {
     pub fn new() -> SelectionTree {
         // храним программу селектора. в будущем загрузка из БД
         //     [event, state], [event, state]
-        let sel = vec![[6, 2], [5, 1], [3, 3], [7, 2]]; // если событие 6, то переключить сосотояние на 2
+        let sel = vec![
+            [BehaviorEventEnum::NoEvent as u32, BehaviorStateEnum::Walk as u32],
+            [BehaviorEventEnum::ComeTired as u32, BehaviorStateEnum::Sleep as u32],
+            [BehaviorEventEnum::ComeHungry as u32, BehaviorStateEnum::FindFood as u32],
+            [BehaviorEventEnum::EatFull as u32, BehaviorStateEnum::Walk as u32]
+        ]; // если событие 6, то переключить сосотояние на 2
         SelectionTree {
             selector: sel,
             curr_selector: -1,

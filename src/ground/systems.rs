@@ -118,13 +118,21 @@ impl System for SpawnMonsterSystem {
                     bios_time: PreciseTime::now(),
                     event_time: PreciseTime::now(),
                     selector_time: PreciseTime::now(),
+                    perception_time: PreciseTime::now(),
                     dead: 0,
+                    move_target: PositionM { x: -1f32, y: -1f32 },
+                    old_position: PositionM { x: -1f32, y: -1f32 },
+                    target_point: PositionM { x: -1f32, y: -1f32 },
                 });
                 entity_object.add_component(MonsterId { id: last_id.monster_id });
                 entity_object.add_component(SelectionTree::new());
                 entity_object.add_component(BehaviourState { state: 0 });
                 entity_object.add_component(BehaviourEvent { event: 0 });
-                entity_object.add_component(MonsterAttributes { power: 1000 });
+                entity_object.add_component(MonsterAttributes {
+                    speed: 1,
+                    power: 1000,
+                    hungry: 1000,
+                });
                 entity_object.refresh();
                 let monster_id = entity_object.get_component::<MonsterId>();
                 println!("Создаем сущность {} {}", spawn_point.name.to_string(), monster_id.id);

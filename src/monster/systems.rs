@@ -96,27 +96,113 @@ use time::{PreciseTime, Duration};
 
 use MONSTER_SPEED;
 
+use ::utility::map::Point;
 use ::ground::components::Replication;
 use ::ground::components::Position;
 use ::ground::components::ClassGround;
 use ::ground::components::WindDirection;
+use ::ground::components::WorldMap;
 use ::monster::components::*;
 
 
 /// Система восприятия
-pub struct _PerceptionSystem;
+pub struct PerceptionSystem;
 // тут типа чекает окружение, и помечает объекты что попадают в поле зения.
-impl System for _PerceptionSystem {
+impl System for PerceptionSystem {
     fn aspect(&self) -> Aspect {
-        aspect_all!(MonsterClass)
+        aspect_all!(MonsterState)
     }
 
-    fn process_one(&mut self, _entity: &mut Entity) {
+    fn data_aspects(&self) -> Vec<Aspect> {
+        vec![aspect_all![ClassGround]]
+    }
+
+    fn process_d(&mut self, entity: &mut Entity, data: &mut DataList) {
         // здесь тоже меняются события.
 
         // сканируем вокруг, может есть еда или вода или др. монстр или ОБОРИГЕН!
+        // сканируем с интервалом равным перемещению.
+        let mut monster_state = entity.get_component::<MonsterState>();
+        if monster_state.perception_time.to(PreciseTime::now()) > Duration::seconds(2 * MONSTER_SPEED) {
+            // сканируем окружность на предмет кактусов.
+            //_MonsterMaps
+            let ground = data.unwrap_entity();
+            let world_map = ground.get_component::<WorldMap>();
+            // проверяем свободно ли место спавна.
+            let position = entity.get_component::<Position>();
+            for x in -2..3 {
+                for y in -2..3 {
+                    let pos_x: i32 = (position.x.trunc() + x as f32) as i32;
+                    let pos_y: i32 = (position.y.trunc() + y as f32) as i32;
+                    let scan_point: Point = Point(pos_x, pos_y); // Casting
+                    if world_map.flora[scan_point] == 1 {
+                        // еда!
+                        println!("Обнаружена еда!");
+                    }
+                }
+            }
+
+
+            // фиксируем текущее время
+            monster_state.selector_time = PreciseTime::now();
+        }
     }
 }
+
+
+/// Генерация событий
+// Создаем события, проверяем параметры.
+pub struct EventSystem;
+
+impl System for EventSystem {
+    fn aspect(&self) -> Aspect {
+        aspect_all!(MonsterAttributes, BehaviourEvent)
+    }
+
+    fn process_one(&mut self, entity: &mut Entity) {
+        //    0.  Инициализация, ошибка.
+        //    1.  Обнаружена еда.
+        //    2.  Обнаружена вода.
+        //    3.  Наступил голод.
+        //    4.  Наступила жажда.
+        //    5.  Утомился.
+        //    6.  Нет событий.
+        //    7.  Монстр насытился.
+        //    8.  Монстр напился.
+        let mut monster_state = entity.get_component::<MonsterState>();
+        if monster_state.event_time.to(PreciseTime::now()) > Duration::seconds(MONSTER_SPEED) {
+            let mut behaviour_event = entity.get_component::<BehaviourEvent>(); // события
+            let monster_attr = entity.get_component::<MonsterAttributes>(); // события
+            let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+            if behaviour_event.event == 0 {
+                // проверяем ошибки/инициализация
+                behaviour_event.event = 6;
+                println!("ошибка/инициализация текущего события монстра {}, теперь он {}", monster_id.id, 6);
+            } else if monster_attr.power < 960 && monster_state.event_last != 5 {
+                behaviour_event.event = 5; // наступает событие - УСТАЛ
+                monster_state.event_last = behaviour_event.event;
+                println!("Новое событие: монстр {} устал.", monster_id.id);
+            } else if monster_attr.power > 990 && monster_state.event_last != 6 {
+                behaviour_event.event = 6;
+                monster_state.event_last = behaviour_event.event;
+                println!("Новое событие: монстр {} отдохнул.", monster_id.id);
+            } else if monster_attr.hungry < 960 && monster_state.event_last != 3 {
+                behaviour_event.event = 3; // наступает событие - ГОЛОД
+                monster_state.event_last = behaviour_event.event;
+                println!("Новое событие: монстр {} голоден.", monster_id.id);
+            } else if monster_attr.hungry > 990 && monster_state.event_last != 7 {
+                behaviour_event.event = 7;
+                monster_state.event_last = behaviour_event.event;
+                println!("Новое событие: монстр {} сыт.", monster_id.id);
+            }
+
+
+            // фиксируем текущее время
+            monster_state.event_time = PreciseTime::now();
+        }
+    }
+}
+
 
 /// Выбиральщик состояний дерева поведения
 // используя код программатора SelectionTree, переключает состояния.
@@ -126,13 +212,6 @@ impl System for SelectorSystem {
     fn aspect(&self) -> Aspect {
         aspect_all!(MonsterClass, SelectionTree, BehaviourEvent, BehaviourState)
     }
-
-    //    fn process_no_entities(&mut self) {
-    //        println!("instaced buffer render system must work, but no entities!");
-    //    }
-    //    fn process_no_data(&mut self) {
-    //        println!("instaced buffer render system must work, but no data!");
-    //    }
 
     fn process_one(&mut self, entity: &mut Entity) {
         let mut monster_state = entity.get_component::<MonsterState>();
@@ -148,8 +227,9 @@ impl System for SelectorSystem {
                     selection_tree.curr_selector = 0i32;
                     println!("ошибка/инициализация текущего указателя, теперь он {}", 0i32);
                 } else {
+                    println!("текущий указатель {}", selection_tree.curr_selector);
                     /*event, state
-                    let sel = vec![[6, 2], [5, 1]];*/
+                    let sel = vec![[6, 2], [5, 1], ...];*/
                     let index: usize = selection_tree.curr_selector as usize;
                     let curr_cell = selection_tree.selector[index]; //[6, 2]
                     let v_event = curr_cell[0];
@@ -206,12 +286,14 @@ impl System for BehaviorSystem {
         let mut monster_state = entity.get_component::<MonsterState>();
         if monster_state.behavior_time.to(PreciseTime::now()) > Duration::seconds(2 * MONSTER_SPEED) {
             let behaviour_state = entity.get_component::<BehaviourState>(); // состояние
+            let mut monster_attr = entity.get_component::<MonsterAttributes>(); // атрибуты/характеристики
             let mut position = entity.get_component::<Position>();
             let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
             // сумоним ветер
             let ground = data.unwrap_entity();
             let wind = ground.get_component::<WindDirection>();
             //
+            let delta: f32 = monster_attr.speed as f32;
             match behaviour_state.state {
                 1 => {
                     println!("...zzz...монстр {}", monster_id.id);
@@ -220,43 +302,43 @@ impl System for BehaviorSystem {
                     // тут заставляем монстра ходить туда-сюда, бесцельно, куда подует)
                     match wind.direction {
                         0 => {
-                            if position.x < 140f32 {
-                                position.x += 1f32;
+                            if position.x < 140f32 - delta {
+                                position.x += delta;
                             }
                         },
                         1 => {
-                            if position.x > position.y * 2f32 && position.x < 140f32 {
-                                position.x += 1f32;
+                            if position.x > position.y * 2f32 && position.x < 140f32 - delta {
+                                position.x += delta;
                             }
                         },
                         2 => {
-                            if position.y > 0f32 {
-                                position.y -= 1f32;
+                            if position.y > 0f32 + delta {
+                                position.y -= delta;
                             }
                         },
                         3 => {
-                            if position.y < position.x * 2f32 && position.y > 0f32 {
-                                position.y -= 1f32;
+                            if position.y < position.x * 2f32 && position.y > 0f32 + delta {
+                                position.y -= delta;
                             }
                         },
                         4 => {
-                            if position.x > 0f32 {
-                                position.x -= 1f32;
+                            if position.x > 0f32 + delta {
+                                position.x -= delta;
                             }
                         },
                         5 => {
-                            if position.x < position.y * 2f32 && position.x > 0f32 {
-                                position.x -= 1f32;
+                            if position.x < position.y * 2f32 && position.x > 0f32 + delta {
+                                position.x -= delta;
                             }
                         },
                         6 => {
-                            if position.y < 140f32 {
-                                position.y += 1f32;
+                            if position.y < 140f32 - delta {
+                                position.y += delta;
                             }
                         },
                         7 => {
-                            if position.y > position.x * 2f32 && position.y < 140f32 {
-                                position.y += 1f32;
+                            if position.y > position.x * 2f32 && position.y < 140f32 - delta {
+                                position.y += delta;
                             }
                         },
                         _ => println!("странное направление ветра, вы не находите?"),
@@ -281,54 +363,47 @@ impl System for BehaviorSystem {
                     //                    position.y = y1;
                     //                    println!("x:{}, y:{}", position.x, position.y);
                 },
+                3 => {
+                    // поиск пищи.
+                    if monster_attr.speed == 1 { monster_attr.speed = 2 }
+                    // перемещаемся по дуге, расставляя целевые точки пути.
+                    // рассчитываем целевую точку пути:
+                    // вычисляем проекцию вектора, используя старые координаты и текущие.
+                    let v_abx = position.x - monster_state.old_position.x;
+                    let v_aby = position.y - monster_state.old_position.y;
+                    // повернем проекцию вектора на 30 градусов.
+                    // cos 30 grad = 0.866 rad, sin 30 = 0.5
+                    let v_bx = v_abx * 0.866f32 - v_aby * 0.5f32;
+                    let v_by = v_abx * 0.5f32 + v_aby * 0.866f32;
+                    // накладываем проекцию вектора на текущие координаты.
+                    monster_state.target_point.x = v_bx + position.x;
+                    monster_state.target_point.y = v_by + position.y;
+                    // сохраняем текущую точку пути, до перемещения в новое место, для последующих расчетов.
+                    monster_state.old_position.x = position.x;
+                    monster_state.old_position.y = position.y;
+                    // рассчитываем следующий шаг, ближайший к целевой точке пути.
+                    if position.x < monster_state.target_point.x {
+                        if position.x < (140i32 - monster_attr.speed) as f32 {
+                            position.x += monster_attr.speed as f32;// перемещаемся к этой точке по Х
+                        }
+                    } else if position.x > monster_state.target_point.x &&
+                        position.x > monster_attr.speed  as f32{
+                        position.x -= monster_attr.speed as f32;
+                    }
+
+                    if position.y < monster_state.target_point.y {
+                        if position.y < (140i32 - monster_attr.speed) as f32{
+                            position.x += monster_attr.speed as f32;// перемещаемся к этой точке по У
+                        }
+                    } else if position.y > monster_state.target_point.y &&
+                        position.y > monster_attr.speed as f32{
+                        position.y -= monster_attr.speed as f32;
+                    }
+                },
                 _ => {},
             }
             // фиксируем текущее время
             monster_state.behavior_time = PreciseTime::now();
-        }
-    }
-}
-
-/// Генерация событий
-// Создаем события, проверяем параметры.
-pub struct EventSystem;
-
-impl System for EventSystem {
-    fn aspect(&self) -> Aspect {
-        aspect_all!(MonsterAttributes, BehaviourEvent)
-    }
-
-    fn process_one(&mut self, entity: &mut Entity) {
-        //    0.  Инициализация, ошибка.
-        //    1.  Обнаружена еда.
-        //    2.  Обнаружена вода.
-        //    3.  Наступил голод.
-        //    4.  Наступила жажда.
-        //    5.  Утомился.
-        //    6.  Нет событий.
-        //    7.  Монстр насытился.
-        //    8.  Монстр напился.
-        let mut monster_state = entity.get_component::<MonsterState>();
-        if monster_state.event_time.to(PreciseTime::now()) > Duration::seconds(MONSTER_SPEED) {
-            let mut behaviour_event = entity.get_component::<BehaviourEvent>(); // события
-            let monster_attr = entity.get_component::<MonsterAttributes>(); // события
-            let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
-            if behaviour_event.event == 0 {
-                // проверяем ошибки/инициализация
-                behaviour_event.event = 6;
-                println!("ошибка/инициализация текущего события монстра {}, теперь он {}", monster_id.id, 6);
-            } else if monster_attr.power < 960 && monster_state.event_last != 5 {
-                behaviour_event.event = 5; // наступает событие - УСТАЛ
-                monster_state.event_last = behaviour_event.event;
-                println!("Новое событие: монстр {} устал.", monster_id.id);
-            } else if monster_attr.power > 990 && monster_state.event_last != 6 {
-                behaviour_event.event = 6;
-                monster_state.event_last = behaviour_event.event;
-                println!("Новое событие: монстр {} отдохнул.", monster_id.id);
-            }
-
-            // фиксируем текущее время
-            monster_state.event_time = PreciseTime::now();
         }
     }
 }
@@ -349,17 +424,39 @@ impl System for BioSystems {
             let mut monster_attr = entity.get_component::<MonsterAttributes>();
             let behaviour_state = entity.get_component::<BehaviourState>(); // состояние
             let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
-            if monster_attr.power > 0 {
-                if behaviour_state.state == 1 {
-                    monster_attr.power += 1;
-                } else {
-                    monster_attr.power -= 1;
-                }
-                println!("power {}, монстр {}", monster_attr.power, monster_id.id);
+            // power
+            if behaviour_state.state == 1 {
+                monster_attr.power += 1;
+            } else {
+                monster_attr.power -= monster_attr.speed;
             }
+            // hungry
+            if monster_attr.hungry > 0 {
+                monster_attr.hungry -= 1;
+            }
+
+            println!("power {}, hungry {}, монстр {}", monster_attr.power, monster_attr.hungry, monster_id.id);
             // фиксируем текущее время
             monster_state.bios_time = PreciseTime::now();
         }
     }
 }
 
+/// Поиск пути
+/*
+- для поиска пути, предложить проложить путь по шаблону(прямой путь, обход слева, обход справа), если шаблон не проходим, выполнить поиск пути.
+Сначала нужно создать два списка: список узлов, которые еще не проверены (Unchecked), и список уже проверенных узлов (Checked). Каждый список включает узел расположения, предполагаемое расстояние до цели и ссылку на родительский объект (узел, который поместил данный узел в список). Изначально списки пусты.
+
+Теперь добавим начальное расположение в список непроверенных, не указывая ничего в качестве родительского объекта. Затем вводим алгоритм.
+
+    Выбираем в списке наиболее подходящий узел.
+    Если этот узел является целью, то все готово.
+    Если этот узел не является целью, добавляем его в список проверенных.
+    Для каждого узла, соседнего с данным узлом.
+        Если этот узел непроходим, игнорируем его.
+        Если этот узел уже есть в любом из списков (проверенных или непроверенных), игнорируем его.
+        В противном случае добавляем его в список непроверенных, указываем текущий узел в качестве родительского и рассчитываем длину пути до цели (достаточно просто вычислить расстояние).
+
+Когда объект достигает поля цели, можно построить путь, отследив родительские узлы вплоть до узла, у которого нет родительского элемента (это начальный узел).
+
+При загрузке большого количества запросов путей агент может либо подождать, либо, не дожидаясь выдачи путей, просто начать двигаться в нужном направлении (например, по алгоритму «Столкнуться и повернуть»).*/

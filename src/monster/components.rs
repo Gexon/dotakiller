@@ -5,6 +5,11 @@ use time::{PreciseTime};
 
 use ::utility::map::Map;
 
+/// Координаты на полигоне.
+pub struct PositionM {
+    pub x: f32,
+    pub y: f32,
+}
 
 /// метка принадлежности к классу монстров.
 pub struct MonsterClass;
@@ -30,7 +35,11 @@ pub struct MonsterState {
     pub event_time: PreciseTime,
     pub behavior_time: PreciseTime,
     pub selector_time: PreciseTime,
+    pub perception_time: PreciseTime,
     pub dead: i32,
+    pub move_target: PositionM,
+    pub old_position: PositionM,
+    pub target_point: PositionM,
 }
 
 impl Component for MonsterState {}
@@ -38,10 +47,9 @@ impl Component for MonsterState {}
 
 /// характеристики монстра и его текущее состояние
 pub struct MonsterAttributes {
-    //pub grow_state: i32,
-    //pub reproduction_time: PreciseTime,
-    //pub dead: i32,
-    pub power: u32,
+    pub speed: i32,
+    pub power: i32,
+    pub hungry: i32,
 }
 
 impl Component for MonsterAttributes {}
@@ -140,10 +148,11 @@ impl SelectionTree {
     pub fn new() -> SelectionTree {
         // храним программу селектора. в будущем загрузка из БД
         //     [event, state], [event, state]
-        let sel = vec![[6, 2], [5, 1]]; // если событие 6, то переключить сосотояние на 2
+        let sel = vec![[6, 2], [5, 1], [3, 3], [7, 2]]; // если событие 6, то переключить сосотояние на 2
         SelectionTree {
             selector: sel,
-            curr_selector: -1, // текущий узел. -1 это инициализация либо ошибка.
+            curr_selector: -1,
+            // текущий узел. -1 это инициализация либо ошибка.
         }
     }
 }

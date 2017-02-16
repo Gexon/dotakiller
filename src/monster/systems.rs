@@ -282,7 +282,7 @@ impl System for SelectorSystem {
                     let v_state = curr_cell[1];
                     if behaviour_event.event as u32 == v_event {
                         // меняем состояние, на соответствующее.
-                        behaviour_state.state = get_behavior_state_enum(v_state);
+                        behaviour_state.state = BehaviorStateEnum::from_index(v_state);
                         println!("обнаружено событие {}", v_event);
                         println!("переключаю состояние на {}", v_state);
                     }

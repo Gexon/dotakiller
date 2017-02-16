@@ -25,6 +25,23 @@ pub enum BehaviorStateEnum {
     CheckMoveToTarget = 8,
 }
 
+/// Приклеиваем метод по выемке перечисления по индексу
+impl BehaviorStateEnum {
+    pub fn from_index(idx: u32) -> Self {
+        match idx {
+            //0 => BehaviorStateEnum::Init,
+            1 => BehaviorStateEnum::Sleep,
+            2 => BehaviorStateEnum::Walk,
+            3 => BehaviorStateEnum::FindFood,
+            4 => BehaviorStateEnum::FindWater,
+            5 => BehaviorStateEnum::Meal,
+            6 => BehaviorStateEnum::WaterIntake,
+            7 => BehaviorStateEnum::MoveToTarget,
+            8 => BehaviorStateEnum::CheckMoveToTarget,
+            _ => BehaviorStateEnum::Init,
+        }
+    }
+}
 
 /// Собятия монстра
 #[derive(PartialEq, Copy, Clone)]
@@ -50,18 +67,18 @@ pub enum BehaviorEventEnum {
 }
 
 
-/// Вынимаем перечисление по индексу.
-pub fn get_behavior_state_enum(idx: u32) -> BehaviorStateEnum {
-    match idx {
-        0 => BehaviorStateEnum::Init,
-        1 => BehaviorStateEnum::Sleep,
-        2 => BehaviorStateEnum::Walk,
-        3 => BehaviorStateEnum::FindFood,
-        4 => BehaviorStateEnum::FindWater,
-        5 => BehaviorStateEnum::Meal,
-        6 => BehaviorStateEnum::WaterIntake,
-        7 => BehaviorStateEnum::MoveToTarget,
-        8 => BehaviorStateEnum::CheckMoveToTarget,
-        _ => { unreachable!() },
-    }
-}
+///// Вынимаем перечисление по индексу.
+//pub fn get_behavior_state_enum(idx: u32) -> BehaviorStateEnum {
+//    match idx {
+//        0 => BehaviorStateEnum::Init,
+//        1 => BehaviorStateEnum::Sleep,
+//        2 => BehaviorStateEnum::Walk,
+//        3 => BehaviorStateEnum::FindFood,
+//        4 => BehaviorStateEnum::FindWater,
+//        5 => BehaviorStateEnum::Meal,
+//        6 => BehaviorStateEnum::WaterIntake,
+//        7 => BehaviorStateEnum::MoveToTarget,
+//        8 => BehaviorStateEnum::CheckMoveToTarget,
+//        _ => BehaviorStateEnum::Init,
+//    }
+//}

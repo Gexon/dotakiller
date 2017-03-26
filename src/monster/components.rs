@@ -132,6 +132,14 @@ pub struct SelectionTree {
 
 impl SelectionTree {
     pub fn new() -> SelectionTree {
+        // описание приоритета событий, для предотвращения зацикливания.
+        // ComeHungry - 1(самый высокий приоритет), ComeTired - 2
+        // пока узел не вернул выполнено или неудача, не запускать другие задачи.
+        // возможно необходимо выставить ограничение на количество попыток выполнения текущей задачи,
+        // чтоб предотвратить зацикливание.
+        //
+        // описание графа поведения при событии ComeTired(усталость)
+        //
         // храним программу селектора. в будущем загрузка из БД
         //     [event, state], [event, state]
         let sel = vec![
@@ -139,7 +147,7 @@ impl SelectionTree {
             [BehaviorEventEnum::ComeTired as u32, BehaviorStateEnum::Sleep as u32],
             [BehaviorEventEnum::ComeHungry as u32, BehaviorStateEnum::FindFood as u32],
             [BehaviorEventEnum::EatFull as u32, BehaviorStateEnum::Walk as u32]
-        ]; // если событие 6, то переключить сосотояние на 2
+        ]; // если событие 6, то переключить сосотояние на 2, с проверкой приоритетов и выполнения текущих задач.
         SelectionTree {
             selector: sel,
             curr_selector: -1,

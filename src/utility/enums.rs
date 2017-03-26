@@ -84,7 +84,9 @@ pub enum _NodeType {
     Parallel,
 }
 
-/// Описание поведения. https://github.com/PistonDevelopers/ai_behavior/blob/master/src/behavior.rs
+
+/// Описание поведения.
+// https://github.com/PistonDevelopers/ai_behavior/blob/master/src/behavior.rs
 #[derive(Clone, RustcDecodable, RustcEncodable, PartialEq)]
 pub enum Behavior<A> {
     /// Описания высоко-уровеневых действий.

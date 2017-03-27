@@ -46,27 +46,42 @@ impl BehaviorStateEnum {
 /// Собятия монстра
 #[derive(PartialEq, Copy, Clone)]
 pub enum BehaviorEventEnum {
+    // цифры обозначают приоритет события.
     //      0. Инициализация, ошибка.
     Init = 0,
-    //      1. Обнаружена еда.
-    FoundFood = 1,
-    //      2. Обнаружена вода.
-    _FoundWater = 2,
+    //      1. Обнаружена вода.
+    _FoundWater = 1,
+    //      2. Обнаружена еда.
+    FoundFood = 2,
     //      3. Наступил голод.
     ComeHungry = 3,
     //      4. Наступила жажда.
     _ComeThirsty = 4,
     //      5. Утомился.
     ComeTired = 5,
-    //      6. Нет событий.
-    NoEvent = 6,
-    //      7. Монстр насытился.
-    EatFull = 7,
-    //      8. Монстр напился.
-    _DrinkFull = 8,
+    //      6. Монстр насытился.
+    EatFull = 6,
+    //      7. Монстр напился.
+    _DrinkFull = 7,
+    //      8. Нет событий.
+    NoEvent = 8,
 }
 
-
+impl BehaviorEventEnum {
+    pub fn from_enum(in_enum: BehaviorEventEnum) -> u32 {
+        match in_enum {
+            BehaviorEventEnum::Init => 0,
+            BehaviorEventEnum::_FoundWater => 1,
+            BehaviorEventEnum::FoundFood => 2,
+            BehaviorEventEnum::ComeHungry => 3,
+            BehaviorEventEnum::_ComeThirsty => 4,
+            BehaviorEventEnum::ComeTired => 5,
+            BehaviorEventEnum::EatFull => 6,
+            BehaviorEventEnum::_DrinkFull => 7,
+            BehaviorEventEnum::NoEvent => 8,
+        }
+    }
+}
 
 /// Список узлов графа
 pub enum _NodeType {
@@ -138,7 +153,8 @@ pub enum Behavior<A> {
     /// В том случае, если все варианты поведения, удается, но только если успех в определенной последовательности.
     /// Fails if one behavior fails.
     /// Вернет неудачу, если хотябы в одном элементе происходит сбой.
-    After(Vec<Behavior<A>>), // надо ли?
+    After(Vec<Behavior<A>>),
+    // надо ли?
 }
 
 

@@ -129,8 +129,6 @@ use ::ground::components::WorldMap;
 use ::monster::components::*;
 
 
-
-
 /// Система восприятия
 pub struct PerceptionSystem;
 // тут типа чекает окружение, и помечает объекты что попадают в поле зения.
@@ -156,16 +154,14 @@ impl System for PerceptionSystem {
             let world_map = ground.get_component::<WorldMap>();
             // проверяем свободно ли место спавна.
             let position = entity.get_component::<Position>();
-            let mut behaviour_event = entity.get_component::<BehaviourEvent>(); // события
             let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
             'outer: for x in -2..3 {
                 for y in -2..3 {
                     let pos_x: i32 = (position.x.trunc() + x as f32) as i32;
                     let pos_y: i32 = (position.y.trunc() + y as f32) as i32;
                     let scan_point: Point = Point(pos_x, pos_y); // Casting
+                    // Проверяем растет ли дерево по даденным координатам.
                     if !monster_state.view_food && world_map.flora[scan_point] == 1 {
-                        // переключаем событие на 1-Обнаружена еда.
-                        behaviour_event.event = BehaviorEventEnum::FoundFood; // наступает событие обнаружена еда
                         monster_state.view_food = true;
                         println!("Новое событие: монстр {} обнаружил еду!", monster_id.id);
                         break 'outer;
@@ -191,42 +187,55 @@ impl System for EventSystem {
     }
 
     fn process_one(&mut self, entity: &mut Entity) {
-        //    0.  Инициализация, ошибка.
-        //    1.  Обнаружена еда.+
-        //    2.  Обнаружена вода.
-        //    3.  Наступил голод.+
-        //    4.  Наступила жажда.
-        //    5.  Утомился.+
-        //    6.  Нет событий.+
-        //    7.  Монстр насытился.+
-        //    8.  Монстр напился.
         let mut monster_state = entity.get_component::<MonsterState>();
         if monster_state.event_time.to(PreciseTime::now()) > Duration::seconds(MONSTER_SPEED) {
             let mut behaviour_event = entity.get_component::<BehaviourEvent>(); // события
             let monster_attr = entity.get_component::<MonsterAttributes>(); // события
             let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+            // Соблюдать приоритет событий, для предотвращения зацикливания.(возможно прерывание менее приоритетной задачи).
+            // ComeHungry - 1(самый высокий приоритет), ComeTired - 2
+
+            // цифры обозначают приоритет события.
+            //      0. Инициализация, ошибка.+
+            //      1. Обнаружена вода.
+            //      2. Обнаружена еда.+
+            //      3. Наступил голод.+
+            //      4. Наступила жажда.
+            //      5. Утомился.+
+            //      6. Монстр насытился.+
+            //      7. Монстр напился.
+            //      8. Нет событий.+
+            // TODO возможно, стоит выдавать несколько событий одновременно(Vec[BehaviourEvent])
             if behaviour_event.event == BehaviorEventEnum::Init {
                 // проверяем ошибки/инициализация
                 behaviour_event.event = BehaviorEventEnum::NoEvent;
                 println!("ошибка/инициализация текущего события монстра {}, теперь он {}", monster_id.id, 6);
-            } else if !monster_state.low_power && monster_attr.power < monster_attr.danger_power {
-                behaviour_event.event = BehaviorEventEnum::ComeTired; // наступает событие - УСТАЛ
-                monster_state.low_power = true;
-                println!("Новое событие: монстр {} устал.", monster_id.id);
-            } else if monster_state.low_power && monster_attr.power > 990 {
-                behaviour_event.event = BehaviorEventEnum::NoEvent;
-                monster_state.low_power = false;
-                println!("Новое событие: монстр {} отдохнул.", monster_id.id);
-            } else if !monster_state.low_food && monster_attr.hungry < monster_attr.danger_hungry {
-                behaviour_event.event = BehaviorEventEnum::ComeHungry; // наступает событие - ГОЛОД
-                monster_state.low_food = true;
+            } else if monster_state.view_food {
+                // переключаем событие на Обнаружена еда.
+                behaviour_event.event = BehaviorEventEnum::FoundFood; // наступает событие обнаружена еда
+            } else if monster_attr.hungry < monster_attr.danger_hungry {
+                // наступает событие - ГОЛОД
+                // danger_hungry = 960
+                // 959+, 960
+                behaviour_event.event = BehaviorEventEnum::ComeHungry;
+                // monster_state.low_food = true;
                 println!("Новое событие: монстр {} голоден.", monster_id.id);
+            } else if monster_attr.power < monster_attr.danger_power {
+                // наступает событие - УСТАЛ
+                behaviour_event.event = BehaviorEventEnum::ComeTired;
+                //monster_state.low_power = true;
+                println!("Новое событие: монстр {} устал.", monster_id.id);
             } else if monster_state.low_food && monster_attr.hungry > 990 {
+                // Монстр насытился
                 behaviour_event.event = BehaviorEventEnum::EatFull;
                 monster_state.low_food = false;
                 println!("Новое событие: монстр {} сыт.", monster_id.id);
+            } else if monster_state.low_power && monster_attr.power > 990 {
+                // Нет событий
+                behaviour_event.event = BehaviorEventEnum::NoEvent;
+                monster_state.low_power = false;
+                println!("Новое событие: монстр {} отдохнул.", monster_id.id);
             }
-
 
             // фиксируем текущее время
             monster_state.event_time = PreciseTime::now();
@@ -254,34 +263,32 @@ impl System for SelectorSystem {
             let len = selection_tree.selector.len();
             if len > 0 {
                 // ткущий узел.
-                if selection_tree.curr_selector < 0i32 {
-                    selection_tree.curr_selector = 0i32;
+                if selection_tree.cursor < 0i32 {
+                    selection_tree.cursor = 0i32;
                     println!("ошибка/инициализация текущего выбиральщика, теперь он {}", 0i32);
                 } else {
-                    // 1. Пока узел не вернул выполнено или неудача, не запускать другие задачи.
-                    // 2. Соблюдать приоритет событий, для предотвращения зацикливания.(возможно прерывание менее приоритетной задачи).
-                    // ComeHungry - 1(самый высокий приоритет), ComeTired - 2
-
                     // 3. Контролировать количество попыток выполнения текущей задачи, для предотвращения зацикливания.
-
-                    println!("текущий выбиральщик {}", selection_tree.curr_selector);
+                    println!("текущий выбиральщик {}", selection_tree.cursor);
                     /*event, state
-                    let sel = vec![[6, 2], [5, 1], ...];*/
-                    let index: usize = selection_tree.curr_selector as usize;
-                    let curr_cell = selection_tree.selector[index]; //[6, 2]
-                    let v_event = curr_cell[0];
-                    let v_state = curr_cell[1];
+                    let sel = vec![(8, 2, Running), (2, 5, Running), (3, 3, Running), (5, 1, Running), (6, 1, Running) ...];*/
+                    let index: usize = selection_tree.cursor as usize;
+                    let (v_event, v_state, v_status) = selection_tree.selector[index]; // (event, state, Status)
+
+                    // Сравнивает текущее/последнее событие с событием из решателя/графа.
                     if behaviour_event.event as u32 == v_event {
                         // меняем состояние, на соответствующее.
                         behaviour_state.state = BehaviorStateEnum::from_index(v_state);
-                        println!("обнаружено событие {}", v_event);
+                        println!("Обнаружено событие {}", v_event);
                         println!("переключаю состояние на {}", v_state);
                     }
-                }
-                // сдвигаем curr_selector, переходим к сл. ячейке.
-                let shl: i32 = (len - 1) as i32;
-                if selection_tree.curr_selector < shl { selection_tree.curr_selector += 1; } else {
-                    selection_tree.curr_selector = 0;
+                    // 1. Пока узел не вернул выполнено или неудача, не переключать узлы.
+                    if behaviour_event.event as u32 != v_event || v_status != Status::Running {
+                        // сдвигаем curr_selector, переходим к сл. ячейке.
+                        let shl: i32 = (len - 1) as i32;
+                        if selection_tree.cursor < shl { selection_tree.cursor += 1; } else {
+                            selection_tree.cursor = 0;
+                        }
+                    }
                 }
             }
 
@@ -320,19 +327,29 @@ impl System for BehaviorSystem {
         //    8.  Проверка достижения цели.
         let mut monster_state = entity.get_component::<MonsterState>();
         if monster_state.behavior_time.to(PreciseTime::now()) > Duration::seconds(2 * MONSTER_SPEED) {
+            let mut selection_tree = entity.get_component::<SelectionTree>();
             let behaviour_state = entity.get_component::<BehaviourState>(); // состояние
             let mut monster_attr = entity.get_component::<MonsterAttributes>(); // атрибуты/характеристики
             let mut position = entity.get_component::<Position>();
             let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+            // вынимаем узел из нашего графа поведения
+            let index: usize = selection_tree.cursor as usize;
+            let (_v_event, v_state, _v_status) = selection_tree.selector[index]; // (event, state, Status)
+            let mut r_status: Status = Status::Running;
             // сумоним ветер
             let ground = data.unwrap_entity();
             let wind = ground.get_component::<WindDirection>();
             //
             let delta: f32 = monster_attr.speed as f32;
+
+
             match behaviour_state.state {
                 BehaviorStateEnum::Sleep => {
                     println!("...zzz...монстр {}", monster_id.id);
-                },
+                    if BehaviorStateEnum::from_index(v_state) == BehaviorStateEnum::Sleep {
+                        r_status = Status::Success;
+                    }
+                }
                 BehaviorStateEnum::Walk => {
                     // тут заставляем монстра ходить туда-сюда, бесцельно, куда подует)
                     match wind.direction {
@@ -340,42 +357,42 @@ impl System for BehaviorSystem {
                             if position.x < 140f32 - delta {
                                 position.x += delta;
                             }
-                        },
+                        }
                         1 => {
                             if position.x > position.y * 2f32 && position.x < 140f32 - delta {
                                 position.x += delta;
                             }
-                        },
+                        }
                         2 => {
                             if position.y > 0f32 + delta {
                                 position.y -= delta;
                             }
-                        },
+                        }
                         3 => {
                             if position.y < position.x * 2f32 && position.y > 0f32 + delta {
                                 position.y -= delta;
                             }
-                        },
+                        }
                         4 => {
                             if position.x > 0f32 + delta {
                                 position.x -= delta;
                             }
-                        },
+                        }
                         5 => {
                             if position.x < position.y * 2f32 && position.x > 0f32 + delta {
                                 position.x -= delta;
                             }
-                        },
+                        }
                         6 => {
                             if position.y < 140f32 - delta {
                                 position.y += delta;
                             }
-                        },
+                        }
                         7 => {
                             if position.y > position.x * 2f32 && position.y < 140f32 - delta {
                                 position.y += delta;
                             }
-                        },
+                        }
                         _ => println!("странное направление ветра, вы не находите?"),
                     }
                     entity.add_component(Replication); // произошли изменения монстра.
@@ -397,7 +414,11 @@ impl System for BehaviorSystem {
                     //                    position.x = x1;
                     //                    position.y = y1;
                     //                    println!("x:{}, y:{}", position.x, position.y);
-                },
+                    if BehaviorStateEnum::from_index(v_state) == BehaviorStateEnum::Walk {
+                        r_status = Status::Success;
+                    }
+                }
+
                 BehaviorStateEnum::FindFood => {
                     // поиск пищи.
                     if monster_attr.speed == 1 { monster_attr.speed = 2 }
@@ -467,9 +488,14 @@ impl System for BehaviorSystem {
                         position.y > monster_attr.speed as f32 {
                         position.y -= monster_attr.speed as f32;
                     }
-                },
-                _ => {},
+                    entity.add_component(Replication); // произошли изменения монстра.
+                    entity.refresh();
+                    println!("x:{}, y:{}, монстр {}", position.x, position.y, monster_id.id);
+                }
+                _ => {}
             }
+            let r_selector = (_v_event, v_state, r_status);
+            selection_tree.selector[index] = r_selector; // (event, state, Status)
             // фиксируем текущее время
             monster_state.behavior_time = PreciseTime::now();
         }

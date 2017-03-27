@@ -29,9 +29,9 @@ impl Component for MonsterId {}
 /// информация о состоянии монстра
 pub struct MonsterState {
     pub state: i32,
-    pub low_power: bool,
-    pub low_food: bool,
-    pub view_food: bool,
+    pub low_power: bool, // устал
+    pub low_food: bool,  // голоден
+    pub view_food: bool, // увидел еду
 
     pub growth_time: PreciseTime,
     pub reproduction_time: PreciseTime,
@@ -106,10 +106,10 @@ impl Component for BehaviourEvent {}
 // хранит код, связки, условия переключения состояний.
 pub struct SelectionTree {
     // тут что-то типа кода алгоритма. правила обхода узлов
-    // это вектор с массивами.
-    pub selector: Vec<[u32; 2]>,
-    //содержат программу поведения.
-    pub curr_selector: i32,
+    // это вектор с массивами. Содержат программу поведения.
+    pub selector: Vec<(u32, u32, Status)>,
+    // указатель на текущую активную ячейку селектора.
+    pub cursor: i32,
     // предыдущая ячейка. храним индекс ячейки id
 
     /*
@@ -141,16 +141,17 @@ impl SelectionTree {
         // описание графа поведения при событии ComeTired(усталость)
         //
         // храним программу селектора. в будущем загрузка из БД
-        //     [event, state], [event, state]
+        //     (event, state, Status), (event, state, Status)
         let sel = vec![
-            [BehaviorEventEnum::NoEvent as u32, BehaviorStateEnum::Walk as u32],
-            [BehaviorEventEnum::ComeTired as u32, BehaviorStateEnum::Sleep as u32],
-            [BehaviorEventEnum::ComeHungry as u32, BehaviorStateEnum::FindFood as u32],
-            [BehaviorEventEnum::EatFull as u32, BehaviorStateEnum::Walk as u32]
+            (BehaviorEventEnum::NoEvent as u32, BehaviorStateEnum::Walk as u32, Status::Running),
+            (BehaviorEventEnum::FoundFood as u32, BehaviorStateEnum::Meal as u32, Status::Running),
+            //(BehaviorEventEnum::ComeHungry as u32, BehaviorStateEnum::FindFood as u32, Status::Running),
+            (BehaviorEventEnum::ComeTired as u32, BehaviorStateEnum::Sleep as u32, Status::Running),
+            (BehaviorEventEnum::EatFull as u32, BehaviorStateEnum::Sleep as u32, Status::Running),
         ]; // если событие 6, то переключить сосотояние на 2, с проверкой приоритетов и выполнения текущих задач.
         SelectionTree {
             selector: sel,
-            curr_selector: -1,
+            cursor: -1,
             // текущий узел. -1 это инициализация либо ошибка.
         }
     }

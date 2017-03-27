@@ -68,7 +68,7 @@ pub enum BehaviorEventEnum {
 }
 
 impl BehaviorEventEnum {
-    pub fn from_enum(in_enum: BehaviorEventEnum) -> u32 {
+    pub fn _from_enum(in_enum: BehaviorEventEnum) -> u32 {
         match in_enum {
             BehaviorEventEnum::Init => 0,
             BehaviorEventEnum::_FoundWater => 1,
@@ -129,7 +129,7 @@ pub enum Behavior<A> {
     /// or if any behavior in the loop body fails.
     /// Вернет сбой, если условное поведение не удается,
     /// или если какое-либо поведение в тело цикла не выполняется.
-    While(Box<Behavior<A>>, Vec<Behavior<A>>),
+    //While(Box<Behavior<A>>, Vec<Behavior<A>>),
     /// Runs all behaviors in parallel until all succeeded.
     /// Работает все поведение параллельно, пока все получилось.
     ///

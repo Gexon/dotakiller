@@ -30,6 +30,7 @@ const SERVER_IP: &'static str = "192.168.0.131";
 static GROUND_SPEED: i64 = 10;
 static FLORA_SPEED: i64 = 1000;
 static MONSTER_SPEED: i64 = 1;
+static GROUND_SIZE: u32 = 140;
 // 1_000_000ns = 1ms
 static TICK_MAX_TIME: u64 = 50;//Duration::milliseconds(50);
 

@@ -4,6 +4,7 @@ use tinyecs::*;
 use time::PreciseTime;
 
 use ::utility::map::Map;
+use ::utility::enums::Direction;
 
 
 pub struct ClassGround;
@@ -47,7 +48,7 @@ impl Component for WorldMap {}
 
 // куда дует ветер. 0 - это типа север(+Х)
 pub struct WindDirection {
-    pub direction: u8,
+    pub direction: Direction,
     pub start: PreciseTime,
 }
 

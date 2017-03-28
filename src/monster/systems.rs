@@ -118,6 +118,7 @@ use tinyecs::*;
 use time::{PreciseTime, Duration};
 
 use MONSTER_SPEED;
+use GROUND_SIZE;
 
 use ::utility::map::Point;
 use ::utility::enums::*;
@@ -163,7 +164,6 @@ impl System for PerceptionSystem {
                     // Проверяем растет ли дерево по даденным координатам.
                     if !monster_state.view_food && world_map.flora[scan_point] == 1 {
                         monster_state.view_food = true;
-                        println!("Новое событие: монстр {} обнаружил еду!", monster_id.id);
                         break 'outer;
                     }
                 }
@@ -213,6 +213,7 @@ impl System for EventSystem {
             } else if monster_state.view_food {
                 // переключаем событие на Обнаружена еда.
                 behaviour_event.event = BehaviorEventEnum::FoundFood; // наступает событие обнаружена еда
+                println!("Новое событие: монстр {} обнаружил еду!", monster_id.id);
             } else if monster_attr.hungry < monster_attr.danger_hungry {
                 // наступает событие - ГОЛОД
                 // danger_hungry = 960
@@ -268,7 +269,7 @@ impl System for SelectorSystem {
                     println!("ошибка/инициализация текущего выбиральщика, теперь он {}", 0i32);
                 } else {
                     // 3. Контролировать количество попыток выполнения текущей задачи, для предотвращения зацикливания.
-                    println!("текущий выбиральщик {}", selection_tree.cursor);
+                    //println!("текущий выбиральщик {}", selection_tree.cursor);
                     /*event, state
                     let sel = vec![(8, 2, Running), (2, 5, Running), (3, 3, Running), (5, 1, Running), (6, 1, Running) ...];*/
                     let index: usize = selection_tree.cursor as usize;
@@ -278,8 +279,8 @@ impl System for SelectorSystem {
                     if behaviour_event.event as u32 == v_event {
                         // меняем состояние, на соответствующее.
                         behaviour_state.state = BehaviorStateEnum::from_index(v_state);
-                        println!("Обнаружено событие {}", v_event);
-                        println!("переключаю состояние на {}", v_state);
+                        //println!("Обнаружено событие {}", v_event);
+                        //println!("переключаю состояние на {}", v_state);
                     }
                     // 1. Пока узел не вернул выполнено или неудача, не переключать узлы.
                     if behaviour_event.event as u32 != v_event || v_status != Status::Running {
@@ -306,7 +307,7 @@ pub struct BehaviorSystem;
 
 impl System for BehaviorSystem {
     fn aspect(&self) -> Aspect {
-        aspect_all!(MonsterClass, BehaviourState, Position)
+        aspect_all!(MonsterClass, BehaviourState, Position, MonsterState)
     }
 
     fn data_aspects(&self) -> Vec<Aspect> {
@@ -350,150 +351,42 @@ impl System for BehaviorSystem {
                         r_status = Status::Success;
                     }
                 }
+
                 BehaviorStateEnum::Walk => {
                     // тут заставляем монстра ходить туда-сюда, бесцельно, куда подует)
-                    match wind.direction {
-                        0 => {
-                            if position.x < 140f32 - delta {
-                                position.x += delta;
-                            }
-                        }
-                        1 => {
-                            if position.x > position.y * 2f32 && position.x < 140f32 - delta {
-                                position.x += delta;
-                            }
-                        }
-                        2 => {
-                            if position.y > 0f32 + delta {
-                                position.y -= delta;
-                            }
-                        }
-                        3 => {
-                            if position.y < position.x * 2f32 && position.y > 0f32 + delta {
-                                position.y -= delta;
-                            }
-                        }
-                        4 => {
-                            if position.x > 0f32 + delta {
-                                position.x -= delta;
-                            }
-                        }
-                        5 => {
-                            if position.x < position.y * 2f32 && position.x > 0f32 + delta {
-                                position.x -= delta;
-                            }
-                        }
-                        6 => {
-                            if position.y < 140f32 - delta {
-                                position.y += delta;
-                            }
-                        }
-                        7 => {
-                            if position.y > position.x * 2f32 && position.y < 140f32 - delta {
-                                position.y += delta;
-                            }
-                        }
-                        _ => println!("странное направление ветра, вы не находите?"),
-                    }
+                    next_step(&mut position, delta, &wind);
                     entity.add_component(Replication); // произошли изменения монстра.
                     entity.refresh();
+                    println!("монстр {} гуляет", monster_id.id);
                     println!("x:{}, y:{}, монстр {}", position.x, position.y, monster_id.id);
-                    /*  движение по овальной траектории.
-                        x = x_+x_radius*cos(r_ang+2);
-                        y = y_+y_radius*sin(r_ang);
 
-                        X1 = X + R * 0.5;
-                        Y1 = Y + 1.3 * R * 0.8;
-                        0.5 это синус 30
-                        0.8 это косинус 30
-                        R - хз. например 20 клеток.
-                        X, Y - это текущие координаты.
-                    */
-                    //                    let x1: f32 = position.x + 20f32 * 0.5;
-                    //                    let y1: f32 = position.y + 1.3f32 * 20f32 *0.8;
-                    //                    position.x = x1;
-                    //                    position.y = y1;
-                    //                    println!("x:{}, y:{}", position.x, position.y);
                     if BehaviorStateEnum::from_index(v_state) == BehaviorStateEnum::Walk {
                         r_status = Status::Success;
                     }
                 }
 
                 BehaviorStateEnum::FindFood => {
-                    // поиск пищи.
-                    if monster_attr.speed == 1 { monster_attr.speed = 2 }
-                    // перемещаемся по дуге, расставляя целевые точки пути.
-                    //
-                    /*
-                    нужно сначала вычесть координаты точки V1, повернуть вектор V2, потом прибавить V1.
-                    В общем это примерно так:
-                    V3=V2-V1;
-                    V2.x = V3.x*cos(a) - V3.y*sin(a);
-                    V2.y = V3.x*sin(a) + V3.y*cos(a);
-                    V2=V2+V1;
-                    */
-                    /*
-                    https://habrahabr.ru/post/131931/
-                    Чтобы сложить вектора, нам надо просто сложить каждую их составляющую друг с другом.
-                    Например:
-                    (0, 1, 4) + (3, -2, 5) = (0+3, 1-2, 4+5) = (3, -1, 9)
+                    // поиск пищи. ходим по окружности
+                    if monster_attr.speed == 1 { monster_attr.speed = 2 };
+                    next_step_around(&mut position, monster_attr.speed as f32, &mut monster_state);
 
-                    Длина вектора:
-                    |V| = sqrt(x*x + y*y).
-
-                    Нормализованный вектор:
-                    Делим каждый компонент вектора на его длину.
-                    V_n=(x/|V|, y/|V|)
-
-                    Угол между нормализованными векторами:
-                    Θ = acos(AB)
-                    Пример:
-                    Получим нормализованные вектора для (D') и для (V').
-                    D' = D / |D| = (1, 1) / sqrt(1^2 + 1^2) = (1, 1) / sqrt(2) = (0.71, 0.71)
-                    V' = V / |V| = (2, -1) / sqrt(2^2 + (-1)^2) = (2,-1) / sqrt(5) = (0.89, -0.45)
-                    Затем определим угол между ними.
-                    Θ = acos(D'V') = acos(0.71*0.89 + 0.71*(-0.45)) = acos(0.31) = 72
-
-
-                    */
-                    // рассчитываем целевую точку пути:
-                    // вычисляем проекцию вектора, используя старые координаты и текущие.
-                    let v_abx = position.x - monster_state.old_position.x;
-                    let v_aby = position.y - monster_state.old_position.y;
-                    // повернем проекцию вектора на 30 градусов.
-                    // cos 30 grad = 0.866 rad, sin 30 = 0.5
-                    let v_bx = v_abx * 0.866f32 - v_aby * 0.5f32;
-                    let v_by = v_abx * 0.5f32 + v_aby * 0.866f32;
-                    // накладываем проекцию вектора на текущие координаты.
-                    monster_state.target_point.x = v_bx + position.x;
-                    monster_state.target_point.y = v_by + position.y;
-                    // сохраняем текущую точку пути, до перемещения в новое место, для последующих расчетов.
-                    monster_state.old_position.x = position.x;
-                    monster_state.old_position.y = position.y;
-                    // рассчитываем следующий шаг, ближайший к целевой точке пути.
-                    if position.x < monster_state.target_point.x {
-                        if position.x < (140i32 - monster_attr.speed) as f32 {
-                            position.x += monster_attr.speed as f32;// перемещаемся к этой точке по Х
-                        }
-                    } else if position.x > monster_state.target_point.x &&
-                        position.x > monster_attr.speed as f32 {
-                        position.x -= monster_attr.speed as f32;
-                    }
-
-                    if position.y < monster_state.target_point.y {
-                        if position.y < (140i32 - monster_attr.speed) as f32 {
-                            position.x += monster_attr.speed as f32;// перемещаемся к этой точке по У
-                        }
-                    } else if position.y > monster_state.target_point.y &&
-                        position.y > monster_attr.speed as f32 {
-                        position.y -= monster_attr.speed as f32;
-                    }
                     entity.add_component(Replication); // произошли изменения монстра.
                     entity.refresh();
+                    //println!("монстр {} ищет хавку", monster_id.id);
                     println!("x:{}, y:{}, монстр {}", position.x, position.y, monster_id.id);
                 }
+
+                BehaviorStateEnum::Meal => {
+                    monster_attr.hungry = 1000;
+                    println!("монстр {} поел", monster_id.id);
+                    if BehaviorStateEnum::from_index(v_state) == BehaviorStateEnum::Meal {
+                        r_status = Status::Success;
+                    }
+                }
+
                 _ => {}
             }
+
             let r_selector = (_v_event, v_state, r_status);
             selection_tree.selector[index] = r_selector; // (event, state, Status)
             // фиксируем текущее время
@@ -554,3 +447,117 @@ impl System for BioSystems {
 Когда объект достигает поля цели, можно построить путь, отследив родительские узлы вплоть до узла, у которого нет родительского элемента (это начальный узел).
 
 При загрузке большого количества запросов путей агент может либо подождать, либо, не дожидаясь выдачи путей, просто начать двигаться в нужном направлении (например, по алгоритму «Столкнуться и повернуть»).*/
+
+
+/// Расчет следующего шага монстра.
+// Вывезли наружу расчет следующего шага монстра.
+pub fn next_step(position: &mut Position, delta: f32, wind: &WindDirection) {
+    match wind.direction {
+        Direction::North => {
+            if position.x < (GROUND_SIZE as f32 - delta) {
+                position.x += delta;
+            }
+        }
+        Direction::NorthWest => {
+            if position.x > position.y * 2f32 && position.x < (GROUND_SIZE as f32 - delta) {
+                position.x += delta;
+            }
+        }
+        Direction::West => {
+            if position.y > 0f32 + delta {
+                position.y -= delta;
+            }
+        }
+        Direction::WestSouth => {
+            if position.y < position.x * 2f32 && position.y > 0f32 + delta {
+                position.y -= delta;
+            }
+        }
+        Direction::South => {
+            if position.x > 0f32 + delta {
+                position.x -= delta;
+            }
+        }
+        Direction::SouthEast => {
+            if position.x < position.y * 2f32 && position.x > 0f32 + delta {
+                position.x -= delta;
+            }
+        }
+        Direction::East => {
+            if position.y < (GROUND_SIZE as f32 - delta) {
+                position.y += delta;
+            }
+        }
+        Direction::EastNorth => {
+            if position.y > position.x * 2f32 && position.y < (GROUND_SIZE as f32 - delta) {
+                position.y += delta;
+            }
+        }
+    }
+}
+
+
+/// Расчет следующего шага по кругу монстра.
+// По кругу должен ходить.
+pub fn next_step_around(position: &mut Position, delta: f32, monster_state: &mut MonsterState) {
+    // проверяем достижение цели
+    if position.x as u32 == monster_state.target_point.x as u32
+        && position.y as u32 == monster_state.target_point.y as u32 {
+        // цель достигнута, ставим новую цель:
+        // выбираем новую цель по направлению монстра.
+        // две клетки вперед и одну вправо. меняем направление монстра.
+        match monster_state.move_target.direct {
+            Direction::North | Direction::NorthWest => {
+                if (position.x as u32) < GROUND_SIZE - 2 { monster_state.target_point.x += 2f32; };
+                if (position.y as u32) > 1 { monster_state.target_point.y -= 1f32; };
+                monster_state.move_target.direct = Direction::West;
+            }
+
+            Direction::West | Direction::WestSouth => {
+                if (position.y as u32) > 2 { monster_state.target_point.y -= 2f32; };
+                if (position.x as u32) > 1 { monster_state.target_point.x -= 1f32; };
+                monster_state.move_target.direct = Direction::South;
+            }
+
+            Direction::South | Direction::SouthEast => {
+                if (position.x as u32) > 2 { monster_state.target_point.x -= 2f32; };
+                if (position.y as u32) < GROUND_SIZE - 1 { monster_state.target_point.y += 1f32; };
+                monster_state.move_target.direct = Direction::East;
+            }
+
+            Direction::East | Direction::EastNorth => {
+                if (position.y as u32) < GROUND_SIZE - 2 { monster_state.target_point.y += 2f32; };
+                if (position.x as u32) < GROUND_SIZE - 1 { monster_state.target_point.x += 1f32; };
+                monster_state.move_target.direct = Direction::North;
+            }
+        }
+        println!("NEW target_x {}, target_y {}", monster_state.target_point.x, monster_state.target_point.y);
+    } else {
+        // цель не достигнута, делаем шаг в сторону цели.
+        // расчеты по Х
+        if position.x < monster_state.target_point.x {
+            monster_state.old_position.x = position.x;
+            if position.x + delta > monster_state.target_point.x {
+                position.x = monster_state.target_point.x
+            } else { position.x += delta };
+        } else if position.x > monster_state.target_point.x {
+            monster_state.old_position.x = position.x;
+            if position.x - delta < monster_state.target_point.x {
+                position.x = monster_state.target_point.x
+            } else { position.x -= delta };
+        }
+
+        // расчеты по Y
+        if position.y < monster_state.target_point.y {
+            monster_state.old_position.y = position.y;
+            if position.y + delta > monster_state.target_point.y {
+                position.y = monster_state.target_point.y
+            } else { position.y += delta };
+        } else if position.y > monster_state.target_point.y {
+            monster_state.old_position.y = position.y;
+            if position.y - delta < monster_state.target_point.y {
+                position.y = monster_state.target_point.y
+            } else { position.y -= delta };
+        }
+    }
+}

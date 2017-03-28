@@ -4,6 +4,7 @@ use tinyecs::*;
 use time::PreciseTime;
 
 use ::utility::map::Map;
+use ::utility::enums::Direction;
 use ::utility::map::Size;
 use ::ground::components::*;
 use ::ground::systems::*;
@@ -28,7 +29,7 @@ pub fn init(dk_world: &mut World) {
             flora: Map::new_empty(Size(140, 140), 0u8, 0u8),
             monster: Map::new_empty(Size(140, 140), 0u8, 0u8),
         });
-        entity.add_component(WindDirection { direction: 0, start: PreciseTime::now() });
+        entity.add_component(WindDirection { direction: Direction::North, start: PreciseTime::now() });
         entity.add_component(WorldLastId {
             flora_id: 0,
             monster_id: 0,

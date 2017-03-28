@@ -3,13 +3,14 @@
 use tinyecs::*;
 use time::{PreciseTime};
 
-use ::utility::map::Map;
+//use ::utility::map::Map;
 use ::utility::enums::*;
 
 /// Координаты на полигоне.
 pub struct PositionM {
     pub x: f32,
     pub y: f32,
+    pub direct: Direction,
 }
 
 /// метка принадлежности к классу монстров.
@@ -63,9 +64,9 @@ impl Component for MonsterAttributes {}
 
 /// тут будем хранить все объекты на карте.
 pub struct _MonsterMaps {
-    pub view_map: Map<u8>,
-    pub foods_map: Map<u8>,
-    pub waters_map: Map<u8>,
+    //pub view_map: Map<u8>,
+    //pub foods_map: Map<u8>,
+    //pub waters_map: Map<u8>,
 }
 
 impl Component for _MonsterMaps {}
@@ -145,7 +146,7 @@ impl SelectionTree {
         let sel = vec![
             (BehaviorEventEnum::NoEvent as u32, BehaviorStateEnum::Walk as u32, Status::Running),
             (BehaviorEventEnum::FoundFood as u32, BehaviorStateEnum::Meal as u32, Status::Running),
-            //(BehaviorEventEnum::ComeHungry as u32, BehaviorStateEnum::FindFood as u32, Status::Running),
+            (BehaviorEventEnum::ComeHungry as u32, BehaviorStateEnum::FindFood as u32, Status::Running),
             (BehaviorEventEnum::ComeTired as u32, BehaviorStateEnum::Sleep as u32, Status::Running),
             (BehaviorEventEnum::EatFull as u32, BehaviorStateEnum::Sleep as u32, Status::Running),
         ]; // если событие 6, то переключить сосотояние на 2, с проверкой приоритетов и выполнения текущих задач.

@@ -2,6 +2,19 @@
 // спс Adaman'у, за подсказки по энумам.
 
 
+/// Направление
+pub enum Direction {
+    North = 0,
+    NorthWest = 1,
+    West = 2,
+    WestSouth = 3,
+    South = 4,
+    SouthEast = 5,
+    East = 6,
+    EastNorth = 7,
+}
+
+
 /// Состояния монстра
 #[derive(PartialEq, Copy, Clone)]
 pub enum BehaviorStateEnum {
@@ -47,23 +60,23 @@ impl BehaviorStateEnum {
 #[derive(PartialEq, Copy, Clone)]
 pub enum BehaviorEventEnum {
     // цифры обозначают приоритет события.
-    //      0. Инициализация, ошибка.
+    // 0. Инициализация, ошибка.
     Init = 0,
-    //      1. Обнаружена вода.
+    // 1. Обнаружена вода.
     _FoundWater = 1,
-    //      2. Обнаружена еда.
+    // 2. Обнаружена еда.
     FoundFood = 2,
-    //      3. Наступил голод.
+    // 3. Наступил голод.
     ComeHungry = 3,
-    //      4. Наступила жажда.
+    // 4. Наступила жажда.
     _ComeThirsty = 4,
-    //      5. Утомился.
+    // 5. Утомился.
     ComeTired = 5,
-    //      6. Монстр насытился.
+    // 6. Монстр насытился.
     EatFull = 6,
-    //      7. Монстр напился.
+    // 7. Монстр напился.
     _DrinkFull = 7,
-    //      8. Нет событий.
+    // 8. Нет событий.
     NoEvent = 8,
 }
 

@@ -5,6 +5,7 @@ use time::{PreciseTime, Duration};
 use FLORA_SPEED;
 
 use ::utility::map::Point;
+use ::utility::enums::Direction;
 use ::ground::components::*;
 use ::flora::components::*;
 
@@ -39,27 +40,26 @@ impl System for PlantReproductionSystem {
                     let mut target_y = position.y;
                     // определяем координаты выпавшей семки
                     match wind.direction {
-                        0 => { if position.x < 140f32 { target_x = position.x + 1f32 } },
-                        1 => {
+                        Direction::North => { if position.x < 140f32 { target_x = position.x + 1f32 } },
+                        Direction::NorthWest => {
                             if position.x < 140f32 { target_x = position.x + 1f32 };
                             if position.y > 0f32 { target_y = position.y - 1f32 };
                         },
-                        2 => { if position.y > 0f32 { target_y = position.y - 1f32 }; },
-                        3 => {
+                        Direction::West => { if position.y > 0f32 { target_y = position.y - 1f32 }; },
+                        Direction::WestSouth => {
                             if position.x > 0f32 { target_x = position.x - 1f32 };
                             if position.y > 0f32 { target_y = position.y - 1f32 };
                         },
-                        4 => { if position.x > 0f32 { target_x = position.x - 1f32 } },
-                        5 => {
+                        Direction::South => { if position.x > 0f32 { target_x = position.x - 1f32 } },
+                        Direction::SouthEast => {
                             if position.x > 0f32 { target_x = position.x - 1f32 };
                             if position.y < 140f32 { target_y = position.y + 1f32 };
                         },
-                        6 => { if position.y < 140f32 { target_y = position.y + 1f32 }; },
-                        7 => {
+                        Direction::East => { if position.y < 140f32 { target_y = position.y + 1f32 }; },
+                        Direction::EastNorth => {
                             if position.x < 140f32 { target_x = position.x + 1f32 };
                             if position.y < 140f32 { target_y = position.y + 1f32 };
                         },
-                        _ => println!("странное направление ветра, вы не находите?"),
                     }
                     //println!("Ветер уносит семена в направлении: {}", wind.direction);
                     // поручаем спавнеру, засумонить в наш мир пальму.

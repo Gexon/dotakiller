@@ -123,9 +123,9 @@ impl System for SpawnMonsterSystem {
                     selector_time: PreciseTime::now(),
                     perception_time: PreciseTime::now(),
                     dead: 0,
-                    move_target: PositionM { x: -1f32, y: -1f32 },
-                    old_position: PositionM { x: -1f32, y: -1f32 },
-                    target_point: PositionM { x: -1f32, y: -1f32 },
+                    move_target: PositionM { x: 0f32, y: 0f32, direct: Direction::North },
+                    old_position: PositionM { x: 0f32, y: 0f32, direct: Direction::North },
+                    target_point: PositionM { x: 0f32, y: 0f32, direct: Direction::North },
                 });
                 entity_object.add_component(MonsterId { id: last_id.monster_id });
                 entity_object.add_component(SelectionTree::new());
@@ -165,7 +165,17 @@ impl System for WindDirectionSystem {
 
         // меняем ветер
         if wind.start.to(PreciseTime::now()) > Duration::seconds(8 * GROUND_SPEED) {
-            if wind.direction == 7 { wind.direction = 0 } else { wind.direction += 1; }
+            //if wind.direction == 7 { wind.direction = 0 } else { wind.direction += 1; }
+            match wind.direction {
+                Direction::North => wind.direction = Direction::NorthWest,
+                Direction::NorthWest => wind.direction = Direction::West,
+                Direction::West => wind.direction = Direction::WestSouth,
+                Direction::WestSouth => wind.direction = Direction::South,
+                Direction::South => wind.direction = Direction::SouthEast,
+                Direction::SouthEast => wind.direction = Direction::East,
+                Direction::East => wind.direction = Direction::EastNorth,
+                Direction::EastNorth => wind.direction = Direction::North,
+            }
             //println!("Ветер меняет направление на {}", wind.direction);
             // фиксируем текущее время
             wind.start = PreciseTime::now();

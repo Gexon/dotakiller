@@ -30,9 +30,12 @@ impl Component for MonsterId {}
 /// информация о состоянии монстра
 pub struct MonsterState {
     pub state: i32,
-    pub low_power: bool, // устал
-    pub low_food: bool,  // голоден
-    pub view_food: bool, // увидел еду
+    // устал
+    pub low_power: bool,
+    // голоден
+    pub low_food: bool,
+    // увидел еду
+    pub view_food: bool,
 
     pub growth_time: PreciseTime,
     pub reproduction_time: PreciseTime,
@@ -41,6 +44,7 @@ pub struct MonsterState {
     pub behavior_time: PreciseTime,
     pub selector_time: PreciseTime,
     pub perception_time: PreciseTime,
+
     pub dead: i32,
     pub move_target: PositionM,
     pub old_position: PositionM,
@@ -83,35 +87,25 @@ pub struct _BehaviourGlobalState {
 
 impl Component for _BehaviourGlobalState {}
 
-/// Сосотояние монстра, для Behaviour Tree
-pub struct BehaviourState {
-    // и здесь тоже может быть только одно состояние.
-    //  и кто-то должен его переключать =)
-    pub state: BehaviorStateEnum,
-}
 
-impl Component for BehaviourState {}
-
-
-/// Событий происходящее с монстром, для Behaviour Tree
-pub struct BehaviourEvent {
-    // видимо может быть только одно событие,
-    // и обработчик событий loop event при отсутствии событий у монстра,
-    // выставляет ему "6. Нет событий"
-    pub event: BehaviorEventEnum,
+/// События происходящие с монстром
+pub struct MonsterConditions {
+    // возникшие события. Может быть несколько.
+    pub event: Vec<BehaviorEventEnum>,
+    // текщие действие или экшон
+    pub action: BehaviorActions,
+    // текущее состояние дерева. Здесь тоже может быть только одно состояние.
+    pub state: BehaviorState,
 }
 
 impl Component for BehaviourEvent {}
 
 /// Программатор Selection tree
-// хранит код, связки, условия переключения состояний.
+// тут храним граф.
 pub struct SelectionTree {
-    // тут что-то типа кода алгоритма. правила обхода узлов
-    // это вектор с массивами. Содержат программу поведения.
-    pub selector: Vec<(u32, u32, Status)>,
-    // указатель на текущую активную ячейку селектора.
-    pub cursor: i32,
-    // предыдущая ячейка. храним индекс ячейки id
+    // это вектор с узлами графа. Содержат программу поведения.
+    pub selector: NodeBehavior,
+    // родительский узел хранит курсор на активный дочерний узел.
 
     /*
     - Дерево ИИ переоценивает ИИ-ассоциированные Selection Variables.
@@ -133,27 +127,37 @@ pub struct SelectionTree {
 
 impl SelectionTree {
     pub fn new() -> SelectionTree {
-        // описание приоритета событий, для предотвращения зацикливания.
-        // ComeHungry - 1(самый высокий приоритет), ComeTired - 2
-        // пока узел не вернул выполнено или неудача, не запускать другие задачи.
         // возможно необходимо выставить ограничение на количество попыток выполнения текущей задачи,
         // чтоб предотвратить зацикливание.
         //
-        // описание графа поведения при событии ComeTired(усталость)
-        //
-        // храним программу селектора. в будущем загрузка из БД
-        //     (event, state, Status), (event, state, Status)
-        let sel = vec![
-            (BehaviorEventEnum::NoEvent as u32, BehaviorStateEnum::Walk as u32, Status::Running),
-            (BehaviorEventEnum::FoundFood as u32, BehaviorStateEnum::Meal as u32, Status::Running),
-            (BehaviorEventEnum::ComeHungry as u32, BehaviorStateEnum::FindFood as u32, Status::Running),
-            (BehaviorEventEnum::ComeTired as u32, BehaviorStateEnum::Sleep as u32, Status::Running),
-            (BehaviorEventEnum::EatFull as u32, BehaviorStateEnum::Sleep as u32, Status::Running),
-        ]; // если событие 6, то переключить сосотояние на 2, с проверкой приоритетов и выполнения текущих задач.
+        // заполняем граф руками, в будущем загрузка из БД.
+        let node_root = vec![
+            NodeBehavior {
+                behavior: BehaviorEnum::Sequencer(vec![
+                    NodeBehavior {
+                        behavior: BehaviorEnum::If(
+                            BehaviorActions::CheckHungry,
+                            BehaviorActions::FindFood,
+                            BehaviorActions::Walk),
+                        cursor: 0,
+                        status: Status::Running,
+                    },
+                    NodeBehavior {
+                        behavior: BehaviorEnum::If(
+                            BehaviorActions::CheckTired,
+                            BehaviorActions::Sleep,
+                            BehaviorActions::Walk,
+                        ),
+                        cursor: 0,
+                        status: Status::Running,
+                    }
+                ]),
+                cursor: 0,
+                status: Status::Running,
+            }
+        ];
         SelectionTree {
-            selector: sel,
-            cursor: -1,
-            // текущий узел. -1 это инициализация либо ошибка.
+            selector: node_root,
         }
     }
 }

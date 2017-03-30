@@ -247,6 +247,7 @@ impl System for EventSystem {
 
 /// Выбиральщик состояний дерева поведения
 // используя код программатора SelectionTree, переключает состояния.
+// используем выбиральщик, чтоб каждый узел выполнять за тик.
 pub struct SelectorSystem;
 
 impl System for SelectorSystem {
@@ -260,6 +261,8 @@ impl System for SelectorSystem {
             let mut selection_tree = entity.get_component::<SelectionTree>();
             let mut behaviour_state = entity.get_component::<BehaviourState>(); // состояние
             let behaviour_event = entity.get_component::<BehaviourEvent>(); // события
+
+            exec_node(selection_tree.selector);
 
             let len = selection_tree.selector.len();
             if len > 0 {
@@ -301,11 +304,10 @@ impl System for SelectorSystem {
 }
 
 /// Активатор. Приводит в действие.
-// считывает состояние и выполняет его, либо продолжает выполнение.
-// система поведения.
-pub struct BehaviorSystem;
+// считывает текущее действие(экшон) и выполняет его.
+pub struct ActionSystem; // todo переименовать в ActionSystem
 
-impl System for BehaviorSystem {
+impl System for ActionSystem {
     fn aspect(&self) -> Aspect {
         aspect_all!(MonsterClass, BehaviourState, Position, MonsterState)
     }
@@ -315,17 +317,8 @@ impl System for BehaviorSystem {
     }
 
     fn process_d(&mut self, entity: &mut Entity, data: &mut DataList) {
-        // смотрит текущее состояние и выполняет действие.
+        // смотрит текущее действие и выполняет его.
         // тут заставляем монстра ходить, пить, искать.
-        //    0.  Инициализация, ошибка.
-        //    1.  Сон. Монстр ждет, в этот момент с ним ничего не происходит.
-        //    2.  Бодрствование. Случайное перемещение по полигону.
-        //    3.  Поиск пищи.
-        //    4.  Поиск воды.
-        //    5.  Прием пищи.
-        //    6.  Прием воды.
-        //    7.  Перемещение к цели.
-        //    8.  Проверка достижения цели.
         let mut monster_state = entity.get_component::<MonsterState>();
         if monster_state.behavior_time.to(PreciseTime::now()) > Duration::seconds(2 * MONSTER_SPEED) {
             let mut selection_tree = entity.get_component::<SelectionTree>();
@@ -560,4 +553,22 @@ pub fn next_step_around(position: &mut Position, delta: f32, monster_state: &mut
             } else { position.y -= delta };
         }
     }
+}
+
+
+/// Обход вектора
+pub fn exec_node(selector: SelectionTree) -> Status {
+    let sel_len = selector.len();
+
+    for node in selector {
+
+        Status::Running
+    }
+
+    /*// Функциональный подход
+    let sum_of_squared_odd_numbers: u32 =
+        (0..).map(|n| n * n)             // Все натуральные числа в квадрате
+             .take_while(|&n| n < upper) // Ниже верхнего предела
+             .filter(|n| is_odd(*n))     // Это нечётные
+             .fold(0, |sum, i| sum + i); // Суммируем*/
 }

@@ -129,8 +129,11 @@ impl System for SpawnMonsterSystem {
                 });
                 entity_object.add_component(MonsterId { id: last_id.monster_id });
                 entity_object.add_component(SelectionTree::new());
-                entity_object.add_component(BehaviourState { state: BehaviorStateEnum::Init });
-                entity_object.add_component(BehaviourEvent { event: BehaviorEventEnum::Init });
+                entity_object.add_component(BehaviourEvents {
+                    event: vec![BehaviorEventEnum::NoEvent],
+                    action: BehaviorActions::Init,
+
+                });
                 entity_object.add_component(MonsterAttributes {
                     speed: 1,
                     power: 1000,

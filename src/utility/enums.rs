@@ -16,6 +16,7 @@ pub enum Direction {
 
 /// Действия монстра.
 // тут будут действия что выполняет монстр.
+#[derive(Copy, Clone, RustcDecodable, RustcEncodable, PartialEq, Eq, Debug)]
 pub enum BehaviorActions {
     // 0. ХЗ, резервёд Ё
     Init,
@@ -80,7 +81,8 @@ pub enum BehaviorActions {
 //}
 
 /// Собятия монстра
-#[derive(PartialEq, Copy, Clone)]
+//#[derive(PartialEq, Copy, Clone)]
+#[derive(Copy, Clone, RustcDecodable, RustcEncodable, PartialEq, Eq, Debug)]
 pub enum BehaviorEventEnum {
     // Обнаружена вода.
     _FoundWater,
@@ -117,27 +119,27 @@ pub enum BehaviorEventEnum {
 //}
 
 /// Список узлов графа
-pub enum BehaviorEnum<A> {
+pub enum BehaviorEnum {
     //функция, которая должна выполниться при посещении данного узла.
-    Action(A),
+    Action(BehaviorActions),
     //чтобы определить, выполнять или нет следующие за ним узлы
-    If(Box<BehaviorEnum<A>>, Box<BehaviorEnum<A>>, Box<BehaviorEnum<A>>),
+    If(Box<BehaviorEnum>, Box<BehaviorEnum>, Box<BehaviorEnum>),
     //последовательность, до первого узла Fail, либо выполняет все и возвращает Success
-    Sequencer(Vec<BehaviorEnum<A>>),
+    Sequencer(Vec<NodeBehavior>),
     //до первого узла возвращающего Success
-    Selector(Vec<BehaviorEnum<A>>),
+    Selector(Vec<NodeBehavior>),
     //роль цикла
-    While(Box<BehaviorEnum<A>>, Vec<BehaviorEnum<A>>),
+    While(Box<BehaviorEnum>, Vec<BehaviorEnum>),
 }
 
 /// Узел графа
 pub struct NodeBehavior {
     // функция, которая должна выполниться при посещении данного узла.
-    behavior: BehaviorEnum,
+    pub behavior: BehaviorEnum,
     // курсор, указывает на выполняющийся дочерний узел.
-    cursor: usize,
+    pub cursor: usize,
     // статус выполнения.
-    status: Status,
+    pub status: Status,
 }
 
 

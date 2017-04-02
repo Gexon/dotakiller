@@ -89,16 +89,16 @@ impl Component for _BehaviourGlobalState {}
 
 
 /// События происходящие с монстром
-pub struct MonsterConditions {
+pub struct BehaviourEvents {
     // возникшие события. Может быть несколько.
     pub event: Vec<BehaviorEventEnum>,
     // текщие действие или экшон
     pub action: BehaviorActions,
     // текущее состояние дерева. Здесь тоже может быть только одно состояние.
-    pub state: BehaviorState,
+    //pub state: BehaviorState,
 }
 
-impl Component for BehaviourEvent {}
+impl Component for BehaviourEvents {}
 
 /// Программатор Selection tree
 // тут храним граф.
@@ -131,31 +131,31 @@ impl SelectionTree {
         // чтоб предотвратить зацикливание.
         //
         // заполняем граф руками, в будущем загрузка из БД.
-        let node_root = vec![
-            NodeBehavior {
-                behavior: BehaviorEnum::Sequencer(vec![
-                    NodeBehavior {
-                        behavior: BehaviorEnum::If(
-                            BehaviorActions::CheckHungry,
-                            BehaviorActions::FindFood,
-                            BehaviorActions::Walk),
-                        cursor: 0,
-                        status: Status::Running,
-                    },
-                    NodeBehavior {
-                        behavior: BehaviorEnum::If(
-                            BehaviorActions::CheckTired,
-                            BehaviorActions::Sleep,
-                            BehaviorActions::Walk,
-                        ),
-                        cursor: 0,
-                        status: Status::Running,
-                    }
-                ]),
-                cursor: 0,
-                status: Status::Running,
-            }
-        ];
+        let node_root: NodeBehavior = NodeBehavior {
+            behavior: BehaviorEnum::Sequencer(vec![
+                NodeBehavior {
+                    behavior: BehaviorEnum::If(
+                        Box::new(BehaviorEnum::Action(BehaviorActions::CheckHungry)),
+                        Box::new(BehaviorEnum::Action(BehaviorActions::FindFood)),
+                        Box::new(BehaviorEnum::Action(BehaviorActions::Walk)),
+                    ),
+                    cursor: 0,
+                    status: Status::Running,
+                },
+                NodeBehavior {
+                    behavior: BehaviorEnum::If(
+                        Box::new(BehaviorEnum::Action(BehaviorActions::CheckTired)),
+                        Box::new(BehaviorEnum::Action(BehaviorActions::Sleep)),
+                        Box::new(BehaviorEnum::Action(BehaviorActions::Walk)),
+                    ),
+                    cursor: 0,
+                    status: Status::Running,
+                }
+            ]),
+            cursor: 0,
+            status: Status::Running,
+        };
+
         SelectionTree {
             selector: node_root,
         }

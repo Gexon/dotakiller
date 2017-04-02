@@ -122,14 +122,14 @@ pub enum BehaviorEventEnum {
 pub enum BehaviorEnum {
     //функция, которая должна выполниться при посещении данного узла.
     Action(BehaviorActions),
-    //чтобы определить, выполнять или нет следующие за ним узлы
+    // тут все ясно
     If(Box<BehaviorEnum>, Box<BehaviorEnum>, Box<BehaviorEnum>),
     //последовательность, до первого узла Fail, либо выполняет все и возвращает Success
     Sequencer(Vec<NodeBehavior>),
     //до первого узла возвращающего Success
-    Selector(Vec<NodeBehavior>),
+    _Selector(Vec<NodeBehavior>),
     //роль цикла
-    While(Box<BehaviorEnum>, Vec<BehaviorEnum>),
+    _While(Box<BehaviorEnum>, Vec<BehaviorEnum>),
 }
 
 /// Узел графа

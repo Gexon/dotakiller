@@ -13,7 +13,7 @@ pub mod systems;
 /// инициализация. создаем первого монстра.
 pub fn init(monster_world: &mut World) {
     monster_world.set_system(SelectorSystem);
-    monster_world.set_system(ActionSystem);
+    //monster_world.set_system(ActionSystem);
     monster_world.set_system(EventSystem);
     monster_world.set_system(BioSystems);
     monster_world.set_system(PerceptionSystem);

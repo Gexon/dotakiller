@@ -126,10 +126,10 @@ impl System for ReplicationServerSystem {
                 // рассылаем всем клиентам "updherb idHerb classHerb stateHerb x y"
                 let s = format!("updherb {} {} {} {} {}", id_herb.id, class.name, state.state, position.x, position.y);
                 let smsg: String = s.to_string();
-                let smsg_len = smsg.len();
-                let mut recv_buf: Vec<u8> = Vec::with_capacity(smsg_len);
-                unsafe { recv_buf.set_len(smsg_len); }
-                recv_buf = smsg.into_bytes();
+                //let smsg_len = smsg.len();
+                //let mut recv_buf: Vec<u8> = Vec::with_capacity(smsg_len);
+                //unsafe { recv_buf.set_len(smsg_len); }
+                let recv_buf = smsg.into_bytes();
                 self.server_data.replication(recv_buf.to_vec());
                 flora.remove_component::<Replication>(); // убираем компонент репликации.
                 flora.refresh();
@@ -138,10 +138,10 @@ impl System for ReplicationServerSystem {
             if exist_new_conn {
                 let s = format!("updherb {} {} {} {} {}", id_herb.id, class.name, state.state, position.x, position.y);
                 let smsg: String = s.to_string();
-                let smsg_len = smsg.len();
-                let mut recv_buf2: Vec<u8> = Vec::with_capacity(smsg_len);
-                unsafe { recv_buf2.set_len(smsg_len); }
-                recv_buf2 = smsg.into_bytes();
+                //let smsg_len = smsg.len();
+                //let mut recv_buf2: Vec<u8> = Vec::with_capacity(smsg_len);
+                //unsafe { recv_buf2.set_len(smsg_len); }
+                let recv_buf2 = smsg.into_bytes();
                 recv_obj.push(recv_buf2.to_vec());
                 // отсылаем по 500 штук.
                 if recv_obj.len() > 500 {
@@ -163,10 +163,10 @@ impl System for ReplicationServerSystem {
 
                 let s = format!("updmonstr {} {} {} {} {}", id_monstr.id, class.name, state.state, position.x, position.y);
                 let smsg: String = s.to_string();
-                let smsg_len = smsg.len();
-                let mut recv_buf: Vec<u8> = Vec::with_capacity(smsg_len);
-                unsafe { recv_buf.set_len(smsg_len); }
-                recv_buf = smsg.into_bytes();
+                //let smsg_len = smsg.len();
+                //let mut recv_buf: Vec<u8> = Vec::with_capacity(smsg_len);
+                //unsafe { recv_buf.set_len(smsg_len); }
+                let recv_buf = smsg.into_bytes();
                 self.server_data.replication(recv_buf.to_vec());
 
                 monster.remove_component::<Replication>(); // убираем компонент репликации.

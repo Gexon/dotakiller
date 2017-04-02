@@ -116,16 +116,16 @@ impl Connection {
                         self.name = return_name;
                         self.is_reset = return_reset;
                         // вектор с сообщением для рассылки.
-                        let smsg_len = smsg.len();
-                        recv2_buf = Vec::with_capacity(smsg_len);
-                        unsafe { recv2_buf.set_len(smsg_len); }
+                        //let smsg_len = smsg.len();
+                        //recv2_buf = Vec::with_capacity(smsg_len);
+                        //unsafe { recv2_buf.set_len(smsg_len); }
                         recv2_buf = smsg.into_bytes();
                     },
                     "ping" => {
                         let smsg: String = s.to_string();
-                        let smsg_len = smsg.len();
-                        recv2_buf = Vec::with_capacity(smsg_len);
-                        unsafe { recv2_buf.set_len(smsg_len); }
+                        //let smsg_len = smsg.len();
+                        //recv2_buf = Vec::with_capacity(smsg_len);
+                        //unsafe { recv2_buf.set_len(smsg_len); }
                         recv2_buf = smsg.into_bytes();
                     },
                     _ => (),

@@ -108,20 +108,21 @@ impl System for SpawnMonsterSystem {
                 let entity_object = world.entity_manager.create_entity();
                 entity_object.add_component(Name { name: spawn_point.name.to_string() });
                 entity_object.add_component(Position { x: spawn_point.x, y: spawn_point.y });
-                entity_object.add_component(MonsterClass);
-                entity_object.add_component(Replication); // произошли изменения монстра.
-                entity_object.add_component(MonsterState {
-                    state: 1,
-                    low_power: false,
-                    low_food: false,
-                    view_food: false,
+                entity_object.add_component(MonsterClass{
                     growth_time: PreciseTime::now(),
                     reproduction_time: PreciseTime::now(),
                     behavior_time: PreciseTime::now(),
                     bios_time: PreciseTime::now(),
                     event_time: PreciseTime::now(),
                     selector_time: PreciseTime::now(),
-                    perception_time: PreciseTime::now(),
+                    perception_time: PreciseTime::now()
+                });
+                entity_object.add_component(Replication); // произошли изменения монстра.
+                entity_object.add_component(MonsterState {
+                    state: 1,
+                    low_power: false,
+                    low_food: false,
+                    view_food: false,
                     dead: 0,
                     move_target: PositionM { x: 0f32, y: 0f32, direct: Direction::North },
                     old_position: PositionM { x: 0f32, y: 0f32, direct: Direction::North },

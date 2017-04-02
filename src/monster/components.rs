@@ -14,7 +14,20 @@ pub struct PositionM {
 }
 
 /// метка принадлежности к классу монстров.
-pub struct MonsterClass;
+pub struct MonsterClass{
+    // убрал эти говнотаймеры сюда из MonsterState
+    // т.к. получение таймера перед всеми работами с сущностью
+    // в части передачи entity в функцию и из этой функции снова в функцию,
+    // затем при попытке прочитать MonsterState как mut
+    // приводило к #сразукраш
+    pub growth_time: PreciseTime,
+    pub reproduction_time: PreciseTime,
+    pub bios_time: PreciseTime,
+    pub event_time: PreciseTime,
+    pub behavior_time: PreciseTime,
+    pub selector_time: PreciseTime,
+    pub perception_time: PreciseTime,
+}
 
 impl Component for MonsterClass {}
 
@@ -36,14 +49,6 @@ pub struct MonsterState {
     pub low_food: bool,
     // увидел еду
     pub view_food: bool,
-
-    pub growth_time: PreciseTime,
-    pub reproduction_time: PreciseTime,
-    pub bios_time: PreciseTime,
-    pub event_time: PreciseTime,
-    pub behavior_time: PreciseTime,
-    pub selector_time: PreciseTime,
-    pub perception_time: PreciseTime,
 
     pub dead: i32,
     pub move_target: PositionM,

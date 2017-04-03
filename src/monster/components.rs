@@ -14,7 +14,7 @@ pub struct PositionM {
 }
 
 /// метка принадлежности к классу монстров.
-pub struct MonsterClass{
+pub struct MonsterClass {
     // убрал эти говнотаймеры сюда из MonsterState
     // т.к. получение таймера перед всеми работами с сущностью
     // в части передачи entity в функцию и из этой функции снова в функцию,
@@ -141,7 +141,11 @@ impl SelectionTree {
                 NodeBehavior {
                     behavior: BehaviorEnum::If(
                         Box::new(BehaviorEnum::Action(BehaviorActions::CheckHungry)),
-                        Box::new(BehaviorEnum::Action(BehaviorActions::FindFood)),
+                        Box::new(BehaviorEnum::If(
+                            Box::new(BehaviorEnum::Action(BehaviorActions::FindFood)),
+                            Box::new(BehaviorEnum::Action(BehaviorActions::Meal)),
+                            Box::new(BehaviorEnum::Action(BehaviorActions::Init)),
+                        )),
                         Box::new(BehaviorEnum::Action(BehaviorActions::Walk)),
                     ),
                     cursor: 0,

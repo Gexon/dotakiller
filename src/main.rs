@@ -34,6 +34,7 @@ static GROUND_SIZE: u32 = 140;
 // 1_000_000ns = 1ms
 static TICK_MAX_TIME: u64 = 50;//Duration::milliseconds(50);
 
+
 fn main() {
     utility::init(); // запускаем логгер.
     let mut dk_world = World::new(); // создаем мир компонентной системы.

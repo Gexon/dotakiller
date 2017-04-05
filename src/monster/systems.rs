@@ -185,7 +185,6 @@ impl System for EventSystem {
             if monster_state.view_food
                 // переключаем событие на Обнаружена еда.
                 && !behaviour_event.event.contains(&BehaviorEventEnum::FoundFood) {
-                //behaviour_event.event.iter().any(|ev| *ev != BehaviorEventEnum::FoundFood)
                 // если в векторе behaviour_events.event, нет события FoundFood
                 // то, добавляем его туда.
                 behaviour_event.event.push(BehaviorEventEnum::FoundFood);
@@ -197,8 +196,8 @@ impl System for EventSystem {
                 // наступает событие - ГОЛОД
                 // danger_hungry = 960
                 // 959+, 960
-                && !behaviour_event.event.contains(&BehaviorEventEnum::ComeHungry) {
-                behaviour_event.event.push(BehaviorEventEnum::ComeHungry);
+                && !behaviour_event.event.contains(&BehaviorEventEnum::BecomeHungry) {
+                behaviour_event.event.push(BehaviorEventEnum::BecomeHungry);
                 monster_state.low_food = true;
                 println!("Новое событие: монстр {} голоден!", monster_id.id);
             }
@@ -206,8 +205,8 @@ impl System for EventSystem {
             //реакция на усталость.
             if monster_attr.power < monster_attr.danger_power && !monster_state.low_power
                 // наступает событие - УСТАЛ
-                && !behaviour_event.event.contains(&BehaviorEventEnum::ComeTired) {
-                behaviour_event.event.push(BehaviorEventEnum::ComeTired);
+                && !behaviour_event.event.contains(&BehaviorEventEnum::BecomeTired) {
+                behaviour_event.event.push(BehaviorEventEnum::BecomeTired);
                 monster_state.low_power = true;
                 println!("Новое событие: монстр {} устал!", monster_id.id);
             }
@@ -381,7 +380,7 @@ impl System for BioSystems {
 
             // power
             if behaviour_state.action == BehaviorActions::Sleep {
-                monster_attr.power += 1;
+                monster_attr.power += 5;
             } else {
                 monster_attr.power -= monster_attr.speed;
             }
@@ -545,7 +544,7 @@ pub fn exec_node(branch: &mut NodeBehavior, entity: &Entity, wind: &WindDirectio
     match *behavior {
         // последовательность, до первого узла Fail, либо выполняет все и возвращает Success
         BehaviorEnum::Sequencer(ref mut vec_sequence) => {
-            println!("Sequencer cursor {}", cursor);
+            println!("Sequencer cursor:{}", *cursor);
             for (index, node_beh) in vec_sequence.iter_mut().enumerate().skip(*cursor) {
                 //if index >= cursor { //.skip(cursor) пропускает все до cursor
                 *cursor = index; // пометить узел на котором мы торчим
@@ -555,7 +554,7 @@ pub fn exec_node(branch: &mut NodeBehavior, entity: &Entity, wind: &WindDirectio
                 // что делать если нам вернули что процесс еще выполняется?
                 // прерываем и выходим, запоминая курсор.
                 if status == Status::Running {
-                    println!("Running Sequencer cursor {}", cursor);
+                    println!("Running Sequencer cursor {}", *cursor);
                     return status
                 }
                 //}
@@ -567,10 +566,18 @@ pub fn exec_node(branch: &mut NodeBehavior, entity: &Entity, wind: &WindDirectio
 
         //
         BehaviorEnum::If(ref mut beh_enum1, ref mut beh_enum2, ref mut beh_enum3) => {
-            println!("If cursor {}", cursor);
+            println!("If cursor:{}", *cursor);
             match *cursor {
-                1 => { exec_node(beh_enum2, entity, wind) }
-                2 => { exec_node(beh_enum3, entity, wind) }
+                1 => {
+                    let status = exec_node(beh_enum2, entity, wind);
+                    if status != Status::Running { *cursor = 0 }
+                    status
+                }
+                2 => {
+                    let status = exec_node(beh_enum3, entity, wind);
+                    if status != Status::Running { *cursor = 0 }
+                    status
+                }
                 _ => {
                     // Курсор хранит значение последнего выбранного варианта.
                     let status = exec_node(beh_enum1, entity, wind);
@@ -608,9 +615,10 @@ pub fn exec_node(branch: &mut NodeBehavior, entity: &Entity, wind: &WindDirectio
 
 /// Активация действий монстра
 pub fn exec_action(action: BehaviorActions, entity: &Entity, wind: &WindDirection) -> Status {
+    println!("exec_action {:?}", action);
     match action {
         // 0. ХЗ, резервёд Ё
-        BehaviorActions::Init => run_init(entity),
+        BehaviorActions::Null => run_null(entity),
         // Проверить усталось.
         BehaviorActions::CheckTired => run_check_tired(entity),
         // Сон. Монстр ждет, в этот момент с ним ничего не происходит.
@@ -634,7 +642,7 @@ pub fn exec_action(action: BehaviorActions, entity: &Entity, wind: &WindDirectio
 
 
 /// Действие монстра "инициализация"
-pub fn run_init(entity: &Entity) -> Status {
+pub fn run_null(entity: &Entity) -> Status {
     let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
     println!("Init монстр {}", monster_id.id);
     Status::Success
@@ -648,7 +656,9 @@ pub fn run_sleep(entity: &Entity) -> Status {
 
     // отдохнул
     if behaviour_state.event.contains(&BehaviorEventEnum::PowerFull) {
-        behaviour_state.action = BehaviorActions::Init;
+        behaviour_state.event.retain(|x| x != &BehaviorEventEnum::PowerFull);
+        behaviour_state.event.retain(|x| x != &BehaviorEventEnum::BecomeTired);
+        behaviour_state.action = BehaviorActions::Null;
         println!("монстр {} отдохнул", monster_id.id);
         return Status::Success
     }
@@ -661,10 +671,10 @@ pub fn run_sleep(entity: &Entity) -> Status {
 
 /// Действие монстра "проверить усталость"
 pub fn run_check_tired(entity: &Entity) -> Status {
-    let monster_attr = entity.get_component::<MonsterAttributes>(); // атрибуты/характеристики
+    let behaviour_event = entity.get_component::<BehaviourEvents>(); // события
     //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
     //println!("монстр {} проверяет усталость", monster_id.id);
-    if monster_attr.power < monster_attr.danger_power {
+    if behaviour_event.event.contains(&BehaviorEventEnum::BecomeTired) {
         println!("монстр устал");
         return Status::Success
     }
@@ -675,10 +685,10 @@ pub fn run_check_tired(entity: &Entity) -> Status {
 
 /// Действие монстра "проверить голод"
 pub fn run_check_hungry(entity: &Entity) -> Status {
-    let monster_attr = entity.get_component::<MonsterAttributes>(); // атрибуты/характеристики
+    let behaviour_event = entity.get_component::<BehaviourEvents>(); // события
     //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
     //println!("монстр {} проверяет голод", monster_id.id);
-    if monster_attr.hungry < monster_attr.danger_hungry {
+    if behaviour_event.event.contains(&BehaviorEventEnum::BecomeHungry) {
         println!("монстр голоден");
         return Status::Success
     }
@@ -748,7 +758,6 @@ pub fn run_find_food(entity: &Entity) -> Status {
         vec.retain(|&x| x%2 == 0);
         assert_eq!(vec, [2, 4]);*/
         behaviour_event.event.retain(|x| x != &BehaviorEventEnum::FoundFood);
-        //behaviour_event.event.pop(&BehaviorEventEnum::FoundFood);
         println!("Монстр {} вижу пальму", monster_id.id);
         return Status::Success
     }
@@ -767,7 +776,8 @@ pub fn run_meal(entity: &Entity) -> Status {
     // наелся
     if behaviour_event.event.contains(&BehaviorEventEnum::EatFull) {
         behaviour_event.event.retain(|x| x != &BehaviorEventEnum::EatFull);
-        behaviour_event.action = BehaviorActions::Init;
+        behaviour_event.event.retain(|x| x != &BehaviorEventEnum::BecomeHungry);
+        behaviour_event.action = BehaviorActions::Null;
         println!("монстр {} наелся", monster_id.id);
         return Status::Success
     }

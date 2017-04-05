@@ -132,7 +132,7 @@ impl System for SpawnMonsterSystem {
                 entity_object.add_component(SelectionTree::new());
                 entity_object.add_component(BehaviourEvents {
                     event: vec![BehaviorEventEnum::NoEvent],
-                    action: BehaviorActions::Init,
+                    action: BehaviorActions::Null,
 
                 });
                 entity_object.add_component(MonsterAttributes {

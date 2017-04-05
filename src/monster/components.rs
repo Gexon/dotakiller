@@ -147,7 +147,7 @@ impl SelectionTree {
                             Box::new(NodeBehavior {
                                 behavior: BehaviorEnum::Action(BehaviorActions::CheckHungry),
                                 cursor: 0,
-                                status: Status::Running,
+                                //status: Status::Running,
                             }),
                             Box::new(NodeBehavior {
                                 // третий слой, нода выбора, проверка поиска еды.
@@ -155,30 +155,30 @@ impl SelectionTree {
                                     Box::new(NodeBehavior {
                                         behavior: BehaviorEnum::Action(BehaviorActions::FindFood),
                                         cursor: 0,
-                                        status: Status::Running,
+                                        //status: Status::Running,
                                     }),
                                     Box::new(NodeBehavior {
                                         behavior: BehaviorEnum::Action(BehaviorActions::Meal),
                                         cursor: 0,
-                                        status: Status::Running,
+                                        //status: Status::Running,
                                     }),
                                     Box::new(NodeBehavior {
-                                        behavior: BehaviorEnum::Action(BehaviorActions::Init),
+                                        behavior: BehaviorEnum::Action(BehaviorActions::Null),
                                         cursor: 0,
-                                        status: Status::Running,
+                                        //status: Status::Running,
                                     }),
                                 ),
                                 cursor: 0,
-                                status: Status::Running,
+                                //status: Status::Running,
                             }),
                             Box::new(NodeBehavior {
                                 behavior: BehaviorEnum::Action(BehaviorActions::Walk),
                                 cursor: 0,
-                                status: Status::Running,
+                                //status: Status::Running,
                             })
                         ),
                         cursor: 0,
-                        status: Status::Running,
+                        //status: Status::Running,
                     },
                     NodeBehavior {
                         behavior: BehaviorEnum::If(
@@ -186,27 +186,27 @@ impl SelectionTree {
                                 NodeBehavior {
                                     behavior: BehaviorEnum::Action(BehaviorActions::CheckTired),
                                     cursor: 0,
-                                    status: Status::Running,
+                                    //status: Status::Running,
                                 }),
                             Box::new(
                                 NodeBehavior {
                                     behavior: BehaviorEnum::Action(BehaviorActions::Sleep),
                                     cursor: 0,
-                                    status: Status::Running,
+                                    //status: Status::Running,
                                 }),
                             Box::new(
                                 NodeBehavior {
                                     behavior: BehaviorEnum::Action(BehaviorActions::Walk),
                                     cursor: 0,
-                                    status: Status::Running,
+                                    //status: Status::Running,
                                 }),
                         ),
                         cursor: 0,
-                        status: Status::Running,
+                        //status: Status::Running,
                     }
                 ]),
                 cursor: 0,
-                status: Status::Running,
+                //status: Status::Running,
             };
 
         SelectionTree {

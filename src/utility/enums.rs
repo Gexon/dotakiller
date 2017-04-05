@@ -19,7 +19,7 @@ pub enum Direction {
 #[derive(Copy, Clone, RustcDecodable, RustcEncodable, PartialEq, Eq, Debug)]
 pub enum BehaviorActions {
     // 0. ХЗ, резервёд Ё
-    Init,
+    Null,
     // Проверить усталось.
     CheckTired,
     // Сон. Монстр ждет, в этот момент с ним ничего не происходит.
@@ -89,11 +89,11 @@ pub enum BehaviorEventEnum {
     // Обнаружена еда.
     FoundFood,
     // Наступил голод.
-    ComeHungry,
+    BecomeHungry,
     // Наступила жажда.
-    _ComeThirsty,
+    _BecomeThirsty,
     // Утомился.
-    ComeTired,
+    BecomeTired,
     // Монстр насытился.
     EatFull,
     // Монстр напился.
@@ -141,7 +141,7 @@ pub struct NodeBehavior {
     // курсор, указывает на выполняющийся дочерний узел.
     pub cursor: usize,
     // статус выполнения.
-    pub status: Status,
+    //pub status: Status,
 }
 
 

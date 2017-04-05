@@ -138,7 +138,7 @@ impl System for SpawnMonsterSystem {
                 entity_object.add_component(MonsterAttributes {
                     speed: 1,
                     power: 1000,
-                    hungry: 1000,
+                    hungry: 970,
                     danger_power: 960,
                     danger_hungry: 960,
                 });

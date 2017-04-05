@@ -1,18 +1,5 @@
 // будем юзать Behaviour Tree AI
 
-//Главный скрипт работает по системе выбор-условие-действие (selector-condition-action).
-
-//Выбор — своеобразный аналог оператора switch() в языках программирования.
-// В «теле» элемента выбора происходит выбор одного из заданных наборов действий
-// в зависимости от условия.
-
-//Условие — проверка истинности заданного условия.
-// Используется в начале каждого набора действий внутри элемента выбора.
-// Если условие истинно — выполняется данный набор действий и выбор завершается.
-// Если нет — происходит переход к следующему набору действий
-
-//Действие — скрипт, запускающий другой скрипт (действие) с заданными параметрами.
-// *В BT AI существует понятие базовых действий.
 
 /*
 SelectorBegin('AI Role 1');
@@ -238,9 +225,8 @@ impl System for EventSystem {
 
             // реакция на отдохнул
             if monster_state.low_power && (monster_attr.power > 990)
-                // Нет событий
-                && !behaviour_event.event.contains(&BehaviorEventEnum::NoEvent) {
-                behaviour_event.event.push(BehaviorEventEnum::NoEvent);
+                && !behaviour_event.event.contains(&BehaviorEventEnum::PowerFull) {
+                behaviour_event.event.push(BehaviorEventEnum::PowerFull);
                 monster_state.low_power = false;
                 println!("Новое событие: монстр {} отдохнул!", monster_id.id);
             }
@@ -279,9 +265,9 @@ impl System for SelectorSystem {
             // дерево поведений собственной персоны
             let node: &mut NodeBehavior = &mut selection_tree.selector;
             // один тик,  обход дерева.
-            exec_node(node, entity, &wind);
-            //let status: Status = exec_node(node, entity, &wind);
-            //println!("node.status {:?}, node.cursor {}", status, node.cursor);
+            //exec_node(node, entity, &wind);
+            let status: Status = exec_node(node, entity, &wind);
+            println!("node.status {:?}, node.cursor {}", status, node.cursor);
 
 
             // фиксируем текущее время
@@ -392,14 +378,18 @@ impl System for BioSystems {
             let mut monster_attr = entity.get_component::<MonsterAttributes>();
             let behaviour_state = entity.get_component::<BehaviourEvents>(); // состояние
             let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+
             // power
             if behaviour_state.action == BehaviorActions::Sleep {
                 monster_attr.power += 1;
             } else {
                 monster_attr.power -= monster_attr.speed;
             }
+
             // hungry
-            if monster_attr.hungry > 0 {
+            if behaviour_state.action == BehaviorActions::Meal {
+                monster_attr.hungry += 10;
+            } else if monster_attr.hungry > 0 {
                 monster_attr.hungry -= 1;
             }
 
@@ -555,7 +545,7 @@ pub fn exec_node(branch: &mut NodeBehavior, entity: &Entity, wind: &WindDirectio
     match *behavior {
         // последовательность, до первого узла Fail, либо выполняет все и возвращает Success
         BehaviorEnum::Sequencer(ref mut vec_sequence) => {
-            //println!("Sequencer cursor {}", cursor);
+            println!("Sequencer cursor {}", cursor);
             for (index, node_beh) in vec_sequence.iter_mut().enumerate().skip(*cursor) {
                 //if index >= cursor { //.skip(cursor) пропускает все до cursor
                 *cursor = index; // пометить узел на котором мы торчим
@@ -565,56 +555,55 @@ pub fn exec_node(branch: &mut NodeBehavior, entity: &Entity, wind: &WindDirectio
                 // что делать если нам вернули что процесс еще выполняется?
                 // прерываем и выходим, запоминая курсор.
                 if status == Status::Running {
-                    println!("return Sequencer cursor {}", cursor);
+                    println!("Running Sequencer cursor {}", cursor);
                     return status
                 }
                 //}
             }
             *cursor = 0; // успех или провал, обнуляем курсор, т.к. начинать полюбасу поновой)))
             //println!("return2 Sequencer cursor {}", cursor);
-            return Status::Success
+            Status::Success
         }
 
         //
         BehaviorEnum::If(ref mut beh_enum1, ref mut beh_enum2, ref mut beh_enum3) => {
-            //
-            //println!("If cursor {}", cursor);
-            if let BehaviorEnum::Action(beh_act1) = **beh_enum1 {
-                let status = exec_action(beh_act1, entity, wind);
-                match status {
-                    Status::Success => {
-                        if let BehaviorEnum::Action(beh_act2) = **beh_enum2 {
-                            return exec_action(beh_act2, entity, wind);
+            println!("If cursor {}", cursor);
+            match *cursor {
+                1 => { exec_node(beh_enum2, entity, wind) }
+                2 => { exec_node(beh_enum3, entity, wind) }
+                _ => {
+                    // Курсор хранит значение последнего выбранного варианта.
+                    let status = exec_node(beh_enum1, entity, wind);
+                    match status {
+                        Status::Success => {
+                            let status_if = exec_node(beh_enum2, entity, wind);
+                            if status_if == Status::Running { *cursor = 1 } else { *cursor = 0 }
+                            status_if
                         }
-                    }
 
-                    Status::Failure => {
-                        if let BehaviorEnum::Action(beh_act3) = **beh_enum3 {
-                            return exec_action(beh_act3, entity, wind);
+                        Status::Failure => {
+                            let status_if = exec_node(beh_enum3, entity, wind);
+                            if status_if == Status::Running { *cursor = 2 } else { *cursor = 0 }
+                            status_if
                         }
-                    }
 
-                    Status::Running => {
-                        return Status::Running
+                        Status::Running => {
+                            Status::Running
+                        }
                     }
                 }
-            };
+            }
         }
 
-        _ => { return Status::Success }
+        //
+        BehaviorEnum::Action(beh_act) => {
+            //
+            exec_action(beh_act, entity, wind)
+        }
+
+        _ => { Status::Success }
     }
-
-
-    // вернуть статус, если больше нет дочерних узлов.
-    Status::Running
 }
-
-/*// Функциональный подход
-let sum_of_squared_odd_numbers: u32 =
-    (0..).map(|n| n * n)             // Все натуральные числа в квадрате
-         .take_while(|&n| n < upper) // Ниже верхнего предела
-         .filter(|n| is_odd(*n))     // Это нечётные
-         .fold(0, |sum, i| sum + i); // Суммируем*/
 
 
 /// Активация действий монстра
@@ -656,6 +645,14 @@ pub fn run_init(entity: &Entity) -> Status {
 pub fn run_sleep(entity: &Entity) -> Status {
     let mut behaviour_state = entity.get_component::<BehaviourEvents>(); // состояние
     let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+
+    // отдохнул
+    if behaviour_state.event.contains(&BehaviorEventEnum::PowerFull) {
+        behaviour_state.action = BehaviorActions::Init;
+        println!("монстр {} отдохнул", monster_id.id);
+        return Status::Success
+    }
+
     behaviour_state.action = BehaviorActions::Sleep;
     println!("...zzz...монстр {}", monster_id.id);
     Status::Running
@@ -671,6 +668,7 @@ pub fn run_check_tired(entity: &Entity) -> Status {
         println!("монстр устал");
         return Status::Success
     }
+    println!("монстр бодр");
     Status::Failure
 }
 
@@ -684,6 +682,7 @@ pub fn run_check_hungry(entity: &Entity) -> Status {
         println!("монстр голоден");
         return Status::Success
     }
+    println!("монстр сыт");
     Status::Failure
 }
 
@@ -733,33 +732,48 @@ pub fn run_walk(entity: &Entity, wind: &WindDirection) -> Status {
 pub fn run_find_food(entity: &Entity) -> Status {
     let mut monster_attr = entity.get_component::<MonsterAttributes>(); // атрибуты/характеристики
     let mut monster_state = entity.get_component::<MonsterState>();
-    let behaviour_event = entity.get_component::<BehaviourEvents>(); // события
+    let mut behaviour_event = entity.get_component::<BehaviourEvents>(); // события
     let mut position = entity.get_component::<Position>();
     let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
     // поиск пищи. ходим по окружности
     if monster_attr.speed == 1 { monster_attr.speed = 2 };
     next_step_around(&mut position, monster_attr.speed as f32, &mut monster_state);
     //
-
     entity.add_component(Replication); // произошли изменения монстра.
     entity.refresh();
 
-    // наелся
-    if behaviour_event.event.contains(&BehaviorEventEnum::EatFull) {
-        println!("монстр {} наелся", monster_id.id);
+    if behaviour_event.event.contains(&BehaviorEventEnum::FoundFood) {
+        // Те элементы, которые не удовлетворяют предикату удаляются!
+        /*let mut vec = vec![1, 2, 3, 4];
+        vec.retain(|&x| x%2 == 0);
+        assert_eq!(vec, [2, 4]);*/
+        behaviour_event.event.retain(|x| x != &BehaviorEventEnum::FoundFood);
+        //behaviour_event.event.pop(&BehaviorEventEnum::FoundFood);
+        println!("Монстр {} вижу пальму", monster_id.id);
         return Status::Success
     }
 
-    println!("Монстр {} ищет хавку x:{}, y:{},", monster_id.id, position.x, position.y);
+    println!("Монстр {} ищет че бы поесть", monster_id.id);
     Status::Running
 }
 
 
 /// Действие монстра "трапезничать"
 pub fn run_meal(entity: &Entity) -> Status {
-    let mut monster_attr = entity.get_component::<MonsterAttributes>(); // атрибуты/характеристики
+    let mut behaviour_event = entity.get_component::<BehaviourEvents>(); // события
     let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
-    monster_attr.hungry = 1000;
-    println!("монстр {} поел", monster_id.id);
-    Status::Success
+
+
+    // наелся
+    if behaviour_event.event.contains(&BehaviorEventEnum::EatFull) {
+        behaviour_event.event.retain(|x| x != &BehaviorEventEnum::EatFull);
+        behaviour_event.action = BehaviorActions::Init;
+        println!("монстр {} наелся", monster_id.id);
+        return Status::Success
+    }
+
+    // пальму съесть
+    behaviour_event.action = BehaviorActions::Meal;
+    println!("монстр {} ест", monster_id.id);
+    Status::Running
 }

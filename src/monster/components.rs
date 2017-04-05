@@ -136,34 +136,78 @@ impl SelectionTree {
         // чтоб предотвратить зацикливание.
         //
         // заполняем граф руками, в будущем загрузка из БД.
-        let node_root: NodeBehavior = NodeBehavior {
-            behavior: BehaviorEnum::Sequencer(vec![
-                NodeBehavior {
-                    behavior: BehaviorEnum::If(
-                        Box::new(BehaviorEnum::Action(BehaviorActions::CheckHungry)),
-                        Box::new(BehaviorEnum::If(
-                            Box::new(BehaviorEnum::Action(BehaviorActions::FindFood)),
-                            Box::new(BehaviorEnum::Action(BehaviorActions::Meal)),
-                            Box::new(BehaviorEnum::Action(BehaviorActions::Init)),
-                        )),
-                        Box::new(BehaviorEnum::Action(BehaviorActions::Walk)),
-                    ),
-                    cursor: 0,
-                    status: Status::Running,
-                },
-                NodeBehavior {
-                    behavior: BehaviorEnum::If(
-                        Box::new(BehaviorEnum::Action(BehaviorActions::CheckTired)),
-                        Box::new(BehaviorEnum::Action(BehaviorActions::Sleep)),
-                        Box::new(BehaviorEnum::Action(BehaviorActions::Walk)),
-                    ),
-                    cursor: 0,
-                    status: Status::Running,
-                }
-            ]),
-            cursor: 0,
-            status: Status::Running,
-        };
+        let node_root: NodeBehavior =
+        //корень
+            NodeBehavior {
+                // корневая нода, хранит последовательность
+                behavior: BehaviorEnum::Sequencer(vec![
+                    NodeBehavior {
+                        // второй слой, нода выбора, проверка голода.
+                        behavior: BehaviorEnum::If(
+                            Box::new(NodeBehavior {
+                                behavior: BehaviorEnum::Action(BehaviorActions::CheckHungry),
+                                cursor: 0,
+                                status: Status::Running,
+                            }),
+                            Box::new(NodeBehavior {
+                                // третий слой, нода выбора, проверка поиска еды.
+                                behavior: BehaviorEnum::If(
+                                    Box::new(NodeBehavior {
+                                        behavior: BehaviorEnum::Action(BehaviorActions::FindFood),
+                                        cursor: 0,
+                                        status: Status::Running,
+                                    }),
+                                    Box::new(NodeBehavior {
+                                        behavior: BehaviorEnum::Action(BehaviorActions::Meal),
+                                        cursor: 0,
+                                        status: Status::Running,
+                                    }),
+                                    Box::new(NodeBehavior {
+                                        behavior: BehaviorEnum::Action(BehaviorActions::Init),
+                                        cursor: 0,
+                                        status: Status::Running,
+                                    }),
+                                ),
+                                cursor: 0,
+                                status: Status::Running,
+                            }),
+                            Box::new(NodeBehavior {
+                                behavior: BehaviorEnum::Action(BehaviorActions::Walk),
+                                cursor: 0,
+                                status: Status::Running,
+                            })
+                        ),
+                        cursor: 0,
+                        status: Status::Running,
+                    },
+                    NodeBehavior {
+                        behavior: BehaviorEnum::If(
+                            Box::new(
+                                NodeBehavior {
+                                    behavior: BehaviorEnum::Action(BehaviorActions::CheckTired),
+                                    cursor: 0,
+                                    status: Status::Running,
+                                }),
+                            Box::new(
+                                NodeBehavior {
+                                    behavior: BehaviorEnum::Action(BehaviorActions::Sleep),
+                                    cursor: 0,
+                                    status: Status::Running,
+                                }),
+                            Box::new(
+                                NodeBehavior {
+                                    behavior: BehaviorEnum::Action(BehaviorActions::Walk),
+                                    cursor: 0,
+                                    status: Status::Running,
+                                }),
+                        ),
+                        cursor: 0,
+                        status: Status::Running,
+                    }
+                ]),
+                cursor: 0,
+                status: Status::Running,
+            };
 
         SelectionTree {
             selector: node_root,

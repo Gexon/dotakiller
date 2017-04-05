@@ -98,6 +98,8 @@ pub enum BehaviorEventEnum {
     EatFull,
     // Монстр напился.
     _DrinkFull,
+    // Монстр отдохнул.
+    PowerFull,
     // Нет событий.
     NoEvent,
 }
@@ -123,7 +125,7 @@ pub enum BehaviorEnum {
     //функция, которая должна выполниться при посещении данного узла.
     Action(BehaviorActions),
     // тут все ясно
-    If(Box<BehaviorEnum>, Box<BehaviorEnum>, Box<BehaviorEnum>),
+    If(Box<NodeBehavior>, Box<NodeBehavior>, Box<NodeBehavior>),
     //последовательность, до первого узла Fail, либо выполняет все и возвращает Success
     Sequencer(Vec<NodeBehavior>),
     //до первого узла возвращающего Success

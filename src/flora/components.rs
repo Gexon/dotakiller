@@ -25,6 +25,7 @@ pub struct FloraState {
     pub growth_time: PreciseTime,
     pub reproduction_time: PreciseTime,
     pub dead: i32,
+    pub mass: i32,
 }
 
 impl Component for FloraState {}

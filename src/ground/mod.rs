@@ -18,6 +18,7 @@ pub fn init(dk_world: &mut World) {
     dk_world.set_system(SpawnFloraSystem);
     dk_world.set_system(SpawnMonsterSystem);
     dk_world.set_system(WindDirectionSystem);
+    dk_world.set_system(FloraEventSystem);
 
     {
         // вносим в этот мир немного земли
@@ -34,6 +35,7 @@ pub fn init(dk_world: &mut World) {
             flora_id: 0,
             monster_id: 0,
         });
+        entity.add_component(EventsMonsterToFlora { event: vec![] });
         entity.refresh();
     }
 }

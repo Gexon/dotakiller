@@ -1,105 +1,5 @@
 // будем юзать Behaviour Tree AI
 
-
-/*
-SelectorBegin('AI Role 1');
-    SequenceBegin('Атака');
-        //видим врага и знаем его id
-        Condition(SeeEnemy && Enemy>0);
-        //смомтрим на него
-        Action( Action_LookAt, point_direction(x,y, Enemy.x, Enemy.y));
-        //стреляем в сторону врага 2 раза
-        Action( Action_Shoot, point_direction(x,y, Enemy.x, Enemy.y), 2);
-        SelectorBegin('Подходим на оптимальное растояние');
-            //или
-            SequenceBegin('Враг слишком далеко');
-                Condition(point_distance(x,y, Enemy.x, Enemy.y)>256);
-                Action(Action_MoveTo, Enemy.x-lengthdir_x(128, direction), Enemy.y-lengthdir_y(128, direction), highSpeed);
-            SequenceEnd();
-            //или
-            SequenceBegin('Враг слишком близко');
-                Condition(point_distance(x,y, Enemy.x, Enemy.y)<64);
-                //идем назад
-                Action(Action_MoveTo, x-lengthdir_x(64, direction), y-lengthdir_y(64, direction), highSpeed);
-            SequenceEnd();
-            SequenceBegin('маневр');
-                //иначе просто маневрируем, чтобы сложнее было попасть
-                Action( Action_MoveTo, x+irandom_range(-64, 64), y+irandom_range(-64, 64), highSpeed);
-            SequenceEnd();
-        SelectorEnd();
-        //стреляем в сторону врага 4 раза
-        Action(Action_Shoot, point_direction(x,y, Enemy.x, Enemy.y), 2);
-    SequenceEnd();
-SelectorEnd();
-*/
-
-//Selector — оператор выбора набора действий
-//Sequence — набор действий
-//Condition — проверка условия
-//Action — действие. вызов скрипта(первый аргумент) с параметрами (остальные аргументы)
-
-/*
-http://www.pvsm.ru/robototehnika/161885/print/
-Узлы BT называют [10] задачами или поведениями. Каждая задача может иметь четыре состояния:
-
-    «Успех», если задача выполнена успешно;
-    - выкинуть нахер, заменитьт ошибкой. «Неудача», если условие не выполнено или задача, по какой-то причине, невыполнима;
-    «В работе», если задача запущена в работу и ожидает завершения
-    «Ошибка», если в программе возникает неизвестная ошибка.
-
- Результат работы любого узла всегда передается родительскому узлу, расположенному на уровень выше.
- Дерево просматривается с самого верхнего узла – корня. От него производится поиск в глубину начиная
- с левой ветви дерева. Если у одного узла есть несколько подзадач, они исполняются слева направо.
-
-    Среди узлов выделяют следующие типы:
-    -действие (action),
-    -узел исполнения последовательности (sequence),
-    -параллельный узел (parallel),
-    -селектор (selector),
-    -условие (condition),
-    -инвертор (inverter).
-
- Действие представляет собой запись переменных или какое-либо движение.
- Узлы последовательностей поочередно исполняют поведения каждого дочернего узла до тех пор,
- пока один из них не выдаст значение «Неудача», «В работе» или «Ошибка».
- Если этого не произошло, возвращает значение «Успех».
-
- Узлы параллельных действий исполняют поведения дочерних узлов до тех пор,
- пока заданное количество из них не вернет статусы «Неудача» или «Успех».
-
- Селекторы поочередно исполняют поведения каждого дочернего узла до тех пор,
- пока один из них не выдаст значение «Успех», «В работе» или «Ошибка».
- Если этого не произошло, возвращает значение «Неудача».
-
- Условия содержат критерий, по которому определяется исход, и переменную.
- Например, условие «Есть ли в этой комнате человек?» перебирает все объекты в комнате
- и сравнивает их с переменной «Человек».
-
- Узлы инверсии выполняют функцию оператора NOT.
-*/
-
-/*
-Основные типы узлов в дереве поведения:
-    Action Node (действие)
-    Просто некоторая функция, которая должна выполниться при посещении данного узла.
-
-    Condition (условие)
-    Обычно служит для того, чтобы определить, выполнять или нет следующие за ним узлы. При true вернет Success, а при false возвращает Fail.
-
-    Sequencer (последовательность)
-    Выполняет все вложенные узлы по порядку, пока какой-либо из них не завершится неудачей (в таком случае возвращает Fail), либо пока все они успешно не завершатся (тогда возвращает Success).
-
-    Selector (селектор)
-    В отличие от Sequencer, прекращает обработку, как только любой вложенный узел вернет Success.
-
-    Iterator (итератор — выполняет роль цикла for)
-    Используется для выполнения в цикле серии действий некоторое число раз.
-
-    Parallel Node
-    Выполняет все свои дочерние узлы «одновременно». Здесь не имеется ввиду, что узлы выполняются несколькими потоками. Просто создается иллюзия параллельного выполнения, аналогично корутинам в Unity3d.
-    http://www.pvsm.ru/arhitektura-prilozhenij/88642
-
-*/
 use tinyecs::*;
 use time::{PreciseTime, Duration};
 
@@ -113,6 +13,7 @@ use ::ground::components::Position;
 use ::ground::components::ClassGround;
 use ::ground::components::WindDirection;
 use ::ground::components::WorldMap;
+use ::ground::components::EventsMonsterToFlora;
 use ::monster::components::*;
 
 
@@ -135,6 +36,7 @@ impl System for PerceptionSystem {
         // сканируем с интервалом равным перемещению.
         let mut monster_class = entity.get_component::<MonsterClass>();
         if monster_class.perception_time.to(PreciseTime::now()) > Duration::seconds(2 * MONSTER_SPEED) {
+            let mut monster_map = entity.get_component::<MonsterMaps>();
             // сканируем окружность на предмет кактусов.
             //_MonsterMaps
             let mut monster_state = entity.get_component::<MonsterState>();
@@ -150,9 +52,17 @@ impl System for PerceptionSystem {
                     let scan_point: Point = Point(pos_x, pos_y); // Casting
                     // Проверяем растет ли дерево по даденным координатам.
                     if !monster_state.view_food && world_map.flora[scan_point] == 1 {
+                        // добавляем растение в цель
+                        monster_map.action_target.target_type = TargetType::Flora;
+                        monster_map.action_target.position.x = pos_x as f32;
+                        monster_map.action_target.position.y = pos_y as f32;
                         monster_state.view_food = true;
                         break 'outer;
-                    } else { monster_state.view_food = false; }
+                    } else {
+                        // убираем растение из цели
+                        monster_map.action_target.target_type = TargetType::None;
+                        monster_state.view_food = false;
+                    }
                 }
             }
 
@@ -179,17 +89,21 @@ impl System for EventSystem {
             let mut behaviour_event = entity.get_component::<BehaviourEvents>(); // события
             let mut monster_state = entity.get_component::<MonsterState>();
             let monster_attr = entity.get_component::<MonsterAttributes>(); //
-            let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
-            // TODO возможно, стоит выдавать несколько событий одновременно(Vec[BehaviourEvent])
+            //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+
             // реакция на обнаружение еды.
             if monster_state.view_food
-                // переключаем событие на Обнаружена еда.
+                // Если в очереди нет такого события, то переключаем событие на Обнаружена еда.
                 && !behaviour_event.event.contains(&BehaviorEventEnum::FoundFood) {
                 // если в векторе behaviour_events.event, нет события FoundFood
                 // то, добавляем его туда.
                 behaviour_event.event.push(BehaviorEventEnum::FoundFood);
                 //println!("Новое событие: монстр {} обнаружил еду!", monster_id.id);
-            };
+            } else if behaviour_event.event.contains(&BehaviorEventEnum::FoundFood) {
+                // если еды нет в поле зрения и есть событие обнаружения еды,
+                // то удалить событие из очереди.
+                behaviour_event.event.retain(|x| x != &BehaviorEventEnum::FoundFood);
+            }
 
             // реакция на голод.
             if monster_attr.hungry < monster_attr.danger_hungry && !monster_state.low_food
@@ -237,7 +151,6 @@ impl System for EventSystem {
     }
 }
 
-
 /// Выбиральщик состояний дерева поведения
 /// внутри функций не вынимать из сущности!!!!!!!!!!!!!!!!!!!! #сразукраш
 // monster_state - внутри функций не вынимать из сущности!!!!!!!!!!!!!!!!!!!! #сразукраш
@@ -267,7 +180,6 @@ impl System for SelectorSystem {
             exec_node(node, entity, &wind);
             //let status: Status = exec_node(node, entity, &wind);
             //println!("node.status {:?}, node.cursor {}", status, node.cursor);
-
 
             // фиксируем текущее время
             monster_class.selector_time = PreciseTime::now();
@@ -371,10 +283,16 @@ impl System for BioSystems {
         aspect_all!(MonsterClass, MonsterAttributes)
     }
 
-    fn process_one(&mut self, entity: &mut Entity) {
+    fn data_aspects(&self) -> Vec<Aspect> {
+        vec![aspect_all![ClassGround]]
+    }
+
+    fn process_d(&mut self, entity: &mut Entity, data: &mut DataList) {
         let mut monster_class = entity.get_component::<MonsterClass>();
         if monster_class.bios_time.to(PreciseTime::now()) > Duration::seconds(2 * MONSTER_SPEED) {
+            let ground = data.unwrap_entity();
             let mut monster_attr = entity.get_component::<MonsterAttributes>();
+            let mut monster_map = entity.get_component::<MonsterMaps>();
             let behaviour_state = entity.get_component::<BehaviourEvents>(); // состояние
             let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
 
@@ -387,12 +305,27 @@ impl System for BioSystems {
 
             // hungry
             if behaviour_state.action == BehaviorActions::Meal {
-                monster_attr.hungry += 10;
+                // найти нужную пальму
+                let target = &mut (&mut monster_map.action_target);
+                if target.target_type == TargetType::Flora {
+                    // очередь на уменьшение массы у пальмы
+                    let mut event_to_flora = ground.get_component::<EventsMonsterToFlora>();
+                    event_to_flora.event.push(EventEatFlora {
+                        value: 10,
+                        x: target.position.x,
+                        y: target.position.y,
+                    });
+
+                    // наполняем монстру желудок
+                    monster_attr.hungry += 10;
+                }
+
+                println!("power {}, hungry {}, монстр {}", monster_attr.power, monster_attr.hungry, monster_id.id);
             } else if monster_attr.hungry > 0 {
                 monster_attr.hungry -= 1;
             }
 
-            println!("power {}, hungry {}, монстр {}", monster_attr.power, monster_attr.hungry, monster_id.id);
+
             // фиксируем текущее время
             monster_class.bios_time = PreciseTime::now();
         }
@@ -429,7 +362,7 @@ pub fn next_step(position: &mut Position, delta: f32, wind: &WindDirection) {
             }
         }
         Direction::NorthWest => {
-            if (position.x > position.y * 2f32) && (position.x < (GROUND_SIZE as f32 - delta)) {
+            if (position.x > position.y * 2f32) & &(position.x < (GROUND_SIZE as f32 - delta)) {
                 position.x += delta;
             }
         }
@@ -439,7 +372,7 @@ pub fn next_step(position: &mut Position, delta: f32, wind: &WindDirection) {
             }
         }
         Direction::WestSouth => {
-            if (position.y < position.x * 2f32) && (position.y > 0f32 + delta) {
+            if (position.y < position.x * 2f32) & &(position.y > 0f32 + delta) {
                 position.y -= delta;
             }
         }
@@ -449,7 +382,7 @@ pub fn next_step(position: &mut Position, delta: f32, wind: &WindDirection) {
             }
         }
         Direction::SouthEast => {
-            if (position.x < position.y * 2f32) && (position.x > 0f32 + delta) {
+            if (position.x < position.y * 2f32) & &(position.x > 0f32 + delta) {
                 position.x -= delta;
             }
         }
@@ -459,7 +392,7 @@ pub fn next_step(position: &mut Position, delta: f32, wind: &WindDirection) {
             }
         }
         Direction::EastNorth => {
-            if (position.y > position.x * 2f32) && (position.y < (GROUND_SIZE as f32 - delta)) {
+            if (position.y > position.x * 2f32) & &(position.y < (GROUND_SIZE as f32 - delta)) {
                 position.y += delta;
             }
         }
@@ -472,7 +405,7 @@ pub fn next_step(position: &mut Position, delta: f32, wind: &WindDirection) {
 pub fn next_step_around(position: &mut Position, delta: f32, monster_state: &mut MonsterState) {
     // проверяем достижение цели
     if (position.x as u32 == monster_state.target_point.x as u32)
-        && (position.y as u32 == monster_state.target_point.y as u32) {
+        & &(position.y as u32 == monster_state.target_point.y as u32) {
         // цель достигнута, ставим новую цель:
         // выбираем новую цель по направлению монстра.
         // две клетки вперед и одну вправо. меняем направление монстра.
@@ -642,8 +575,8 @@ pub fn exec_action(action: BehaviorActions, entity: &Entity, wind: &WindDirectio
 
 
 /// Действие монстра "инициализация"
-pub fn run_null(entity: &Entity) -> Status {
-    let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+pub fn run_null(_entity: &Entity) -> Status {
+    //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
     //println!("Init монстр {}", monster_id.id);
     Status::Success
 }
@@ -652,7 +585,7 @@ pub fn run_null(entity: &Entity) -> Status {
 /// Действие монстра "спать"
 pub fn run_sleep(entity: &Entity) -> Status {
     let mut behaviour_state = entity.get_component::<BehaviourEvents>(); // состояние
-    let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+    //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
 
     // отдохнул
     if behaviour_state.event.contains(&BehaviorEventEnum::PowerFull) {
@@ -726,7 +659,7 @@ pub fn run_walk(entity: &Entity, wind: &WindDirection) -> Status {
     let monster_attr = entity.get_component::<MonsterAttributes>(); // атрибуты/характеристики
     let mut behaviour_state = entity.get_component::<BehaviourEvents>(); // состояние
     let mut position = entity.get_component::<Position>();
-    let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+    //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
     let delta: f32 = monster_attr.speed as f32;
     // тут заставляем монстра ходить туда-сюда, бесцельно, куда подует)
     next_step(&mut position, delta, wind);
@@ -744,7 +677,7 @@ pub fn run_find_food(entity: &Entity) -> Status {
     let mut monster_state = entity.get_component::<MonsterState>();
     let mut behaviour_event = entity.get_component::<BehaviourEvents>(); // события
     let mut position = entity.get_component::<Position>();
-    let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+    //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
     // поиск пищи. ходим по окружности
     if monster_attr.speed == 1 { monster_attr.speed = 2 };
     next_step_around(&mut position, monster_attr.speed as f32, &mut monster_state);
@@ -770,7 +703,7 @@ pub fn run_find_food(entity: &Entity) -> Status {
 /// Действие монстра "трапезничать"
 pub fn run_meal(entity: &Entity) -> Status {
     let mut behaviour_event = entity.get_component::<BehaviourEvents>(); // события
-    let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+    //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
 
 
     // наелся

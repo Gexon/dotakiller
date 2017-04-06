@@ -115,7 +115,7 @@ impl System for PlantGrowthSystem {
                 entity.add_component(Replication); // требуется репликация.
                 entity.refresh();
             }
-            // фиксируем таймер для отрупнения
+            // фиксируем таймер для размножения
             if state.state >= 10 {
                 entity.add_component(Reproduction); // пальме пора чпокаться.
                 entity.remove_component::<Growth>(); // выключаем рост.

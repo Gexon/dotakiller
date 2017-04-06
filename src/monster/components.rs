@@ -13,6 +13,14 @@ pub struct PositionM {
     pub direct: Direction,
 }
 
+
+/// Информация о цели(Еда, Жертва, Враг, Лидер)
+pub struct ActionTarget {
+    pub position: PositionM,
+    pub target_type: TargetType,
+}
+
+
 /// метка принадлежности к классу монстров.
 pub struct MonsterClass {
     // убрал эти говнотаймеры сюда из MonsterState
@@ -72,13 +80,29 @@ impl Component for MonsterAttributes {}
 
 
 /// тут будем хранить все объекты на карте.
-pub struct _MonsterMaps {
+pub struct MonsterMaps {
+    pub action_target: ActionTarget,
     //pub view_map: Map<u8>,
-    //pub foods_map: Map<u8>,
+    //pub foods_map: Vec<ActionTarget>,
     //pub waters_map: Map<u8>,
 }
 
-impl Component for _MonsterMaps {}
+impl Component for MonsterMaps {}
+
+impl MonsterMaps {
+    pub fn new() -> MonsterMaps {
+        MonsterMaps {
+            action_target: ActionTarget {
+                position: PositionM {
+                    x: 0f32,
+                    y: 0f32,
+                    direct: Direction::North,
+                },
+                target_type: TargetType::None,
+            }
+        }
+    }
+}
 
 
 /// Сосотояние монстра, для Behaviour Tree

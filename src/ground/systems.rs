@@ -56,6 +56,7 @@ impl System for SpawnFloraSystem {
                     growth_time: PreciseTime::now(),
                     reproduction_time: PreciseTime::now(),
                     dead: 0,
+                    mass: 1000,
                 });
                 entity_object.add_component(HerbId { id: last_id.flora_id });
                 entity_object.refresh();
@@ -108,7 +109,7 @@ impl System for SpawnMonsterSystem {
                 let entity_object = world.entity_manager.create_entity();
                 entity_object.add_component(Name { name: spawn_point.name.to_string() });
                 entity_object.add_component(Position { x: spawn_point.x, y: spawn_point.y });
-                entity_object.add_component(MonsterClass{
+                entity_object.add_component(MonsterClass {
                     growth_time: PreciseTime::now(),
                     reproduction_time: PreciseTime::now(),
                     behavior_time: PreciseTime::now(),
@@ -142,6 +143,7 @@ impl System for SpawnMonsterSystem {
                     danger_power: 960,
                     danger_hungry: 960,
                 });
+                entity_object.add_component(MonsterMaps::new());
                 entity_object.refresh();
                 let monster_id = entity_object.get_component::<MonsterId>();
                 println!("Создаем сущность {} {}", spawn_point.name.to_string(), monster_id.id);
@@ -150,6 +152,43 @@ impl System for SpawnMonsterSystem {
 
             entity.remove_component::<SpawnMonster>(); // удаляем компонент "Точка спавна/spawn_point"
             entity.delete();
+        }
+    }
+}
+
+
+/// система событий для растений
+// события поедания растений монстрами.
+pub struct FloraEventSystem;
+
+impl System for FloraEventSystem {
+    fn aspect(&self) -> Aspect {
+        aspect_all!(FloraClass)
+    }
+
+    fn data_aspects(&self) -> Vec<Aspect> {
+        vec![aspect_all![ClassGround]]
+    }
+
+    fn process_d(&mut self, entity: &mut Entity, data: &mut DataList) {
+        let ground = data.unwrap_entity();
+        let mut event_to_flora = ground.get_component::<EventsMonsterToFlora>();
+
+        // извлекаем события из вектора событий от монстров
+        let event_vec = &mut event_to_flora.event;
+        if !event_vec.is_empty() {
+            let mut flora_state = entity.get_component::<FloraState>();
+            let flora_position = entity.get_component::<Position>();
+            let flora_id = entity.get_component::<HerbId>();
+            let event: EventEatFlora = event_vec.pop().unwrap();
+            //if flora_position.x == event.x && flora_position.y == event.y {
+            if (flora_position.x - event.x).abs() < ::std::f32::EPSILON &&
+                (flora_position.y - event.y).abs() < ::std::f32::EPSILON {
+                if flora_state.mass > event.value {
+                    flora_state.mass -= event.value;
+                } else { flora_state.mass = 0 }
+                println!("Растение:{}, масса:{}", flora_id.id, flora_state.mass);
+            }
         }
     }
 }

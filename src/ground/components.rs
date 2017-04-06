@@ -5,6 +5,7 @@ use time::PreciseTime;
 
 use ::utility::map::Map;
 use ::utility::enums::Direction;
+use ::utility::enums::EventEatFlora;
 
 
 pub struct ClassGround;
@@ -27,6 +28,17 @@ pub struct Name {
 }
 
 impl Component for Name {}
+
+
+
+/// Сообщения от монстров для пальм
+pub struct EventsMonsterToFlora {
+    // возникшие события. Может быть несколько.
+    pub event: Vec<EventEatFlora>,
+}
+
+impl Component for EventsMonsterToFlora {}
+
 
 
 // храним последние id

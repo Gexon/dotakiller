@@ -32,7 +32,7 @@ static FLORA_SPEED: i64 = 100;//1000
 static MONSTER_SPEED: i64 = 4;//10
 static GROUND_SIZE: u32 = 140;
 // 1_000_000ns = 1ms
-static TICK_MAX_TIME: u64 = 50;//Duration::milliseconds(50);
+//static TICK_MAX_TIME: u64 = 50;//Duration::milliseconds(50);
 
 
 fn main() {
@@ -42,19 +42,21 @@ fn main() {
     ground::init(&mut dk_world);    // инициализация основ мира.
     flora::init(&mut dk_world);     // инициализация растений.
     monster::init(&mut dk_world);     // инициализация монстров.
-    let mut event_time: std::time::Instant;//PreciseTime;
-    let max_time = std::time::Duration::from_millis(TICK_MAX_TIME);
+    //let mut event_time: std::time::Instant;//PreciseTime;
+    //let max_time = std::time::Duration::from_millis(TICK_MAX_TIME);
     loop {
         // засекаю время.
-        event_time = std::time::Instant::now();//PreciseTime::now();
+        //event_time = std::time::Instant::now();//PreciseTime::now();
         dk_world.update(); // основной цикл ECS.
         // смотрю сколько потратил.
-        if std::time::Instant::now().duration_since(event_time) < max_time {
-            // надо спать разницу между time_max и временем затраченным на полезную работу
-            std::thread::sleep(max_time - std::time::Instant::now().duration_since(event_time));
-        } else {
-            trace!("Main loop > TICK_MAX_TIME");
-            std::thread::sleep(std::time::Duration::from_millis(1));
-        }
+        // вычисляю дельту до if т.к. сервер крашится при выполнении sleep
+        //let delta = max_time - std::time::Instant::now().duration_since(event_time);
+        //if delta > std::time::Duration::new(0, 0) {
+        // надо спать разницу между time_max и временем затраченным на полезную работу
+        //std::thread::sleep(delta);
+        //} else {
+        //trace!("Main loop > TICK_MAX_TIME");
+        std::thread::sleep(std::time::Duration::from_millis(1));
+        //}
     }
 }

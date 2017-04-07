@@ -14,14 +14,17 @@ pub fn init(dk_world: &mut World) {
     dk_world.set_system(PlantDeadSystem);
     dk_world.set_system(PlantRemoveSystem);
 
-    for count in 0..100 {
-        // поручаем спавнеру, засумонить в наш мир пальму.
-        // создаем спавнер
-        let mut entity_manager = dk_world.entity_manager();
-        let entity_spawner = entity_manager.create_entity();
+    for y in 0..100 {
+        for count in 0..100 {
+            // поручаем спавнеру, засумонить в наш мир пальму.
+            // создаем спавнер
+            let mut entity_manager = dk_world.entity_manager();
+            let entity_spawner = entity_manager.create_entity();
 
-        let delta: f32 = count as f32;
-        entity_spawner.add_component(SpawnFlora { name: "palm", x: 1f32 + delta, y: 1f32 + delta });
-        entity_spawner.refresh();
+            let delta_x: f32 = count as f32;
+            let delta_y: f32 = y as f32;
+            entity_spawner.add_component(SpawnFlora { name: "palm", x: 1f32 + delta_x, y: 1f32 + delta_y});
+            entity_spawner.refresh();
+        }
     }
 }

@@ -114,7 +114,7 @@ impl System for ReplicationServerSystem {
         // определяем наличие свежих подключений, тербующих primary_replication
         let exist_new_conn = self.server_data.exist_new_conn();
 
-
+        // репликация растений.
         for flora in _floras {
             let id_herb = flora.get_component::<HerbId>();
             let class = flora.get_component::<Name>();
@@ -122,35 +122,29 @@ impl System for ReplicationServerSystem {
             let state = flora.get_component::<FloraState>();
 
             if flora.has_component::<Replication>() {
-                // репликация.
-                // рассылаем всем клиентам "updherb idHerb classHerb stateHerb x y"
                 let s = format!("updherb {} {} {} {} {}", id_herb.id, class.name, state.state, position.x, position.y);
                 let smsg: String = s.to_string();
-                //let smsg_len = smsg.len();
-                //let mut recv_buf: Vec<u8> = Vec::with_capacity(smsg_len);
-                //unsafe { recv_buf.set_len(smsg_len); }
                 let recv_buf = smsg.into_bytes();
                 self.server_data.replication(recv_buf.to_vec());
                 flora.remove_component::<Replication>(); // убираем компонент репликации.
                 flora.refresh();
             }
+
             // если есть новенькие клиенты, собираем все сущности для primary_replication
             if exist_new_conn {
                 let s = format!("updherb {} {} {} {} {}", id_herb.id, class.name, state.state, position.x, position.y);
                 let smsg: String = s.to_string();
-                //let smsg_len = smsg.len();
-                //let mut recv_buf2: Vec<u8> = Vec::with_capacity(smsg_len);
-                //unsafe { recv_buf2.set_len(smsg_len); }
                 let recv_buf2 = smsg.into_bytes();
                 recv_obj.push(recv_buf2.to_vec());
                 // отсылаем по 500 штук.
-                if recv_obj.len() > 500 {
-                    trace!("REPLICATION primary_replication_500");
+                if recv_obj.len() > 100 {
+                    //trace!("REPLICATION primary_replication_500");
                     self.server_data.primary_replication(&mut recv_obj);
                 }
             }
         }
 
+        // репликация монстров.
         for monster in _monsters {
             let id_monstr = monster.get_component::<MonsterId>();
             let class = monster.get_component::<Name>();
@@ -158,54 +152,34 @@ impl System for ReplicationServerSystem {
             let position = monster.get_component::<Position>();
 
             if monster.has_component::<Replication>() {
-                // репликация монстров.
-                // рассылаем всем клиентам "updherb idHerb classHerb stateHerb x y"
-
                 let s = format!("updmonstr {} {} {} {} {}", id_monstr.id, class.name, state.state, position.x, position.y);
                 let smsg: String = s.to_string();
-                //let smsg_len = smsg.len();
-                //let mut recv_buf: Vec<u8> = Vec::with_capacity(smsg_len);
-                //unsafe { recv_buf.set_len(smsg_len); }
                 let recv_buf = smsg.into_bytes();
-                self.server_data.replication(recv_buf.to_vec());
-
+                self.server_data.replication(recv_buf.to_vec()); // репликация
                 monster.remove_component::<Replication>(); // убираем компонент репликации.
                 monster.refresh();
             }
+
+            // если есть новенькие клиенты, собираем все сущности для primary_replication
+            if exist_new_conn {
+                let s = format!("updmonstr {} {} {} {} {}", id_monstr.id, class.name, state.state, position.x, position.y);
+                let smsg: String = s.to_string();
+                let recv_buf2 = smsg.into_bytes();
+                recv_obj.push(recv_buf2.to_vec());
+                // отсылаем по 500 штук.
+                if recv_obj.len() > 100 {
+                    //trace!("REPLICATION primary_replication_500");
+                    self.server_data.primary_replication(&mut recv_obj); // первичная репликация
+                }
+            }
         }
 
-        // первичная рассылка. для вновь подключенных клиентов.
         if exist_new_conn {
-            trace!("REPLICATION primary_replication_final");
-            self.server_data.primary_replication(&mut recv_obj);
+            // Выполняем первичную репликацию, на тот случай если объектов меньше 500.
+            //
+            self.server_data.primary_replication(&mut recv_obj); // первичная репликация
         }
-
     });
-
-
-
-
-    // получение разных аспектов
-    //    fn data_aspects(&mut self) -> Vec<Aspect> {
-    //        vec!(aspect_all![FirstAspectComponent, FirstAspectComponent2], aspect_all![SecondAspectComponent, SecondAspectComponent2])
-    //    }
-
-
-    // складываем разные аспекты в разные вектора.
-    // fn data_aspects(&self) -> Vec<Aspect> { vec![aspect_all![FloraClass].optional(), aspect_all![MonsterClass].optional()] }
-
-
-
-    // вызывается 1 раз при update, но для каждой сущности свой process_one
-    //fn  process_one(&mut self, _entity: &mut Entity) {
-
-    // process_d вызывается при update, 1 раз для каждой сущности из fn aspect(&self).
-    //    fn process_d(&mut self, _entity: &mut Entity, data: &mut DataList) {
-    //        // перебираем все сущности.
-    //        let entities = data.unwrap_all(); // тут лежит вся флора.
-    //        for entity in entities {
-    //        }
-    //    }
 }
 
 
@@ -422,7 +396,7 @@ impl ReplicationServer {
             };
 
             match self.find_connection_by_token(token).register(poll) {
-                Ok(_) => {},
+                Ok(_) => {}
                 Err(e) => {
                     error!("Сбой регистрации {:?} соединения в опроснике событий, {:?}", token, e);
                     self.conns.remove(token);

@@ -67,6 +67,8 @@ pub enum BehaviorActions {
 /// Собятия монстра
 #[derive(Copy, Clone, RustcDecodable, RustcEncodable, PartialEq, Eq, Debug)]
 pub enum BehaviorEventEnum {
+    // Нет событий.
+    NoEvent,
     // Обнаружена вода.
     _FoundWater,
     // Обнаружена еда.
@@ -83,8 +85,9 @@ pub enum BehaviorEventEnum {
     _DrinkFull,
     // Монстр отдохнул.
     PowerFull,
-    // Нет событий.
-    NoEvent,
+    // цель потеряна
+    TargetLost,
+
 }
 
 

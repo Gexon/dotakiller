@@ -58,7 +58,9 @@ impl System for PerceptionSystem {
                         monster_map.action_target.position.y = pos_y as f32;
                         monster_state.view_food = true;
                         break 'outer;
-                    } else {
+                    };
+                    {
+                        // если мы попали сюда, значит не сработал break 'outer; а это значит что нет целей рядом.
                         // убираем растение из цели
                         monster_map.action_target.target_type = TargetType::None;
                         monster_state.view_food = false;
@@ -89,7 +91,9 @@ impl System for EventSystem {
             let mut behaviour_event = entity.get_component::<BehaviourEvents>(); // события
             let mut monster_state = entity.get_component::<MonsterState>();
             let monster_attr = entity.get_component::<MonsterAttributes>(); //
+            let monster_map = entity.get_component::<MonsterMaps>();
             //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+
 
             // реакция на обнаружение еды.
             if monster_state.view_food
@@ -99,10 +103,17 @@ impl System for EventSystem {
                 // то, добавляем его туда.
                 behaviour_event.event.push(BehaviorEventEnum::FoundFood);
                 //println!("Новое событие: монстр {} обнаружил еду!", monster_id.id);
+                // убираем событие потери цели если видим еду.
+                behaviour_event.event.retain(|x| x != &BehaviorEventEnum::TargetLost);
             } else if behaviour_event.event.contains(&BehaviorEventEnum::FoundFood) {
                 // если еды нет в поле зрения и есть событие обнаружения еды,
                 // то удалить событие из очереди.
                 behaviour_event.event.retain(|x| x != &BehaviorEventEnum::FoundFood);
+                // при потере цели добавить событие потери цели(еды)
+                if monster_map.action_target.target_type != TargetType::None
+                    && !behaviour_event.event.contains(&BehaviorEventEnum::TargetLost) {
+                    behaviour_event.event.push(BehaviorEventEnum::TargetLost);
+                }
             }
 
             // реакция на голод.
@@ -315,7 +326,7 @@ impl System for BioSystems {
                         x: target.position.x,
                         y: target.position.y,
                     });
-
+                    println!("event.push монстр {}", monster_id.id);
                     // наполняем монстру желудок
                     monster_attr.hungry += 10;
                 }
@@ -677,7 +688,7 @@ pub fn run_find_food(entity: &Entity) -> Status {
     let mut monster_state = entity.get_component::<MonsterState>();
     let mut behaviour_event = entity.get_component::<BehaviourEvents>(); // события
     let mut position = entity.get_component::<Position>();
-    //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+    let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
     // поиск пищи. ходим по окружности
     if monster_attr.speed == 1 { monster_attr.speed = 2 };
     next_step_around(&mut position, monster_attr.speed as f32, &mut monster_state);
@@ -691,11 +702,11 @@ pub fn run_find_food(entity: &Entity) -> Status {
         vec.retain(|&x| x%2 == 0);
         assert_eq!(vec, [2, 4]);*/
         behaviour_event.event.retain(|x| x != &BehaviorEventEnum::FoundFood);
-        //println!("Монстр {} вижу пальму", monster_id.id);
+        println!("Монстр {} вижу пальму", monster_id.id);
         return Status::Success
     }
 
-    //println!("Монстр {} ищет че бы поесть", monster_id.id);
+    println!("Монстр {} ищет че бы поесть", monster_id.id);
     Status::Running
 }
 
@@ -703,7 +714,7 @@ pub fn run_find_food(entity: &Entity) -> Status {
 /// Действие монстра "трапезничать"
 pub fn run_meal(entity: &Entity) -> Status {
     let mut behaviour_event = entity.get_component::<BehaviourEvents>(); // события
-    //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+    let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
 
 
     // наелся
@@ -713,10 +724,13 @@ pub fn run_meal(entity: &Entity) -> Status {
         behaviour_event.action = BehaviorActions::Null;
         //println!("монстр {} наелся", monster_id.id);
         return Status::Success
+    } else if behaviour_event.event.contains(&BehaviorEventEnum::TargetLost) {
+        behaviour_event.event.retain(|x| x != &BehaviorEventEnum::TargetLost);
+        return Status::Failure
     }
 
     // пальму съесть
     behaviour_event.action = BehaviorActions::Meal;
-    //println!("монстр {} ест", monster_id.id);
+    println!("монстр {} ест", monster_id.id);
     Status::Running
 }

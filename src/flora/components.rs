@@ -29,4 +29,3 @@ pub struct FloraState {
 }
 
 impl Component for FloraState {}
-

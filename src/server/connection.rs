@@ -81,7 +81,7 @@ impl Connection {
     /// В буфере возвращается "сервер", так что сообщение может быть передано на все прослушивания соединений.
     pub fn readable(&mut self) -> io::Result<Option<Vec<u8>>> {
         let msg_len = match try!(self.read_message_length()) {
-            None => { return Ok(None); },
+            None => { return Ok(None); }
             Some(n) => n,
         };
 
@@ -120,14 +120,14 @@ impl Connection {
                         //recv2_buf = Vec::with_capacity(smsg_len);
                         //unsafe { recv2_buf.set_len(smsg_len); }
                         recv2_buf = smsg.into_bytes();
-                    },
+                    }
                     "ping" => {
                         let smsg: String = s.to_string();
                         //let smsg_len = smsg.len();
                         //recv2_buf = Vec::with_capacity(smsg_len);
                         //unsafe { recv2_buf.set_len(smsg_len); }
                         recv2_buf = smsg.into_bytes();
-                    },
+                    }
                     _ => (),
                 }
 
@@ -170,7 +170,7 @@ impl Connection {
                 //let s = str::from_utf8(&buf[..]).unwrap();
                 //println!("Содержимое длины сообщения:{}, количество считанных байт:{}", s, n);
                 n
-            },
+            }
             Err(e) => {
                 if e.kind() == ErrorKind::WouldBlock {
                     return Ok(None);
@@ -217,17 +217,17 @@ impl Connection {
                         // сообщение помещается обратно в очередь, так что мы можем снова попробовать
                         self.send_queue.push(buf);
                         return Ok(());
-                    },
+                    }
                     Ok(Some(())) => {
 //                        let s = str::from_utf8(&buf[..]).unwrap();
 //                        let len = s.len();
 //                        if len > 0 {
-//                            if s != "ping" && s != "pos" {
+//                            if s != "ping" {
 //                                println!("send>{}", s);
 //                            }
 //                        };
                         ()
-                    },
+                    }
                     Err(e) => {
                         error!("Сбой отправки буфера {:?}, ошибка: {}", self.token, e);
                         return Err(e);
@@ -236,10 +236,13 @@ impl Connection {
 
                 match self.sock.write(&*buf) {
                     Ok(_n) => {
-                        //debug!("CONN : записано {} bytes", n);
+                        //debug!("CONN : записано {} bytes, длина буфера {} bytes", _n, buf.len());
+                        // То есть, если при write ты получил Ok(n),
+                        // то n может быть от 0 до buf.len(),
+                        // но гарантии что записалось ровно buf.len() байт нет.
                         self.write_continuation = false;
                         Ok(())
-                    },
+                    }
                     Err(e) => {
                         if e.kind() == ErrorKind::WouldBlock {
                             debug!("client flushing buf; WouldBlock");
@@ -359,7 +362,6 @@ impl Connection {
     /// метим соединение для сброса
     pub fn mark_reset(&mut self) {
         //trace!("connection mark_reset; token={:?}", self.token);
-
         self.is_reset = true;
     }
 
@@ -375,6 +377,10 @@ impl Connection {
 
     pub fn mark_old(&mut self) {
         self.is_newbe = false;
+    }
+
+    pub fn get_name(&mut self) -> Vec<u8> {
+        self.name.clone()
     }
 
 

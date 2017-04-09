@@ -139,14 +139,14 @@ impl System for SpawnMonsterSystem {
                 entity_object.add_component(MonsterAttributes {
                     speed: 1,
                     power: 1000,
-                    hungry: 800,
+                    hungry: 960,
                     danger_power: 960,
                     danger_hungry: 960,
                 });
                 entity_object.add_component(MonsterMaps::new());
                 entity_object.refresh();
-                let monster_id = entity_object.get_component::<MonsterId>();
-                println!("Создаем сущность {} {}", spawn_point.name.to_string(), monster_id.id);
+                //let monster_id = entity_object.get_component::<MonsterId>();
+                //println!("Создаем сущность {} {}", spawn_point.name.to_string(), monster_id.id);
                 last_id.monster_id += 1;
             }
 
@@ -183,7 +183,7 @@ impl System for FloraEventSystem {
                 for entity in entities {
                     let mut flora_state = entity.get_component::<FloraState>();
                     let flora_position = entity.get_component::<Position>();
-                    let flora_id = entity.get_component::<HerbId>();
+                    //let flora_id = entity.get_component::<HerbId>();
                     //println!("event.pop растение {}", flora_id.id);
                     //if flora_position.x == event.x && flora_position.y == event.y {
                     if (flora_position.x - event.x).abs() < ::std::f32::EPSILON &&
@@ -191,7 +191,7 @@ impl System for FloraEventSystem {
                         if flora_state.mass > event.value {
                             flora_state.mass -= event.value;
                         } else { self.kill_flora(entity, &mut flora_state.mass) }
-                        println!("Растение:{}, масса:{}", flora_id.id, flora_state.mass);
+                        //println!("Растение:{}, масса:{}", flora_id.id, flora_state.mass);
                     }
                 }
             }

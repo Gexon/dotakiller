@@ -148,7 +148,7 @@ impl System for PlantDeadSystem {
         // перебираем все сущности
         for entity in entities {
             let name = entity.get_component::<Name>(); // удалить, только для лога
-            let id_herb = entity.get_component::<HerbId>(); // удалить, только для лога
+            //let id_herb = entity.get_component::<HerbId>(); // удалить, только для лога
 
             let mut state = entity.get_component::<FloraState>();
             let position = entity.get_component::<Position>();
@@ -170,7 +170,7 @@ impl System for PlantDeadSystem {
             entity.add_component(Replication); // требуется репликация.
             entity.add_component(Remove); // требуется убрать с полей.
             entity.refresh();
-            println!("{} {} крякнула", name.name, id_herb.id);
+            //println!("{} {} крякнула", name.name, id_herb.id);
         }
     }
 }

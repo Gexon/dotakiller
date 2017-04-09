@@ -5,6 +5,7 @@ use tinyecs::*;
 use std::io::{self, ErrorKind};
 use std::rc::Rc;
 use std::net::SocketAddr;
+use std::str;
 
 use mio::*;
 use mio::tcp::*;
@@ -59,7 +60,12 @@ impl ReplicationServerSystem {
             conns: Slab::with_capacity(128),
 
             // Список событий что сервер должен обработать.
-            events: Events::with_capacity(1024)
+            events: Events::with_capacity(1024),
+
+            // вектор с потраченными игроками
+            player_potra4eno: Vec::new(),
+            // Флаг потери соединения или отключения клиента.
+            flag_potra4eno: false,
         };
 
         server.register(&mut poll).expect("I WANT HANDLE ERROR");
@@ -107,6 +113,10 @@ impl System for ReplicationServerSystem {
             self.server_data.ready(&mut self.poll, event.token(), event.kind());
             i += 1;
         }
+
+
+
+
         self.server_data.tick(&mut self.poll);
 
         // вектор векторов, для primary_replication. в нем храним все объекты с карты.
@@ -138,8 +148,8 @@ impl System for ReplicationServerSystem {
                 recv_obj.push(recv_buf2.to_vec());
                 // отсылаем по 500 штук.
                 if recv_obj.len() > 100 {
-                    //trace!("REPLICATION primary_replication_500");
-                    self.server_data.primary_replication(&mut recv_obj);
+                    //trace!("REPLICATION primary_replication_100 FLORA, Длина объектов: {}", recv_obj.len());
+                    self.server_data.primary_replication(&mut recv_obj, false);
                 }
             }
         }
@@ -168,16 +178,15 @@ impl System for ReplicationServerSystem {
                 recv_obj.push(recv_buf2.to_vec());
                 // отсылаем по 500 штук.
                 if recv_obj.len() > 100 {
-                    //trace!("REPLICATION primary_replication_500");
-                    self.server_data.primary_replication(&mut recv_obj); // первичная репликация
+                    //trace!("REPLICATION primary_replication_100 MONSTER");
+                    self.server_data.primary_replication(&mut recv_obj, false); // первичная репликация
                 }
             }
         }
 
         if exist_new_conn {
             // Выполняем первичную репликацию, на тот случай если объектов меньше 500.
-            //
-            self.server_data.primary_replication(&mut recv_obj); // первичная репликация
+            self.server_data.primary_replication(&mut recv_obj, true); // первичная репликация
         }
     });
 }
@@ -192,6 +201,10 @@ pub struct ReplicationServer {
     conns: Slab<Connection>,
     // список событий для обработки
     events: Events,
+    // вектор с именами отключенных клиентов.
+    player_potra4eno: Vec<Vec<u8>>,
+    // флаг потери клиента, рассылаем всем собщение.
+    flag_potra4eno: bool,
 }
 
 impl ReplicationServer {
@@ -219,7 +232,7 @@ impl ReplicationServer {
     }
 
     /// первичная репликация
-    pub fn primary_replication(&mut self, recv_obj: &mut Vec<Vec<u8>>) {
+    pub fn primary_replication(&mut self, recv_obj: &mut Vec<Vec<u8>>, mark_old: bool) {
         for c in self.conns.iter_mut() {
             if c.is_newbe() {
                 while !recv_obj.is_empty() {
@@ -232,11 +245,26 @@ impl ReplicationServer {
                             });
                     }
                 }
+                if mark_old { c.mark_old(); }
             }
-            c.mark_old();
         }
     }
 
+
+    /// Заполняем вектор с потраченными клиентами.
+    // с отключенными, для оповещения остальным об этом.
+    pub fn filling_potra4eno(&mut self, token: &Token) {
+        // разослать всем, что игрок вышел
+        let vec_name: Vec<u8>;
+        vec_name = self.find_connection_by_token(*token).get_name();
+        let s_vec = str::from_utf8(&vec_name[..]).unwrap();
+        let s = format!("delpos {}", s_vec);
+        //println!("отключение клиента {}", s);
+        let s_msg: String = s.to_string();
+        let message = s_msg.into_bytes();
+        self.player_potra4eno.push(message);
+        self.flag_potra4eno = true;
+    }
 
     /// Регистрация серверного опросника событий.
     ///
@@ -290,16 +318,36 @@ impl ReplicationServer {
                 }
             }
         }
+
+        if self.flag_potra4eno {
+            let recv_obj = &mut self.player_potra4eno;
+            for c in self.conns.iter_mut() {
+                while !recv_obj.is_empty() {
+                    if let Some(message) = recv_obj.pop() {
+                        let rc_message = Rc::new(message);
+                        c.send_message(rc_message.clone())
+                            .unwrap_or_else(|e| {
+                                error!("Сбой записи сообщения в очередь {:?}: {:?}", c.token, e);
+                                c.mark_reset();
+                            });
+                    }
+                }
+            }
+            self.flag_potra4eno = false;
+        }
     }
 
     /// обработчик события
     fn ready(&mut self, poll: &mut Poll, token: Token, event: Ready) {
         //debug!("токен {:?} событие = {:?}", token, event);
         //println!("токен {:?} событие = {:?}", token, event);
+        //let do_potra4eno: bool = false;
+
 
         if event.is_error() {
             warn!("Ошибка события токена{:?}", token);
             //println!("Ошибка события токена{:?}", token);
+            self.filling_potra4eno(&token);
             self.find_connection_by_token(token).mark_reset(); // пометить на сброс соединения
             return;
         }
@@ -307,10 +355,12 @@ impl ReplicationServer {
         if event.is_hup() {
             //trace!("Hup event for {:?}", token);
             //println!("Hup event for {:?}", token);
+            self.filling_potra4eno(&token);
             self.find_connection_by_token(token).mark_reset();
             return;
         }
 
+        let mut do_potra4eno = false;
         // Мы не обнаружили ошибок записи событий для токена нашего сервера.
         // Запись события для прочих токенов, должны передаваться этому подключению.
         if event.is_writable() {
@@ -328,9 +378,12 @@ impl ReplicationServer {
             conn.writable()
                 .unwrap_or_else(|e| {
                     warn!("Ошибка записи события для токена {:?}, {:?}", token, e);
+                    do_potra4eno = true;
                     conn.mark_reset();
                 });
         }
+
+        if do_potra4eno { self.filling_potra4eno(&token); }
 
         // A read event for our `Server` token means we are establishing a new connection.
         // Событие чтения для токена нашего сервера означает, что мы устанавливаем новое соединение.
@@ -349,6 +402,7 @@ impl ReplicationServer {
                 self.readable(token)
                     .unwrap_or_else(|e| {
                         warn!("Ошибка чтения события для токена {:?}: {:?}", token, e);
+                        self.filling_potra4eno(&token);
                         self.find_connection_by_token(token).mark_reset();
                     });
             }

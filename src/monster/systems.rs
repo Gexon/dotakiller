@@ -105,15 +105,20 @@ impl System for EventSystem {
                 //println!("Новое событие: монстр {} обнаружил еду!", monster_id.id);
                 // убираем событие потери цели если видим еду.
                 behaviour_event.event.retain(|x| x != &BehaviorEventEnum::TargetLost);
-            } else if behaviour_event.event.contains(&BehaviorEventEnum::FoundFood) {
-                // если еды нет в поле зрения и есть событие обнаружения еды,
-                // то удалить событие из очереди.
+            } else if
+                // если не видно цели, то:
+                // проверяем наличие события обнаружения еды.
+                behaviour_event.event.contains(&BehaviorEventEnum::FoundFood) {
+                // если висит событие обнаружения еды, то убрать его из очереди событий
                 behaviour_event.event.retain(|x| x != &BehaviorEventEnum::FoundFood);
-                // при потере цели добавить событие потери цели(еды)
-                if monster_map.action_target.target_type != TargetType::None
-                    && !behaviour_event.event.contains(&BehaviorEventEnum::TargetLost) {
-                    behaviour_event.event.push(BehaviorEventEnum::TargetLost);
-                }
+            }
+
+            // реакция на потерю цели.
+            // если в цели ничего нет, то создать событие потери цели
+            if monster_map.action_target.target_type == TargetType::None
+                // если нет в событиях потери цели, то добавляем в очередь событий потерю цели
+                && !behaviour_event.event.contains(&BehaviorEventEnum::TargetLost) {
+                behaviour_event.event.push(BehaviorEventEnum::TargetLost);
             }
 
             // реакция на голод.
@@ -305,7 +310,7 @@ impl System for BioSystems {
             let mut monster_attr = entity.get_component::<MonsterAttributes>();
             let mut monster_map = entity.get_component::<MonsterMaps>();
             let behaviour_state = entity.get_component::<BehaviourEvents>(); // состояние
-            let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+            //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
 
             // power
             if behaviour_state.action == BehaviorActions::Sleep {
@@ -326,12 +331,12 @@ impl System for BioSystems {
                         x: target.position.x,
                         y: target.position.y,
                     });
-                    println!("event.push монстр {}", monster_id.id);
+                    //println!("event.push монстр {}", monster_id.id);
                     // наполняем монстру желудок
                     monster_attr.hungry += 10;
                 }
 
-                println!("power {}, hungry {}, монстр {}", monster_attr.power, monster_attr.hungry, monster_id.id);
+                //println!("power {}, hungry {}, монстр {}", monster_attr.power, monster_attr.hungry, monster_id.id);
             } else if monster_attr.hungry > 0 {
                 monster_attr.hungry -= 1;
             }
@@ -415,37 +420,44 @@ pub fn next_step(position: &mut Position, delta: f32, wind: &WindDirection) {
 // По кругу должен ходить.
 pub fn next_step_around(position: &mut Position, delta: f32, monster_state: &mut MonsterState) {
     // проверяем достижение цели
-    if (position.x as u32 == monster_state.target_point.x as u32)
-        & &(position.y as u32 == monster_state.target_point.y as u32) {
+    if (
+        (position.x as u32 == monster_state.target_point.x as u32)
+            && (position.y as u32 == monster_state.target_point.y as u32)
+    )
+        ||
+        (
+            (position.x - monster_state.target_point.x).abs() > 10f32 ||
+                (position.y - monster_state.target_point.y).abs() > 10f32
+        ) {
         // цель достигнута, ставим новую цель:
         // выбираем новую цель по направлению монстра.
         // две клетки вперед и одну вправо. меняем направление монстра.
         match monster_state.move_target.direct {
             Direction::North | Direction::NorthWest => {
-                if (position.x as u32) < GROUND_SIZE - 2 { monster_state.target_point.x += 2f32; };
-                if (position.y as u32) > 1 { monster_state.target_point.y -= 1f32; };
+                if (position.x as u32) < GROUND_SIZE - 4 { monster_state.target_point.x = position.x + 4f32; };
+                if (position.y as u32) > 1 { monster_state.target_point.y = position.y - 1f32; };
                 monster_state.move_target.direct = Direction::West;
             }
 
             Direction::West | Direction::WestSouth => {
-                if (position.y as u32) > 2 { monster_state.target_point.y -= 2f32; };
-                if (position.x as u32) > 1 { monster_state.target_point.x -= 1f32; };
+                if (position.y as u32) > 5 { monster_state.target_point.y = position.y - 5f32; };
+                if (position.x as u32) > 2 { monster_state.target_point.x = position.x - 2f32; };
                 monster_state.move_target.direct = Direction::South;
             }
 
             Direction::South | Direction::SouthEast => {
-                if (position.x as u32) > 2 { monster_state.target_point.x -= 2f32; };
-                if (position.y as u32) < GROUND_SIZE - 1 { monster_state.target_point.y += 1f32; };
+                if (position.x as u32) > 6 { monster_state.target_point.x = position.x - 6f32; };
+                if (position.y as u32) < GROUND_SIZE - 2 { monster_state.target_point.y = position.y + 2f32; };
                 monster_state.move_target.direct = Direction::East;
             }
 
             Direction::East | Direction::EastNorth => {
-                if (position.y as u32) < GROUND_SIZE - 2 { monster_state.target_point.y += 2f32; };
-                if (position.x as u32) < GROUND_SIZE - 1 { monster_state.target_point.x += 1f32; };
+                if (position.y as u32) < GROUND_SIZE - 7 { monster_state.target_point.y = position.y + 7f32; };
+                if (position.x as u32) < GROUND_SIZE - 3 { monster_state.target_point.x = position.x + 3f32; };
                 monster_state.move_target.direct = Direction::North;
             }
         }
-        println!("NEW target_x {}, target_y {}", monster_state.target_point.x, monster_state.target_point.y);
+        //println!("NEW target_x {}, target_y {}", monster_state.target_point.x, monster_state.target_point.y);
     } else {
         // цель не достигнута, делаем шаг в сторону цели.
         // расчеты по Х
@@ -642,25 +654,25 @@ pub fn run_check_hungry(entity: &Entity) -> Status {
 
 
 /// Действие монстра "искать воду"
-pub fn run_find_water(entity: &Entity) -> Status {
-    let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
-    println!("...zzz...монстр {}", monster_id.id);
+pub fn run_find_water(_entity: &Entity) -> Status {
+    //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+    //println!("...zzz...монстр {}", monster_id.id);
     Status::Success
 }
 
 
 /// Действие монстра "прием воды"
-pub fn run_water_intake(entity: &Entity) -> Status {
-    let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
-    println!("...zzz...монстр {}", monster_id.id);
+pub fn run_water_intake(_entity: &Entity) -> Status {
+    //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+    //println!("...zzz...монстр {}", monster_id.id);
     Status::Success
 }
 
 
 /// Действие монстра "движение к цели"
-pub fn run_move_to_target(entity: &Entity) -> Status {
-    let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
-    println!("...zzz...монстр {}", monster_id.id);
+pub fn run_move_to_target(_entity: &Entity) -> Status {
+    //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+    //println!("...zzz...монстр {}", monster_id.id);
     Status::Success
 }
 
@@ -688,7 +700,7 @@ pub fn run_find_food(entity: &Entity) -> Status {
     let mut monster_state = entity.get_component::<MonsterState>();
     let mut behaviour_event = entity.get_component::<BehaviourEvents>(); // события
     let mut position = entity.get_component::<Position>();
-    let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+    //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
     // поиск пищи. ходим по окружности
     if monster_attr.speed == 1 { monster_attr.speed = 2 };
     next_step_around(&mut position, monster_attr.speed as f32, &mut monster_state);
@@ -702,11 +714,12 @@ pub fn run_find_food(entity: &Entity) -> Status {
         vec.retain(|&x| x%2 == 0);
         assert_eq!(vec, [2, 4]);*/
         behaviour_event.event.retain(|x| x != &BehaviorEventEnum::FoundFood);
-        println!("Монстр {} вижу пальму", monster_id.id);
+        //println!("Монстр {} вижу пальму", monster_id.id);
+        monster_attr.speed = 1;
         return Status::Success
     }
 
-    println!("Монстр {} ищет че бы поесть", monster_id.id);
+    //println!("Монстр {} ищет че бы поесть", monster_id.id);
     Status::Running
 }
 
@@ -714,8 +727,7 @@ pub fn run_find_food(entity: &Entity) -> Status {
 /// Действие монстра "трапезничать"
 pub fn run_meal(entity: &Entity) -> Status {
     let mut behaviour_event = entity.get_component::<BehaviourEvents>(); // события
-    let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
-
+    //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
 
     // наелся
     if behaviour_event.event.contains(&BehaviorEventEnum::EatFull) {
@@ -725,12 +737,13 @@ pub fn run_meal(entity: &Entity) -> Status {
         //println!("монстр {} наелся", monster_id.id);
         return Status::Success
     } else if behaviour_event.event.contains(&BehaviorEventEnum::TargetLost) {
+        //println!("монстр {} потерял цель", monster_id.id);
         behaviour_event.event.retain(|x| x != &BehaviorEventEnum::TargetLost);
         return Status::Failure
     }
 
     // пальму съесть
     behaviour_event.action = BehaviorActions::Meal;
-    println!("монстр {} ест", monster_id.id);
+    //println!("монстр {} ест", monster_id.id);
     Status::Running
 }

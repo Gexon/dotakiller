@@ -31,7 +31,6 @@ use ::monster::components::MonsterClass;
 use ::monster::components::MonsterState;
 
 
-
 pub struct ReplicationServerSystem {
     server_data: ReplicationServer,
 }
@@ -186,7 +185,13 @@ impl System for ReplicationServerSystem {
 
     // Вынимаем аспекты макросом, т.к. там безумие в коде.
     impl_process!(self, _entity, | _replication_server_class: ReplicationServerClass | with (_floras, _monsters) => {
-    self.server_data.tick();
+        // обработка входящих соединений.
+        self.server_data.tick();
+
+        // вектор векторов, для primary_replication. в нем храним все объекты с карты.
+        let mut recv_obj: Vec<Vec<u8>> = Vec::new();
+        // определяем наличие свежих подключений, тербующих primary_replication
+        let exist_new_conn = self.server_data.exist_new_conn();
     });
 }
 

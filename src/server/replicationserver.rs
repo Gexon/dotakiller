@@ -344,21 +344,21 @@ impl ReplicationServer {
         //let do_potra4eno: bool = false;
 
 
-        if event.is_error() {
-            warn!("Ошибка события токена{:?}", token);
-            //println!("Ошибка события токена{:?}", token);
-            self.filling_potra4eno(&token);
-            self.find_connection_by_token(token).mark_reset(); // пометить на сброс соединения
-            return;
-        }
+//        if event.is_error() {
+//            warn!("Ошибка события токена{:?}", token);
+//            //println!("Ошибка события токена{:?}", token);
+//            self.filling_potra4eno(&token);
+//            self.find_connection_by_token(token).mark_reset(); // пометить на сброс соединения
+//            return;
+//        }
 
-        if event.is_hup() {
-            //trace!("Hup event for {:?}", token);
-            //println!("Hup event for {:?}", token);
-            self.filling_potra4eno(&token);
-            self.find_connection_by_token(token).mark_reset();
-            return;
-        }
+//        if event.is_hup() {
+//            //trace!("Hup event for {:?}", token);
+//            //println!("Hup event for {:?}", token);
+//            self.filling_potra4eno(&token);
+//            self.find_connection_by_token(token).mark_reset();
+//            return;
+//        }
 
         let mut do_potra4eno = false;
         // Мы не обнаружили ошибок записи событий для токена нашего сервера.

@@ -5,7 +5,7 @@ use std::str::FromStr;
 use ::utility::dbqury as db;
 
 // принимаем позицию клиента и рассылаем всем остальным.
-pub fn pos(args: &str, auth_token: &i64, name: &[u8], reset_conn: &bool) -> (String, i64, Vec<u8>, bool) {
+pub fn _pos(args: &str, auth_token: &i64, name: &[u8], reset_conn: &bool) -> (String, i64, Vec<u8>, bool) {
     // инициализация возвращаемых значений.
     let mut return_msg: String = String::from("");
     let mut return_token: i64 = *auth_token;
@@ -32,7 +32,7 @@ pub fn pos(args: &str, auth_token: &i64, name: &[u8], reset_conn: &bool) -> (Str
         // берем из БД имя по токену.
         let token_64: i64 = i64::from_str(vec_msg[0]).unwrap_or(0);
         return_token = token_64;
-        let name_from_db = db::get_name(&token_64);
+        let name_from_db = db::_get_name(&token_64);
         str_name = name_from_db;
         if str_name.is_empty() {
             return_reset = true;
@@ -44,7 +44,7 @@ pub fn pos(args: &str, auth_token: &i64, name: &[u8], reset_conn: &bool) -> (Str
     // если проверка имени прошла успешно, то
     if !return_reset {
         // проверяем актуальность токена
-        if check_token(&return_token) {
+        if _check_token(&return_token) {
             let head_msg: &str = "pos";
             return_msg = format!("{} {} {}", head_msg, str_name, vec_msg[1]);
         } else {
@@ -64,7 +64,7 @@ pub fn pos(args: &str, auth_token: &i64, name: &[u8], reset_conn: &bool) -> (Str
 }
 
 // проверяем актуальность токена
-pub fn check_token(auth_token: &i64) -> bool {
+pub fn _check_token(auth_token: &i64) -> bool {
     // расшифровываем
     // получаем текущую дату и сравниваем не истек ли токен.
     let current_time = time::get_time();

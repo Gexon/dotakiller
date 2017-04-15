@@ -1,7 +1,7 @@
 extern crate mysql;
 
 /// получаем имя из БД, по токену.
-pub fn get_name(auth_token: &i64) -> String {
+pub fn _get_name(auth_token: &i64) -> String {
     let pool = mysql::Pool::new("mysql://root:dk@localhost:3306").unwrap();
     let mut stmt0 = pool.prepare("  SELECT name \
                                     FROM dotakiller.accounts \

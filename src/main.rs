@@ -3,6 +3,11 @@ extern crate mio;
 extern crate slab;
 extern crate time;
 
+// tokio
+extern crate futures;
+extern crate tokio_core;
+extern crate tokio_io;
+
 #[macro_use]
 extern crate tinyecs;
 //use time::{PreciseTime, Duration};
@@ -11,7 +16,7 @@ extern crate tinyecs;
 extern crate slog;
 extern crate slog_stream;
 extern crate slog_stdlog;
-#[macro_use]
+//#[macro_use]
 extern crate log;
 
 extern crate bincode;
@@ -25,6 +30,7 @@ mod flora;
 mod monster;
 mod ground;
 
+// port 6655
 const SERVER_IP: &'static str = "192.168.0.131";
 //const  SERVER_IP: &'static str = "194.87.237.144";
 static GROUND_SPEED: i64 = 10;

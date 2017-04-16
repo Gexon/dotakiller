@@ -8,11 +8,12 @@ use std::cell::RefCell;
 use std::iter;
 use std::io::{Error, ErrorKind, BufReader};
 use std::time::Duration;
+use std::net::SocketAddr;
 
 use futures::Future;
 use futures::stream::{self, Stream};
 use futures::executor::{self, Spawn, Unpark};
-use tokio_core::net::TcpListener;
+use tokio_core::net::{TcpListener, TcpStream};
 use tokio_core::reactor::Core;
 use tokio_io::io;
 use tokio_io::AsyncRead;
@@ -30,6 +31,10 @@ use ::monster::components::MonsterId;
 use ::monster::components::MonsterClass;
 use ::monster::components::MonsterState;
 
+pub struct Connect {
+    stream: TcpStream,
+    is_new: bool,
+}
 
 pub struct ReplicationServerSystem {
     server_data: ReplicationServer,
@@ -51,7 +56,10 @@ impl ReplicationServerSystem {
 
         // Это однопоточный сервер, поэтому мы можем просто использовать RC и RefCell в
         // HashMap хранилище всех известных соединений.
+        // будем хранить тут список структуры подключения. для хранения данных о подключении.
         let connections = Rc::new(RefCell::new(HashMap::new()));
+
+
 
         let srv = socket.incoming().for_each(move |(stream, addr)| {
             println!("Входящее соединение: {}", addr);
@@ -63,9 +71,9 @@ impl ReplicationServerSystem {
             // Создать канал для потока, который в других сокетов будет
             // послать нам сообщения. Затем зарегистрировать наш адрес с потоком отправить
             // данных в США. RX Receive Data (Принимаемые данные) TX Transmit Data
-            let (tx, rx) = ::futures::sync::mpsc::unbounded();
-            connections.borrow_mut().insert(addr, tx);
-
+            let (tx, rx) = ::futures::sync::mpsc::unbounded::<String>();
+            //connections.borrow_mut().insert(addr, tx);
+            connections.borrow_mut().insert(addr, Connect{stream:stream, is_new:true});
             // Define here what we do for the actual I/O. That is, read a bunch of
             // lines from the socket and dispatch them while we also write any lines
             // from other sockets.
@@ -111,12 +119,14 @@ impl ReplicationServerSystem {
                         let iter = conns.iter_mut()
                             .filter(|&(&k, _)| k != addr)
                             .map(|(_, v)| v);
-                        for tx in iter {
-                            tx.send(format!("{}: {}", addr, msg)).unwrap();
-                        }
+//                        for tx in iter {
+//                            tx.send(format!("{}: {}", addr, msg)).unwrap();
+//                        }
+                        // берем записыватель и пишем.
+
                     } else {
                         let tx = conns.get_mut(&addr).unwrap();
-                        tx.send("You didn't send valid UTF-8.".to_string()).unwrap();
+                        //tx.send("You didn't send valid UTF-8.".to_string()).unwrap();
                     }
                     reader
                 })
@@ -125,7 +135,8 @@ impl ReplicationServerSystem {
             // Всякий раз, когда мы получаем строку на приемнике, мы пишем его
             // `WriteHalf<TcpStream>`.
             let socket_writer = rx.fold(writer, |writer, msg| {
-                let amt = io::write_all(writer, msg.into_bytes());
+                //let amt = io::write_all(writer, msg.into_bytes());
+                let amt = io::write_all(writer, "\n".as_bytes());
                 let amt = amt.map(|(writer, _)| writer);
                 amt.map_err(|_| ())
             });
@@ -148,7 +159,7 @@ impl ReplicationServerSystem {
                         .filter(|&(&k, _)| k != addr)
                         .map(|(_, v)| v);
                     for tx in iter {
-                        tx.send(format!("Клиент {} отвалился.", addr)).unwrap();
+                        //tx.send(format!("Клиент {} отвалился.", addr)).unwrap();
                     }
                 }
                 // ------------------------
@@ -165,6 +176,7 @@ impl ReplicationServerSystem {
 
         let mut server = ReplicationServer {
             core: core,
+            connections: connections,
         };
 
         ReplicationServerSystem {
@@ -192,16 +204,54 @@ impl System for ReplicationServerSystem {
         let mut recv_obj: Vec<Vec<u8>> = Vec::new();
         // определяем наличие свежих подключений, тербующих primary_replication
         let exist_new_conn = self.server_data.exist_new_conn();
+
+
     });
 }
 
 struct ReplicationServer {
+    // реактор обработчик событий.
     core: ::tokio_core::reactor::Core,
+    // тут список клиентов.
+    connections: Rc<(RefCell<(HashMap<SocketAddr, Connect>)>)>,
 }
 
 impl ReplicationServer {
+    /// оперделяем наличие новых соединений.
+    // имеем проблему в получении списка новых клиентов =)
+    pub fn exist_new_conn(&mut self) -> bool {
+//        let mut exist_new: bool = false;
+//        for c in self.conns.iter_mut() {
+//            if c.is_newbe() {
+//                exist_new = true;
+//            }
+//        }
+//        exist_new
+        true
+    }
+
+
     pub fn tick(&mut self) {
         // очередной тик сервака
         self.core.turn(Some(Duration::new(0, 1)));
+    }
+
+    /// Рассылаем всем подключениям
+    pub fn write_all_conn(&mut self){
+        // перебираем все подключения
+        //for conn in self.connections.iter() {
+        for (addr, conn) in self.connections.borrow().iter() {
+            // вынимаем TcpStream
+            let stream = conn.stream;
+            // создаем футуру для записи данных
+            let amt = io::write_all(writer, "\n".as_bytes());
+            let amt = amt.map(|(writer, _)| writer);
+            amt.map_err(|_| ());
+
+            let f_write = io::write_all(stream, b"\n"); //"текст".as_bytes()
+            //self.core.handle().spawn(f_write.map_err(|_| ()));
+
+            self.core.handle().spawn(f_write.map_err(|_| ()));
+        }
     }
 }

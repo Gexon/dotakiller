@@ -249,7 +249,7 @@ impl ReplicationServer {
             amt.map_err(|_| ());
 
             let f_write = io::write_all(stream, b"\n"); //"текст".as_bytes()
-            //self.core.handle().spawn(f_write.map_err(|_| ()));
+            //self.core.handle().spawn(f_write.map_err(|_| ()));dgdfgdfgdfgdf
 
             self.core.handle().spawn(f_write.map_err(|_| ()));
         }

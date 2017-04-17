@@ -9,7 +9,7 @@ use std::iter;
 use std::io::{Error, ErrorKind, BufReader};
 //use std::time::Duration;
 use std::net::SocketAddr;
-//use std::thread;
+use std::sync::{Arc, Mutex};
 
 use futures::Future;
 use futures::stream::{self, Stream};
@@ -162,11 +162,12 @@ pub struct ReplicationServer {
     // реактор обработчик событий.
     pub core: ::tokio_core::reactor::Core,
     // тут список клиентов tx.
-    pub connections: Rc<(RefCell<(HashMap<SocketAddr, mpsc::UnboundedSender<String>>)>)>,
+    pub connections: Arc<Mutex<HashMap<SocketAddr, mpsc::UnboundedSender<String>>>>,
     // список клиентов с каналом приема.
-    pub connections_recive: Rc<(RefCell<(HashMap<SocketAddr, mpsc::UnboundedSender<String>>)>)>,
+    //pub connections_recive: Rc<(RefCell<(HashMap<SocketAddr, mpsc::UnboundedSender<String>>)>)>,
+    pub connections_recive: Arc<Mutex<HashMap<SocketAddr, mpsc::UnboundedSender<String>>>>,
     // список клиентов с меткой нового подключения
-    pub connections_info: Rc<(RefCell<(HashMap<SocketAddr, Connect>)>)>,
+    pub connections_info: Arc<Mutex<HashMap<SocketAddr, Connect>>>,
 }
 
 impl ReplicationServer {
@@ -187,8 +188,10 @@ impl ReplicationServer {
         // HashMap хранилище всех известных соединений.
         // будем хранить тут список структуры подключения. для хранения данных о подключении.
         //let connections = Rc::new(RefCell::new(HashMap::new()));
-        let connections = self.connections.clone();
-        let connections_info = self.connections_info.clone();
+        let mut connections_info_locked = self.connections_info.lock().unwrap();
+        let mut connections_locked = self.connections.lock().unwrap();
+        //let connections = self.connections.clone();
+        //let connections_info = self.connections_info.clone();
 
         let srv = socket.incoming().for_each(move |(stream, addr)| {
             println!("Входящее соединение: {}", addr);
@@ -199,8 +202,8 @@ impl ReplicationServer {
             // данных в США. RX Receive Data (Принимаемые данные) TX Transmit Data
             let (tx, rx) = mpsc::unbounded::<String>();
             //let (tx_s, rx_s) = mpsc::unbounded::<String>();
-            connections.borrow_mut().insert(addr, tx);
-            connections_info.borrow_mut().insert(addr, Connect {
+            connections_locked.insert(addr, tx);
+            connections_info_locked.insert(addr, Connect {
                 is_new: true,
             });
             //            connections.borrow_mut().insert(
@@ -216,7 +219,7 @@ impl ReplicationServer {
             // Определяем, что мы делаем для активного/текущего ввода/вывода.
             // То есть, читаем кучу строк из сокета и обрабатываем их
             // и в то же время мы также записываем любые строки из других сокетов.
-            let connections_inner = connections.clone();
+            let connections_inner = self.connections.lock().unwrap();
             let reader = BufReader::new(reader);
 
             // Model читает частями из сокета путем mapping-га в бесконечном цикле
@@ -239,10 +242,10 @@ impl ReplicationServer {
                 let line = line.map(|(reader, vec)| {
                     (reader, String::from_utf8(vec))
                 });
-                let connections = connections_inner.clone();
+                //let connections = connections_inner.clone();
                 line.map(move |(reader, message)| {
                     println!("{}: {:?}", addr, message);
-                    let mut conns = connections.borrow_mut();
+                    let mut conns = self.connections.lock().unwrap();
                     if let Ok(msg) = message {
                         // Для каждого открытого соединения, кроме отправителя, отправить
                         // строку через канал.
@@ -273,13 +276,13 @@ impl ReplicationServer {
             // Теперь, когда мы получили futures, представляющие каждую половину гнезда, мы
             // используем `select` комбинатор ждать либо половину нужно сделать, чтобы
             // рушить другие. Тогда мы порождать результат.
-            let connections = connections.clone();
+            let connections = self.connections.clone();
             let socket_reader = socket_reader.map_err(|_| ());
             let connection = socket_reader.map(|_| ()).select(socket_writer.map(|_| ()));
             handle.spawn(connection.then(move |_| {
                 // Для каждого открытого соединения, кроме отправителя, отправить
                 // строку через канал.
-                let mut conns = connections.borrow_mut();
+                let mut conns = connections.lock().unwrap();
                 {
                     let iter = conns.iter_mut()
                         .filter(|&(&k, _)| k != addr)

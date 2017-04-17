@@ -15,7 +15,7 @@ use futures::stream::{self, Stream};
 use futures::executor::{self, Spawn, Unpark};
 use tokio_core::net::{TcpListener, TcpStream};
 use tokio_core::reactor::Core;
-use tokio_io::io;
+use tokio_io::*;
 use tokio_io::AsyncRead;
 
 use SERVER_IP;
@@ -31,14 +31,41 @@ use ::monster::components::MonsterId;
 use ::monster::components::MonsterClass;
 use ::monster::components::MonsterState;
 
+#[derive(Clone)]
+struct TcpStreamCloneable {
+    inner: Rc<RefCell<::tokio_core::net::TcpStream>>,
+}
+
+impl ::std::io::Write for TcpStreamCloneable {
+    fn write(&mut self, data: &[u8]) -> ::std::io::Result<usize> {
+        self.inner.borrow_mut().write(data)
+    }
+
+    fn flush(&mut self) -> ::std::io::Result<()> {
+        self.inner.borrow_mut().flush()
+    }
+}
+
+impl ::tokio_io::AsyncWrite for TcpStreamCloneable {
+    fn shutdown(&mut self) -> ::futures::Poll<(), ::std::io::Error> {
+        let mut inner = ::std::cell::RefMut::map(self.inner.borrow_mut(),
+                                                 |inner| inner as &mut ::tokio_io::AsyncWrite);
+        inner.shutdown()
+    }
+}
+
 pub struct Connect {
-    stream: TcpStream,
-    is_new: bool,
+    pub stream: TcpStreamCloneable,
+    pub is_new: bool,
 }
 
 pub struct ReplicationServerSystem {
-    server_data: ReplicationServer,
+    // реактор обработчик событий.
+    core: ::tokio_core::reactor::Core,
+    // тут список клиентов.
+    connections: Rc<(RefCell<(HashMap<SocketAddr, Connect>)>)>,
 }
+
 
 impl ReplicationServerSystem {
     pub fn new() -> ReplicationServerSystem {
@@ -60,7 +87,6 @@ impl ReplicationServerSystem {
         let connections = Rc::new(RefCell::new(HashMap::new()));
 
 
-
         let srv = socket.incoming().for_each(move |(stream, addr)| {
             println!("Входящее соединение: {}", addr);
             let (reader, writer) = stream.split();
@@ -73,7 +99,10 @@ impl ReplicationServerSystem {
             // данных в США. RX Receive Data (Принимаемые данные) TX Transmit Data
             let (tx, rx) = ::futures::sync::mpsc::unbounded::<String>();
             //connections.borrow_mut().insert(addr, tx);
-            connections.borrow_mut().insert(addr, Connect{stream:stream, is_new:true});
+            connections.borrow_mut().insert(
+                addr,
+                Connect { stream: TcpStreamCloneable { inner: Rc::new(RefCell::new(stream)) }, is_new: true }
+            );
             // Define here what we do for the actual I/O. That is, read a bunch of
             // lines from the socket and dispatch them while we also write any lines
             // from other sockets.
@@ -119,11 +148,10 @@ impl ReplicationServerSystem {
                         let iter = conns.iter_mut()
                             .filter(|&(&k, _)| k != addr)
                             .map(|(_, v)| v);
-//                        for tx in iter {
-//                            tx.send(format!("{}: {}", addr, msg)).unwrap();
-//                        }
+                        //                        for tx in iter {
+                        //                            tx.send(format!("{}: {}", addr, msg)).unwrap();
+                        //                        }
                         // берем записыватель и пишем.
-
                     } else {
                         let tx = conns.get_mut(&addr).unwrap();
                         //tx.send("You didn't send valid UTF-8.".to_string()).unwrap();
@@ -174,13 +202,84 @@ impl ReplicationServerSystem {
 
         core.handle().spawn(srv.map_err(|_| ()));
 
-        let mut server = ReplicationServer {
+        ReplicationServerSystem {
             core: core,
             connections: connections,
-        };
+        }
+    }
 
-        ReplicationServerSystem {
-            server_data: server
+
+    /// оперделяем наличие новых соединений.
+    // имеем проблему в получении списка новых клиентов =)
+    pub fn exist_new_conn(&mut self) -> bool {
+        //        let mut exist_new: bool = false;
+        //        for c in self.conns.iter_mut() {
+        //            if c.is_newbe() {
+        //                exist_new = true;
+        //            }
+        //        }
+        //        exist_new
+        true
+    }
+
+
+    pub fn tick(&mut self) {
+        // очередной тик сервака
+        self.core.turn(Some(Duration::new(0, 1)));
+    }
+
+    /// Рассылаем всем подключениям
+    pub fn write_all_conn(&mut self) {
+        for (addr, conn) in self.connections.borrow().iter() {
+            let f_write = io::write_all(conn.stream.clone(), "\n".as_bytes())
+                .and_then(|_| Ok(()))
+                .map_err(|_| ());
+            let handle = self.core.handle();
+            handle.spawn(f_write);
+        }
+    }
+
+    pub fn write_all_conn2(&mut self) {
+        // перебираем все подключения
+        //for conn in self.connections.iter() {
+        for (addr, conn) in self.connections.borrow().iter() {
+            // вынимаем TcpStream
+            let ref stream = conn.stream;
+            // пишем в сокет
+            io::write_all(stream, "text".as_bytes()).and_then(|_| Ok(())).map_err(|_| ());
+            //io::write_all(stream, b"Hello!\n");
+
+            //            // расщипяем на атомы! АХАХААХ!!
+            //            let (reader, writer) = stream.split();
+            //            // создаем футуру для записи данных
+            //            let amt = io::write_all(writer, "\n".as_bytes());
+            //            let amt = amt.map(|(writer, _)| writer);
+            //            amt.map_err(|_| ());
+            //
+            //            let f_write = io::write_all(writer, b"\n"); //"текст".as_bytes()
+            //            let f_write = f_write.map(|(writer, _)| writer);
+            //            //self.core.handle().spawn(f_write.map_err(|_| ()));
+            //
+            //            let clients = listener.incoming();
+            //            let welcomes = clients.and_then(|(socket, _peer_addr)| {
+            //                tokio_core::io::write_all(socket, b"Hello!\n")
+            //            });
+            //            let server = welcomes.for_each(|(_socket, _welcome)| {
+            //                Ok(())
+            //            });
+
+            //            let srv = listener.incoming();
+            //            let welcomes = srv.map(|(socket, _peer_addr)| {
+            //                tokio_core::io::write_all(socket, b"hello!\n")
+            //            });
+            //
+            //            let handle = core.handle();
+            //            let server = welcomes.for_each(|future| {
+            //                handle.spawn(future.then(|_| Ok(())));
+            //                Ok(())
+            //            });
+
+            //self.core.handle().spawn(f_write.map_err(|_| ()));
         }
     }
 }
@@ -198,60 +297,21 @@ impl System for ReplicationServerSystem {
     // Вынимаем аспекты макросом, т.к. там безумие в коде.
     impl_process!(self, _entity, | _replication_server_class: ReplicationServerClass | with (_floras, _monsters) => {
         // обработка входящих соединений.
-        self.server_data.tick();
+        self.tick();
 
         // вектор векторов, для primary_replication. в нем храним все объекты с карты.
         let mut recv_obj: Vec<Vec<u8>> = Vec::new();
         // определяем наличие свежих подключений, тербующих primary_replication
-        let exist_new_conn = self.server_data.exist_new_conn();
+        let exist_new_conn = self.exist_new_conn();
 
 
     });
 }
 
-struct ReplicationServer {
-    // реактор обработчик событий.
-    core: ::tokio_core::reactor::Core,
-    // тут список клиентов.
-    connections: Rc<(RefCell<(HashMap<SocketAddr, Connect>)>)>,
-}
-
-impl ReplicationServer {
-    /// оперделяем наличие новых соединений.
-    // имеем проблему в получении списка новых клиентов =)
-    pub fn exist_new_conn(&mut self) -> bool {
-//        let mut exist_new: bool = false;
-//        for c in self.conns.iter_mut() {
-//            if c.is_newbe() {
-//                exist_new = true;
-//            }
-//        }
-//        exist_new
-        true
-    }
-
-
-    pub fn tick(&mut self) {
-        // очередной тик сервака
-        self.core.turn(Some(Duration::new(0, 1)));
-    }
-
-    /// Рассылаем всем подключениям
-    pub fn write_all_conn(&mut self){
-        // перебираем все подключения
-        //for conn in self.connections.iter() {
-        for (addr, conn) in self.connections.borrow().iter() {
-            // вынимаем TcpStream
-            let stream = conn.stream;
-            // создаем футуру для записи данных
-            let amt = io::write_all(writer, "\n".as_bytes());
-            let amt = amt.map(|(writer, _)| writer);
-            amt.map_err(|_| ());
-
-            let f_write = io::write_all(stream, b"\n"); //"текст".as_bytes()
-            //self.core.handle().spawn(f_write.map_err(|_| ()));dgdfgdfgdfgdf
-
-            self.core.handle().spawn(f_write.map_err(|_| ()));
-        }
-    }
-}
+/*
+    изменение типа future (map, map_err);
+    запуск другого future, когда исходный будет выполнен (then, and_then, or_else);
+    продолжение выполнения, когда хотя бы один из futures выполнился (select);
+    ожидание выполнения двух future (join);
+    определение поведения poll после вычислений (fuse).
+*/

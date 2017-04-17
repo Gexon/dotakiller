@@ -5,14 +5,14 @@ use tinyecs::*;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::cell::RefCell;
-use std::iter;
-use std::io::{Error, ErrorKind, BufReader};
+//use std::iter;
+//use std::io::{Error, ErrorKind, BufReader};
 use std::time::Duration;
 use std::net::SocketAddr;
 
 use futures::Future;
 use futures::stream::{self, Stream};
-use futures::executor::{self, Spawn, Unpark};
+//use futures::executor::{self, Spawn, Unpark};
 use tokio_core::net::{TcpListener, TcpStream};
 use tokio_core::reactor::Core;
 use tokio_io::*;
@@ -55,8 +55,8 @@ impl ::tokio_io::AsyncWrite for TcpStreamCloneable {
 }
 
 pub struct Connect {
-    pub stream: TcpStreamCloneable,
-    pub is_new: bool,
+    stream: TcpStreamCloneable,
+    is_new: bool,
 }
 
 pub struct ReplicationServerSystem {
@@ -85,11 +85,11 @@ impl ReplicationServerSystem {
         // HashMap хранилище всех известных соединений.
         // будем хранить тут список структуры подключения. для хранения данных о подключении.
         let connections = Rc::new(RefCell::new(HashMap::new()));
-
+        let connections_clone = connections.clone();
 
         let srv = socket.incoming().for_each(move |(stream, addr)| {
             println!("Входящее соединение: {}", addr);
-            let (reader, writer) = stream.split();
+            //let (reader, writer) = stream.split();
 
             // Create a channel for our stream, which other sockets will use to
             // send us messages. Then register our address with the stream to send
@@ -97,7 +97,7 @@ impl ReplicationServerSystem {
             // Создать канал для потока, который в других сокетов будет
             // послать нам сообщения. Затем зарегистрировать наш адрес с потоком отправить
             // данных в США. RX Receive Data (Принимаемые данные) TX Transmit Data
-            let (tx, rx) = ::futures::sync::mpsc::unbounded::<String>();
+            //let (tx, rx) = ::futures::sync::mpsc::unbounded::<String>();
             //connections.borrow_mut().insert(addr, tx);
             connections.borrow_mut().insert(
                 addr,
@@ -106,11 +106,13 @@ impl ReplicationServerSystem {
             // Define here what we do for the actual I/O. That is, read a bunch of
             // lines from the socket and dispatch them while we also write any lines
             // from other sockets.
+
             // Определяем, что мы делаем для активного/текущего ввода/вывода.
             // То есть, читаем кучу строк из сокета и обрабатываем их
             // и в то же время мы также записываем любые строки из других сокетов.
-            let connections_inner = connections.clone();
-            let reader = BufReader::new(reader);
+
+            //let connections_inner = connections.clone();
+            //let reader = BufReader::new(reader);
 
             // Model the read portion of this socket by mapping an infinite
             // iterator to each line off the socket. This "loop" is then
@@ -118,56 +120,56 @@ impl ReplicationServerSystem {
             // Model читает частями из сокета путем mapping-га в бесконечном цикле
             // для каждой строки из сокета. Этот "loop" завершается с ошибкой
             // после того как мы получили EOF на сокете.
-            let iter = stream::iter(iter::repeat(()).map(Ok::<(), Error>));
-            let socket_reader = iter.fold(reader, move |reader, _| {
-                // Read a line off the socket, failing if we're at EOF
-                // Прочитать строки из сокета, в противном случае, мы в EOF
-                let line = io::read_until(reader, b'\n', Vec::new());
-                let line = line.and_then(|(reader, vec)| {
-                    if vec.is_empty() {
-                        Err(Error::new(ErrorKind::BrokenPipe, "broken pipe"))
-                    } else {
-                        Ok((reader, vec))
-                    }
-                });
-
-                // Convert the bytes we read into a string, and then send that
-                // string to all other connected clients.
-                // Преобразовать байты в строку, а затем отправить
-                // строку всем остальным подключенным клиентам.
-                let line = line.map(|(reader, vec)| {
-                    (reader, String::from_utf8(vec))
-                });
-                let connections = connections_inner.clone();
-                line.map(move |(reader, message)| {
-                    println!("{}: {:?}", addr, message);
-                    let mut conns = connections.borrow_mut();
-                    if let Ok(msg) = message {
-                        // Для каждого открытого соединения, кроме отправителя, отправить
-                        // строку через канал.
-                        let iter = conns.iter_mut()
-                            .filter(|&(&k, _)| k != addr)
-                            .map(|(_, v)| v);
-                        //                        for tx in iter {
-                        //                            tx.send(format!("{}: {}", addr, msg)).unwrap();
-                        //                        }
-                        // берем записыватель и пишем.
-                    } else {
-                        let tx = conns.get_mut(&addr).unwrap();
-                        //tx.send("You didn't send valid UTF-8.".to_string()).unwrap();
-                    }
-                    reader
-                })
-            });
+            //let iter = stream::iter(iter::repeat(()).map(Ok::<(), Error>));
+//            let socket_reader = iter.fold(reader, move |reader, _| {
+//                // Read a line off the socket, failing if we're at EOF
+//                // Прочитать строки из сокета, в противном случае, мы в EOF
+//                let line = io::read_until(reader, b'\n', Vec::new());
+//                let line = line.and_then(|(reader, vec)| {
+//                    if vec.is_empty() {
+//                        Err(Error::new(ErrorKind::BrokenPipe, "broken pipe"))
+//                    } else {
+//                        Ok((reader, vec))
+//                    }
+//                });
+//
+//                // Convert the bytes we read into a string, and then send that
+//                // string to all other connected clients.
+//                // Преобразовать байты в строку, а затем отправить
+//                // строку всем остальным подключенным клиентам.
+//                let line = line.map(|(reader, vec)| {
+//                    (reader, String::from_utf8(vec))
+//                });
+//                let connections = connections_inner.clone();
+//                line.map(move |(reader, message)| {
+//                    println!("{}: {:?}", addr, message);
+//                    let mut conns = connections.borrow_mut();
+//                    if let Ok(msg) = message {
+//                        // Для каждого открытого соединения, кроме отправителя, отправить
+//                        // строку через канал.
+//                        let iter = conns.iter_mut()
+//                            .filter(|&(&k, _)| k != addr)
+//                            .map(|(_, v)| v);
+//                        //                        for tx in iter {
+//                        //                            tx.send(format!("{}: {}", addr, msg)).unwrap();
+//                        //                        }
+//                        // берем записыватель и пишем.
+//                    } else {
+//                        let tx = conns.get_mut(&addr).unwrap();
+//                        //tx.send("You didn't send valid UTF-8.".to_string()).unwrap();
+//                    }
+//                    reader
+//                })
+//            });
 
             // Всякий раз, когда мы получаем строку на приемнике, мы пишем его
             // `WriteHalf<TcpStream>`.
-            let socket_writer = rx.fold(writer, |writer, msg| {
-                //let amt = io::write_all(writer, msg.into_bytes());
-                let amt = io::write_all(writer, "\n".as_bytes());
-                let amt = amt.map(|(writer, _)| writer);
-                amt.map_err(|_| ())
-            });
+//            let socket_writer = rx.fold(writer, |writer, msg| {
+//                //let amt = io::write_all(writer, msg.into_bytes());
+//                let amt = io::write_all(writer, "\n".as_bytes());
+//                let amt = amt.map(|(writer, _)| writer);
+//                amt.map_err(|_| ())
+//            });
 
             // Now that we've got futures representing each half of the socket, we
             // use the `select` combinator to wait for either half to be done to
@@ -175,26 +177,26 @@ impl ReplicationServerSystem {
             // Теперь, когда мы получили futures, представляющие каждую половину гнезда, мы
             // используем `select` комбинатор ждать либо половину нужно сделать, чтобы
             // рушить другие. Тогда мы порождать результат.
-            let connections = connections.clone();
-            let socket_reader = socket_reader.map_err(|_| ());
-            let connection = socket_reader.map(|_| ()).select(socket_writer.map(|_| ()));
-            handle.spawn(connection.then(move |_| {
-                // Для каждого открытого соединения, кроме отправителя, отправить
-                // строку через канал.
-                let mut conns = connections.borrow_mut();
-                {
-                    let iter = conns.iter_mut()
-                        .filter(|&(&k, _)| k != addr)
-                        .map(|(_, v)| v);
-                    for tx in iter {
-                        //tx.send(format!("Клиент {} отвалился.", addr)).unwrap();
-                    }
-                }
-                // ------------------------
-                conns.remove(&addr);
-                println!("Соединение {} закрыто.", addr);
-                Ok(())
-            }));
+            //let connections = connections.clone();
+            //let socket_reader = socket_reader.map_err(|_| ());
+            //let connection = socket_reader.map(|_| ()).select(socket_writer.map(|_| ()));
+//            handle.spawn(connection.then(move |_| {
+//                // Для каждого открытого соединения, кроме отправителя, отправить
+//                // строку через канал.
+//                let mut conns = connections.borrow_mut();
+//                {
+//                    let iter = conns.iter_mut()
+//                        .filter(|&(&k, _)| k != addr)
+//                        .map(|(_, v)| v);
+//                    for tx in iter {
+//                        //tx.send(format!("Клиент {} отвалился.", addr)).unwrap();
+//                    }
+//                }
+//                // ------------------------
+//                conns.remove(&addr);
+//                println!("Соединение {} закрыто.", addr);
+//                Ok(())
+//            }));
 
 
             Ok(())
@@ -204,7 +206,7 @@ impl ReplicationServerSystem {
 
         ReplicationServerSystem {
             core: core,
-            connections: connections,
+            connections: connections_clone,
         }
     }
 
@@ -239,49 +241,7 @@ impl ReplicationServerSystem {
         }
     }
 
-    pub fn write_all_conn2(&mut self) {
-        // перебираем все подключения
-        //for conn in self.connections.iter() {
-        for (addr, conn) in self.connections.borrow().iter() {
-            // вынимаем TcpStream
-            let ref stream = conn.stream;
-            // пишем в сокет
-            io::write_all(stream, "text".as_bytes()).and_then(|_| Ok(())).map_err(|_| ());
-            //io::write_all(stream, b"Hello!\n");
 
-            //            // расщипяем на атомы! АХАХААХ!!
-            //            let (reader, writer) = stream.split();
-            //            // создаем футуру для записи данных
-            //            let amt = io::write_all(writer, "\n".as_bytes());
-            //            let amt = amt.map(|(writer, _)| writer);
-            //            amt.map_err(|_| ());
-            //
-            //            let f_write = io::write_all(writer, b"\n"); //"текст".as_bytes()
-            //            let f_write = f_write.map(|(writer, _)| writer);
-            //            //self.core.handle().spawn(f_write.map_err(|_| ()));
-            //
-            //            let clients = listener.incoming();
-            //            let welcomes = clients.and_then(|(socket, _peer_addr)| {
-            //                tokio_core::io::write_all(socket, b"Hello!\n")
-            //            });
-            //            let server = welcomes.for_each(|(_socket, _welcome)| {
-            //                Ok(())
-            //            });
-
-            //            let srv = listener.incoming();
-            //            let welcomes = srv.map(|(socket, _peer_addr)| {
-            //                tokio_core::io::write_all(socket, b"hello!\n")
-            //            });
-            //
-            //            let handle = core.handle();
-            //            let server = welcomes.for_each(|future| {
-            //                handle.spawn(future.then(|_| Ok(())));
-            //                Ok(())
-            //            });
-
-            //self.core.handle().spawn(f_write.map_err(|_| ()));
-        }
-    }
 }
 
 

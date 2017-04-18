@@ -117,14 +117,21 @@ impl ReplicationServerSystem {
 
     /// первичная репликация
     pub fn primary_replication(&mut self, _recv_obj: &mut Vec<Vec<u8>>, _mark_old: bool) {
-        self.write_all_conn("primary_replication\n".to_string());
+        //self.write_all_conn("primary_replication\n".to_string());
         // пометить всех кто принял первичную репликацию как стреньких.
         let mut connection_info_locked = self.connections_info.lock().unwrap();
-        for (_addr, mut conn) in connection_info_locked.iter_mut() {
+        let connection_locked = self.connections.lock().unwrap();
+        for (addr, mut conn) in connection_info_locked.iter_mut() {
             // рассылаем только новичкам
+            if conn.is_new {
+                if let Some(tx) = connection_locked.get(addr) {
+                    //tx.send(format!("primary_replication\n" /*addr,*//* message*/)).unwrap();
+                    tx.send("primary_replication\n".to_string() /*addr,*//* message*/).unwrap();
+                    // переписать всем флаг новичка на старичка
+                    conn.is_new = false;
+                }
 
-            // переписать всем флаг новичка на старичка
-            conn.is_new = false;
+            }
         }
     }
 
@@ -135,7 +142,7 @@ impl ReplicationServerSystem {
 
     /// Рассылаем всем подключениям
     // f_write.map(|_| ()).map_err(|_| ())
-    pub fn write_all_conn(&mut self, message: String) {
+    pub fn _write_all_conn(&mut self, message: String) {
         let connection_locked = self.connections.lock().unwrap();
         let mut conns = connection_locked.clone();
         //if let Ok(msg) = message {

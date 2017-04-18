@@ -58,8 +58,6 @@ impl ::tokio_io::AsyncWrite for TcpStreamCloneable {
 
 pub struct Connect {
     //stream: TcpStreamCloneable,
-    //pub tunnel_data: (mpsc::UnboundedSender<String>, mpsc::UnboundedReceiver<String>),
-    //pub tunnel_sync: (mpsc::UnboundedSender<String>, mpsc::UnboundedReceiver<String>),
     pub is_new: bool,
 }
 
@@ -119,26 +117,15 @@ impl ReplicationServerSystem {
 
     /// первичная репликация
     pub fn primary_replication(&mut self, _recv_obj: &mut Vec<Vec<u8>>, _mark_old: bool) {
-        self.write_all_conn();
-        //        for (addr, conn) in self.connections.borrow_mut().iter() {
-        //            // переписать всем флаг новичка на старичка
-        //            conn.is_new = false;
-        //        }
-        //        for c in self.conns.iter_mut() {
-        //            if c.is_newbe() {
-        //                while !recv_obj.is_empty() {
-        //                    if let Some(message) = recv_obj.pop() {
-        //                        let rc_message = Rc::new(message);
-        //                        c.send_message(rc_message.clone())
-        //                            .unwrap_or_else(|e| {
-        //                                error!("Сбой записи сообщения в очередь {:?}: {:?}", c.token, e);
-        //                                c.mark_reset();
-        //                            });
-        //                    }
-        //                }
-        //                if mark_old { c.mark_old(); }
-        //            }
-        //        }
+        self.write_all_conn("primary_replication\n".to_string());
+        // пометить всех кто принял первичную репликацию как стреньких.
+        let mut connection_info_locked = self.connections_info.lock().unwrap();
+        for (_addr, mut conn) in connection_info_locked.iter_mut() {
+            // рассылаем только новичкам
+
+            // переписать всем флаг новичка на старичка
+            conn.is_new = false;
+        }
     }
 
     pub fn tick(&mut self) {
@@ -148,14 +135,18 @@ impl ReplicationServerSystem {
 
     /// Рассылаем всем подключениям
     // f_write.map(|_| ()).map_err(|_| ())
-    pub fn write_all_conn(&mut self) {
-        //        for (addr, conn) in self.connections.borrow().iter() {
-        //            let f_write = io::write_all(conn.stream.clone(), "\n".as_bytes())
-        //                .map(|_| ())//.and_then(|_| Ok(()))
-        //                .map_err(|_| ());
-        //            let handle = self.core.handle();
-        //            handle.spawn(f_write);
-        //        }
+    pub fn write_all_conn(&mut self, message: String) {
+        let connection_locked = self.connections.lock().unwrap();
+        let mut conns = connection_locked.clone();
+        //if let Ok(msg) = message {
+        // Для каждого открытого соединения, кроме отправителя, отправить
+        // строку через канал.
+        let iter = conns.iter_mut()
+            //.filter(|&(&k, _)| k != addr)
+            .map(|(_, v)| v);
+        for tx in iter {
+            tx.send(format!("write_all_conn: {}", /*addr,*/ message)).unwrap();
+        }
     }
 }
 
@@ -276,11 +267,11 @@ impl ReplicationServer {
                 })
             });
 
+            // todo сервак падает если клиент отключатся
             // Всякий раз, когда мы получаем строку на приемнике, мы пишем его
             //`WriteHalf<TcpStream>`.
             let socket_writer = rx.fold(writer, |writer, msg| {
                 let amt = io::write_all(writer, msg.into_bytes());
-                //let amt = io::write_all(writer, b"\n"); //"\n".as_bytes()
                 let amt = amt.map(|(writer, _)| writer);
                 amt.map_err(|_| ())
             });
@@ -301,7 +292,7 @@ impl ReplicationServer {
                         .filter(|&(&k, _)| k != addr)
                         .map(|(_, v)| v);
                     for tx in iter {
-                        tx.send(format!("Клиент {} отвалился.", addr)).unwrap();
+                        tx.send(format!("Клиент {} отвалился.\n", addr)).unwrap();
                     }
                 }
                 // ------------------------

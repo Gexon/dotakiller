@@ -7,9 +7,9 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::iter;
 use std::io::{Error, ErrorKind, BufReader};
-//use std::time::Duration;
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
+use std::str;
 
 use futures::Future;
 use futures::stream::{self, Stream};
@@ -19,6 +19,10 @@ use tokio_core::net::{TcpListener};
 //use tokio_core::reactor::Core;
 use tokio_io::*;
 use tokio_io::AsyncRead;
+
+use byteorder::{ByteOrder, BigEndian};
+
+use ::server::commands as comm;
 
 use SERVER_IP;
 
@@ -59,6 +63,8 @@ impl ::tokio_io::AsyncWrite for TcpStreamCloneable {
 pub struct Connect {
     //stream: TcpStreamCloneable,
     pub is_new: bool,
+    pub token: i64,
+    pub name: String,
 }
 
 pub struct ReplicationServerSystem {
@@ -130,7 +136,6 @@ impl ReplicationServerSystem {
                     // переписать всем флаг новичка на старичка
                     conn.is_new = false;
                 }
-
             }
         }
     }
@@ -191,6 +196,7 @@ impl ReplicationServer {
         //let mut connections_info_locked = self.connections_info.lock().unwrap();
         //let mut connections_locked = self.connections.lock().unwrap();
         let connections = self.connections.clone();
+        let connections_recive = self.connections_recive.clone();
         let connections_info = self.connections_info.clone();
 
         let srv = socket.incoming().for_each(move |(stream, addr)| {
@@ -212,6 +218,8 @@ impl ReplicationServer {
                 connections_locked.insert(addr, tx);
                 connections_info_locked.insert(addr, Connect {
                     is_new: true,
+                    token: 0i64,
+                    name: "".to_string(),
                 });
             }
             //            connections.borrow_mut().insert(
@@ -237,7 +245,80 @@ impl ReplicationServer {
             let iter = stream::iter(iter::repeat(()).map(Ok::<(), Error>));
             let socket_reader = iter.fold(reader, move |reader, _| {
                 // Прочитать строки из сокета, в противном случае, мы в EOF
-                let line = io::read_until(reader, b'\n', Vec::new());
+                //let line = io::read_until(reader, b'\n', Vec::new());
+                // читаем длину сообщения
+                let mut buf = [0u8; 8];
+                //let line = io::read_exact(reader, buf).and_then();
+                let line = io::read_exact(reader, buf);
+                let line = line.and_then(|(reader, buf)| {
+                    // короче тут принимаем размер данных, создаем новый вектор для приема данных
+                    // и передаем его следующей футуре. ппц наркомания токио.
+                    let msg_len = BigEndian::read_u64(buf.as_ref());
+                    if msg_len == 0 && msg_len > 1048576 {
+                        Err(Error::new(ErrorKind::BrokenPipe, "Неверные размеры данных"))
+                    } else {
+                        //
+                        let msg_len = msg_len as usize;
+                        //debug!("Ожидаемая длина сообщения {}", msg_len);
+                        let mut recv_buf: Vec<u8> = Vec::with_capacity(msg_len);
+                        unsafe { recv_buf.set_len(msg_len); }
+                        Ok((reader, recv_buf))
+                    }
+                });
+
+                let line = line.and_then(|(reader, buf_recive)| {
+                    // читаем данные
+                    io::read_exact(reader, buf_recive)
+                });
+
+                let line = line.and_then(|(reader, buf)| {
+                    //debug!("CONN : считано {} байт", n);
+                    let mut recv2_buf = Vec::new();
+                    let s = str::from_utf8(&buf[..]).unwrap();
+                    let data = s.trim();
+                    let data: Vec<&str> = data.splitn(2, ' ').collect();
+                    match data[0] {
+                        "pos" => {
+//                            let mut connect = Connect {
+//                                name: "".to_string(),
+//                                token: 0,
+//                                is_new: false,
+//                            };
+                            let ref mut connect: Connect;
+
+                            let connection_info_clone = connections_info.clone();
+                            let connections_info_locked = connection_info_clone.lock().unwrap();
+                            if let Some(mut in_connect) = connections_info_locked.get(&addr) {
+                                connect = &mut in_connect;
+                            }
+
+                            let (smsg, return_token, return_name, _return_reset) = comm::pos(
+                                data[1], &connect.token, connect.name, false);
+                            // возвращаемые значения
+                            connect.token = return_token;
+                            connect.name = return_name;
+                            //self.is_reset = return_reset;
+                            // вектор с сообщением для рассылки.
+                            recv2_buf = smsg.into_bytes();
+//                            let mut connections_recive_locked = connections_recive.lock().unwrap();
+//                            if let Some(tx) = connections_recive_locked.get(&addr) {
+//                                tx.send(smsg).unwrap();
+//                            }
+                        }
+                        "ping" => {
+                            //let smsg: String = s.to_string();
+                            //let smsg_len = smsg.len();
+                            //recv2_buf = Vec::with_capacity(smsg_len);
+                            //unsafe { recv2_buf.set_len(smsg_len); }
+                            //recv2_buf = smsg.into_bytes();
+                            ()
+                        }
+                        _ => ()
+                    }
+                    Ok((reader, recv2_buf))
+                });
+
+
                 let line = line.and_then(|(reader, vec)| {
                     if vec.is_empty() {
                         Err(Error::new(ErrorKind::BrokenPipe, "broken pipe"))
@@ -277,6 +358,8 @@ impl ReplicationServer {
             // todo сервак падает если клиент отключатся
             // Всякий раз, когда мы получаем строку на приемнике, мы пишем его
             //`WriteHalf<TcpStream>`.
+            // тут нужно собрать пакет для отправки.
+            // склеить размер данных в первые 8 байт и сами данные.
             let socket_writer = rx.fold(writer, |writer, msg| {
                 let amt = io::write_all(writer, msg.into_bytes());
                 let amt = amt.map(|(writer, _)| writer);

@@ -5,16 +5,18 @@ use std::str::FromStr;
 use ::utility::dbqury as db;
 
 // принимаем позицию клиента и рассылаем всем остальным.
-pub fn _pos(args: &str, auth_token: &i64, name: &[u8], reset_conn: &bool) -> (String, i64, Vec<u8>, bool) {
+pub fn pos(args: &str, auth_token: &i64, name: String, reset_conn: bool) -> (String, i64, String, bool) {
+    // todo хранить токен в
     // инициализация возвращаемых значений.
     let mut return_msg: String = String::from("");
     let mut return_token: i64 = *auth_token;
     let return_name: Vec<u8>;
-    let mut return_reset: bool = *reset_conn;
+    let mut return_reset: bool = reset_conn;
 
     // принимаемый аргумент name, передаем строке.
-    let s = str::from_utf8(&name[..]).unwrap();
-    let mut str_name: String = s.to_string();
+    //let s = str::from_utf8(&name[..]).unwrap();
+    //let mut str_name: String = s.to_string();
+    let mut str_name = name;
 
     // для отладки.
     //println!("recv>{}", args);
@@ -54,13 +56,13 @@ pub fn _pos(args: &str, auth_token: &i64, name: &[u8], reset_conn: &bool) -> (St
         }
     }
 
-    let smsg_len = str_name.len();
-    let mut recv_buf: Vec<u8> = Vec::with_capacity(smsg_len);
-    unsafe { recv_buf.set_len(smsg_len); }
-    recv_buf = str_name.into_bytes();
-    return_name = recv_buf;
+    //let smsg_len = str_name.len();
+    //let mut recv_buf: Vec<u8> = Vec::with_capacity(smsg_len);
+    //unsafe { recv_buf.set_len(smsg_len); }
+    //recv_buf = str_name.into_bytes();
+    //return_name = recv_buf;
 
-    (return_msg, return_token, return_name, return_reset)
+    (return_msg, return_token, str_name, return_reset)
 }
 
 // проверяем актуальность токена

@@ -10,12 +10,12 @@ use std::sync::{Arc, Mutex};
 use tokio_core::reactor::Core;
 
 //use ::server::replicationserver::ReplicationServerSystem;
-use ::server::treplicationserver::ReplicationServerSystem;
-use ::server::treplicationserver::ReplicationServer;
+use ::server::replicationserver::ReplicationServerSystem;
+use ::server::replicationserver::ReplicationServer;
 //use ::server::monsterserver::MonsterServerSystem;
 use ::server::components::*;
 
-mod treplicationserver;
+mod replicationserver;
 //mod replicationserver;
 //mod monsterserver;
 mod components;

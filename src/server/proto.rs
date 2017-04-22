@@ -269,7 +269,6 @@ impl Encoder for MessageCodec {
     type Error = MessageError;
 
     fn encode(&mut self, message: Self::Item, buf: &mut BytesMut) -> Result<(), Self::Error> {
-        //message.write_to_buf(buf).map_err(MessageError::from)
         let mut msg_buf = BytesMut::with_capacity(20);
         try!(message
             .write_to_buf(&mut msg_buf)

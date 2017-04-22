@@ -39,6 +39,7 @@ pub fn message_pos(message: &Message,
                 Err("Не удалось извлечь имя из БД"
                     .to_string())
             } else {
+                println!("Имя из БД {}", name);
                 Ok(name)
             }
         } else {

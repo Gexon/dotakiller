@@ -21,6 +21,7 @@ mod treplicationserver;
 mod components;
 //mod connection;
 mod commands;
+mod proto;
 
 pub fn init(dk_world: &mut World) {
     {

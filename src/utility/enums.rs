@@ -1,7 +1,6 @@
 // Будем тут хранить все наши перечисления и функции к ним.
 // спс Adaman'у, за подсказки по энумам.
 
-
 /// Направление
 pub enum Direction {
     North = 0,
@@ -60,10 +59,6 @@ pub enum BehaviorActions {
     MoveToTarget,
 }
 
-
-
-
-
 /// Собятия монстра
 #[derive(Copy, Clone, RustcDecodable, RustcEncodable, PartialEq, Eq, Debug)]
 pub enum BehaviorEventEnum {
@@ -90,8 +85,6 @@ pub enum BehaviorEventEnum {
 
 }
 
-
-
 /// Список узлов графа
 pub enum BehaviorEnum {
     //функция, которая должна выполниться при посещении данного узла.
@@ -115,7 +108,6 @@ pub struct NodeBehavior {
     // статус выполнения.
     //pub status: Status,
 }
-
 
 
 /// Результат работы узла дерева.

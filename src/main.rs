@@ -1,4 +1,5 @@
 extern crate byteorder;
+extern crate bytes;
 extern crate mio;
 extern crate slab;
 extern crate time;

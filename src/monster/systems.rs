@@ -378,7 +378,7 @@ pub fn next_step(position: &mut Position, delta: f32, wind: &WindDirection) {
             }
         }
         Direction::NorthWest => {
-            if (position.x > position.y * 2f32) & &(position.x < (GROUND_SIZE as f32 - delta)) {
+            if (position.x > position.y * 2f32) && (position.x < (GROUND_SIZE as f32 - delta)) {
                 position.x += delta;
             }
         }
@@ -388,7 +388,7 @@ pub fn next_step(position: &mut Position, delta: f32, wind: &WindDirection) {
             }
         }
         Direction::WestSouth => {
-            if (position.y < position.x * 2f32) & &(position.y > 0f32 + delta) {
+            if (position.y < position.x * 2f32) && (position.y > 0f32 + delta) {
                 position.y -= delta;
             }
         }
@@ -398,7 +398,7 @@ pub fn next_step(position: &mut Position, delta: f32, wind: &WindDirection) {
             }
         }
         Direction::SouthEast => {
-            if (position.x < position.y * 2f32) & &(position.x > 0f32 + delta) {
+            if (position.x < (position.y * 2f32)) && (position.x > 0f32 + delta) {
                 position.x -= delta;
             }
         }
@@ -408,7 +408,7 @@ pub fn next_step(position: &mut Position, delta: f32, wind: &WindDirection) {
             }
         }
         Direction::EastNorth => {
-            if (position.y > position.x * 2f32) & &(position.y < (GROUND_SIZE as f32 - delta)) {
+            if (position.y > position.x * 2f32) && (position.y < (GROUND_SIZE as f32 - delta)) {
                 position.y += delta;
             }
         }

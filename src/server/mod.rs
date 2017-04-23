@@ -10,7 +10,7 @@ use std::sync::{Arc, Mutex};
 use tokio_core::reactor::Core;
 
 //use ::server::replicationserver::ReplicationServerSystem;
-use ::server::replicationserver::ReplicationServerSystem;
+use ::server::systems::ReplicationServerSystem;
 use ::server::replicationserver::ReplicationServer;
 //use ::server::monsterserver::MonsterServerSystem;
 use ::server::components::*;
@@ -22,6 +22,7 @@ mod components;
 //mod connection;
 mod commands;
 mod proto;
+mod systems;
 
 pub fn init(dk_world: &mut World) {
     {

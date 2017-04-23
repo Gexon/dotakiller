@@ -57,6 +57,8 @@ pub enum BehaviorActions {
     WaterIntake,
     // Перемещение к цели.
     MoveToTarget,
+    // Пошерудить в памяти о последнем месте с едой.
+    CheckMemMeal,
 }
 
 /// Собятия монстра

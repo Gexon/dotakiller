@@ -42,6 +42,7 @@ pub enum Message {
         state: i32,
         x: f32,
         y: f32,
+        emo: i32,
     },
     Ping,
     Raw(String),
@@ -80,8 +81,9 @@ impl Message {
                 state,
                 x,
                 y,
+                emo,
             } => {
-                buf.extend(format!("updmonstr {} {} {} {} {}", id, class, state, x, y).as_bytes());
+                buf.extend(format!("updmonstr {} {} {} {} {} {}", id, class, state, x, y, emo).as_bytes());
 
                 Ok(())
             }
@@ -154,7 +156,7 @@ impl FromStr for Message {
             }
 
             "updmonstr" => {
-                parse_message!(words_iter, id, class, state, x, y);
+                parse_message!(words_iter, id, class, state, x, y, emo);
 
                 Message::UpdMonster {
                     id,
@@ -162,6 +164,7 @@ impl FromStr for Message {
                     state,
                     x,
                     y,
+                    emo,
                 }
             }
 

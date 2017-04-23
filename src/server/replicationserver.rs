@@ -55,7 +55,7 @@ impl ReplicationServer {
         let srv = socket
             .incoming()
             .for_each(move |(stream, addr)| {
-                println!("Входящее соединение: {}", addr);
+                //println!("Входящее соединение: {}", addr);
                 let framed = stream.framed(MessageCodec);
                 let (writer, reader) = framed.split();
                 // Then register our address with the stream to send data to us.
@@ -105,7 +105,7 @@ impl ReplicationServer {
                             rx.then(|_| Err(Error::new(ErrorKind::Other, error_description))))
                     })
                     .for_each(move |message| {
-                        println!("Message: {:?}", message);
+                        //println!("Message: {:?}", message);
                         match message {
                             message @ Message::Pos { .. } => {
                                 let mut ci_locked = connections_info_inner.lock().unwrap();
@@ -144,8 +144,8 @@ impl ReplicationServer {
 
                             //Message::Ping => Ok(()),
 
-                            Message::Raw(message) => {
-                                println!("raw message: {}", message);
+                            Message::Raw(_message) => {
+                                //println!("raw message: {}", message);
                                 Ok(())
                             }
 
@@ -161,7 +161,7 @@ impl ReplicationServer {
                 // склеить размер данных в первые 8 байт и сами данные.
                 let socket_writer = rx.fold(writer, |writer, msg| match msg {
                     Ok(msg) => {
-                        println!("[SEND] {:?}", msg);
+                        //println!("[SEND] {:?}", msg);
                         writer.send(msg).map_err(|_| ()).boxed()
                     }
                     Err(error) => {
@@ -207,7 +207,7 @@ impl ReplicationServer {
                     }
                     // ------------------------
                     conns.remove(&addr);
-                    println!("Соединение {} закрыто.", addr);
+                    //println!("Соединение {} закрыто.", addr);
                     Ok(())
                 }));
 

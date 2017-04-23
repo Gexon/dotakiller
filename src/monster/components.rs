@@ -51,6 +51,8 @@ impl Component for MonsterId {}
 /// информация о состоянии монстра
 pub struct MonsterState {
     pub state: i32,
+    // emo
+    pub emo_state: i32,
     // устал
     pub low_power: bool,
     // голоден
@@ -59,6 +61,8 @@ pub struct MonsterState {
     pub view_food: bool,
 
     pub dead: i32,
+    // количество попыток поиска еды около себя.
+    pub find_around_count: i32,
     pub move_target: PositionM,
     pub old_position: PositionM,
     pub target_point: PositionM,
@@ -66,12 +70,32 @@ pub struct MonsterState {
 
 impl Component for MonsterState {}
 
+impl MonsterState {
+    pub fn new() -> MonsterState {
+        MonsterState {
+            state: 1,
+            emo_state: 0,
+            low_power: false,
+            low_food: false,
+            view_food: false,
+            dead: 0,
+            move_target: PositionM { x: 0f32, y: 0f32, direct: Direction::North },
+            old_position: PositionM { x: 0f32, y: 0f32, direct: Direction::North },
+            target_point: PositionM { x: 0f32, y: 0f32, direct: Direction::North },
+            find_around_count: 0i32,
+        }
+    }
+}
 
 /// характеристики монстра и его текущее состояние
 pub struct MonsterAttributes {
     pub speed: i32,
     pub power: i32,
     pub hungry: i32,
+    // является ли вожаком
+    pub lead: bool,
+    // id вожака
+    pub id_lead: i32,
     pub danger_power: i32,
     pub danger_hungry: i32,
 }
@@ -82,6 +106,7 @@ impl Component for MonsterAttributes {}
 /// тут будем хранить все объекты на карте.
 pub struct MonsterMaps {
     pub action_target: ActionTarget,
+    pub last_eating: PositionM,
     //pub view_map: Map<u8>,
     //pub foods_map: Vec<ActionTarget>,
     //pub waters_map: Map<u8>,
@@ -99,7 +124,12 @@ impl MonsterMaps {
                     direct: Direction::North,
                 },
                 target_type: TargetType::None,
-            }
+            },
+            last_eating: PositionM {
+                x: -1f32,
+                y: -1f32,
+                direct: Direction::North,
+            },
         }
     }
 }
@@ -135,23 +165,6 @@ pub struct SelectionTree {
     // это вектор с узлами графа. Содержат программу поведения.
     pub selector: NodeBehavior,
     // родительский узел хранит курсор на активный дочерний узел.
-
-    /*
-    - Дерево ИИ переоценивает ИИ-ассоциированные Selection Variables.
-    - Если выбранное поведение является тем же, что и текущее, то ничего не происходит.
-    - Если выбранное поведение другое, тогда ИИ вызывает destructor текущего поведения.
-    - ИИ переходит в новое поведение и...
-    - Constructor нового поведения вызывается в ИИ.
-
-    Selection Variables ассоциированные с ИИ модифицируются несколькими путями.
-
-    ИИ система создает новые сигналы, которые передаются в систему поведения
-    (например, система The Perception (система перцепции) определяет, что ИИ теперь может видеть игрока).
-    ...Сигналы получаются BHS принадлежащем ИИ и обрабатываются как определено в секции Signal Variable.
-    Текущее поведение ИИ получает сигнал и непосредственно изменяет Selection Variable.
-    ИИ система сама непосредственно изменяет Selection Variable, принадлежащую ИИ
-    (это обычно не требуется/в этом нет необходимости).
-    */
 }
 
 impl SelectionTree {
@@ -171,7 +184,6 @@ impl SelectionTree {
                             Box::new(NodeBehavior {
                                 behavior: BehaviorEnum::Action(BehaviorActions::CheckHungry),
                                 cursor: 0,
-                                //status: Status::Running,
                             }),
                             Box::new(NodeBehavior {
                                 // третий слой, нода выбора, проверка поиска еды.
@@ -179,30 +191,38 @@ impl SelectionTree {
                                     Box::new(NodeBehavior {
                                         behavior: BehaviorEnum::Action(BehaviorActions::FindFood),
                                         cursor: 0,
-                                        //status: Status::Running,
                                     }),
                                     Box::new(NodeBehavior {
                                         behavior: BehaviorEnum::Action(BehaviorActions::Meal),
                                         cursor: 0,
-                                        //status: Status::Running,
                                     }),
                                     Box::new(NodeBehavior {
-                                        behavior: BehaviorEnum::Action(BehaviorActions::Null),
+                                        // четвертый слой, поиск в памяти места еды
+                                        behavior: BehaviorEnum::If(
+                                            Box::new(NodeBehavior {
+                                                behavior: BehaviorEnum::Action(BehaviorActions::CheckMemMeal),
+                                                cursor: 0,
+                                            }),
+                                            Box::new(NodeBehavior {
+                                                behavior: BehaviorEnum::Action(BehaviorActions::MoveToTarget),
+                                                cursor: 0,
+                                            }),
+                                            Box::new(NodeBehavior {
+                                                behavior: BehaviorEnum::Action(BehaviorActions::Walk),
+                                                cursor: 0,
+                                            }),
+                                        ),
                                         cursor: 0,
-                                        //status: Status::Running,
                                     }),
                                 ),
                                 cursor: 0,
-                                //status: Status::Running,
                             }),
                             Box::new(NodeBehavior {
                                 behavior: BehaviorEnum::Action(BehaviorActions::Walk),
                                 cursor: 0,
-                                //status: Status::Running,
                             })
                         ),
                         cursor: 0,
-                        //status: Status::Running,
                     },
                     NodeBehavior {
                         behavior: BehaviorEnum::If(
@@ -210,27 +230,22 @@ impl SelectionTree {
                                 NodeBehavior {
                                     behavior: BehaviorEnum::Action(BehaviorActions::CheckTired),
                                     cursor: 0,
-                                    //status: Status::Running,
                                 }),
                             Box::new(
                                 NodeBehavior {
                                     behavior: BehaviorEnum::Action(BehaviorActions::Sleep),
                                     cursor: 0,
-                                    //status: Status::Running,
                                 }),
                             Box::new(
                                 NodeBehavior {
                                     behavior: BehaviorEnum::Action(BehaviorActions::Walk),
                                     cursor: 0,
-                                    //status: Status::Running,
                                 }),
                         ),
                         cursor: 0,
-                        //status: Status::Running,
                     }
                 ]),
                 cursor: 0,
-                //status: Status::Running,
             };
 
         SelectionTree {

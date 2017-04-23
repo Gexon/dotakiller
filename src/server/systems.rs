@@ -79,7 +79,7 @@ impl System for ReplicationServerSystem {
                     let class = monster.get_component::< Name > ();
                     let state = monster.get_component::< MonsterState > ();
                     let position = monster.get_component::< Position > ();
-                    let s = format ! ("updmonstr {} {} {} {} {}", id_monstr.id, class.name, state.state, position.x, position.y);
+                    let s = format ! ("updmonstr {} {} {} {} {} {}", id_monstr.id, class.name, state.state, position.x, position.y, state.emo_state);
                     tx.send(Ok(Message::Raw(s))).unwrap();
                     // основная репликация.
                 } else if monster.has_component::<Replication>() {
@@ -87,7 +87,7 @@ impl System for ReplicationServerSystem {
                     let class = monster.get_component::< Name > ();
                     let state = monster.get_component::< MonsterState > ();
                     let position = monster.get_component::< Position > ();
-                    let s = format ! ("updmonstr {} {} {} {} {}", id_monstr.id, class.name, state.state, position.x, position.y);
+                    let s = format ! ("updmonstr {} {} {} {} {} {}", id_monstr.id, class.name, state.state, position.x, position.y, state.emo_state);
                     tx.send(Ok(Message::Raw(s))).unwrap();
                 }
             });

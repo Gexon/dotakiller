@@ -119,16 +119,7 @@ impl System for SpawnMonsterSystem {
                     perception_time: PreciseTime::now()
                 });
                 entity_object.add_component(Replication); // произошли изменения монстра.
-                entity_object.add_component(MonsterState {
-                    state: 1,
-                    low_power: false,
-                    low_food: false,
-                    view_food: false,
-                    dead: 0,
-                    move_target: PositionM { x: 0f32, y: 0f32, direct: Direction::North },
-                    old_position: PositionM { x: 0f32, y: 0f32, direct: Direction::North },
-                    target_point: PositionM { x: 0f32, y: 0f32, direct: Direction::North },
-                });
+                entity_object.add_component(MonsterState::new());
                 entity_object.add_component(MonsterId { id: last_id.monster_id });
                 entity_object.add_component(SelectionTree::new());
                 entity_object.add_component(BehaviourEvents {
@@ -140,6 +131,8 @@ impl System for SpawnMonsterSystem {
                     speed: 1,
                     power: 1000,
                     hungry: 960,
+                    lead: false,
+                    id_lead: -1,
                     danger_power: 960,
                     danger_hungry: 960,
                 });
@@ -210,6 +203,55 @@ impl FloraEventSystem {
         entity.refresh();
     }
 }
+
+
+//
+///// система событий для монстров
+//// события поедания монстров монстрами.
+//// так же обновление карты.
+//pub struct MonsterEventSystem;
+//
+//impl System for MonsterEventSystem {
+//    fn aspect(&self) -> Aspect {
+//        aspect_all!(MonsterClass)
+//    }
+//
+//    fn data_aspects(&self) -> Vec<Aspect> {
+//        vec![aspect_all![ClassGround]]
+//    }
+//
+//    fn process_all(&mut self, entities: &mut Vec<&mut Entity>, _world: &mut WorldHandle, data: &mut DataList) {
+//        let ground = data.unwrap_entity();
+//        let mut event_to_flora = ground.get_component::<EventsMonsterToFlora>();
+//        // извлекаем события из вектора событий от монстров
+//        let mut event_vec = &mut event_to_flora.event;
+//        if !event_vec.is_empty() {
+//            {
+//                let event = event_vec.last_mut().unwrap();
+//
+//                // перебираем все сущности
+//                for entity in entities {
+//                    let mut flora_state = entity.get_component::<FloraState>();
+//                    let flora_position = entity.get_component::<Position>();
+//                    //let flora_id = entity.get_component::<HerbId>();
+//                    //println!("event.pop растение {}", flora_id.id);
+//                    //if flora_position.x == event.x && flora_position.y == event.y {
+//                    if (flora_position.x - event.x).abs() < ::std::f32::EPSILON &&
+//                        (flora_position.y - event.y).abs() < ::std::f32::EPSILON {
+//                        if flora_state.mass > event.value {
+//                            flora_state.mass -= event.value;
+//                        } else { self.kill_flora(entity, &mut flora_state.mass) }
+//                        //println!("Растение:{}, масса:{}", flora_id.id, flora_state.mass);
+//                    }
+//                }
+//            }
+//            // убираем из очереди событйи, для предотвращения зацикливания при отсутствии растения на месте.
+//            event_vec.pop().unwrap();
+//        }
+//    }
+//}
+
+
 
 /// система меняет направление вветра
 pub struct WindDirectionSystem;

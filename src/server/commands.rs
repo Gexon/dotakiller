@@ -1,26 +1,8 @@
 // обработка токена и что-то еще
 
 use time;
-use std::collections::HashMap;
-use std::rc::Rc;
-use std::cell::{RefCell, RefMut};
-use std::iter;
-use std::io::{Error, ErrorKind, Write};
-use std::net::SocketAddr;
-use std::sync::{Arc, Mutex};
 use std::str::{self, FromStr};
 use std::num::ParseIntError;
-
-use futures::{self, future, Future, Sink, Poll};
-use futures::stream::{self, Stream};
-use futures::sync::oneshot::Sender;
-use futures::sync::mpsc;
-use tokio_core::reactor::Core;
-use tokio_core::net::{TcpStream, TcpListener};
-use tokio_io::{AsyncRead, AsyncWrite};
-use tokio_io::codec::{Decoder, Encoder};
-
-use bytes::{BytesMut, Buf, BufMut, IntoBuf, LittleEndian};
 
 use ::utility::dbqury as db;
 use ::server::proto::Connect;
@@ -29,7 +11,7 @@ use ::server::proto::Message;
 /// Обработка входящих сообщений
 pub fn message_pos(message: &Message,
                    connect: &mut Connect,
-                   reset: bool)
+                   _reset: bool)
                    -> Result<Message, String> {
     if let Message::Pos { ref user, x, y } = *message {
         let name = try!(if connect.name.is_empty() {
@@ -40,6 +22,7 @@ pub fn message_pos(message: &Message,
                     .to_string())
             } else {
                 println!("Имя из БД {}", name);
+                connect.name = name.clone();
                 Ok(name)
             }
         } else {
@@ -61,7 +44,7 @@ pub fn message_pos(message: &Message,
 }
 
 // принимаем позицию клиента и рассылаем всем остальным.
-pub fn pos(args: &str, auth_token: &i64, name: &str, reset_conn: bool) -> (String, i64, String, bool) {
+pub fn _pos(args: &str, auth_token: &i64, name: &str, reset_conn: bool) -> (String, i64, String, bool) {
     // todo хранить токен в
     // инициализация возвращаемых значений.
     let mut return_msg: String = String::from("");

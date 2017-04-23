@@ -1,21 +1,12 @@
 // тут будут всякие ништяки для сервера
 
 use std::collections::HashMap;
-use std::rc::Rc;
-use std::cell::{RefCell, RefMut};
-use std::iter;
-use std::io::{Error, ErrorKind, Write};
+use std::io::{Error, ErrorKind};
 use std::net::SocketAddr;
-use std::sync::{Arc, Mutex};
 use std::str::{self, FromStr};
 
-use futures::{self, future, Future, Sink, Poll};
-use futures::stream::{self, Stream};
 use futures::sync::oneshot::Sender;
 use futures::sync::mpsc;
-use tokio_core::reactor::Core;
-use tokio_core::net::{TcpStream, TcpListener};
-use tokio_io::{AsyncRead, AsyncWrite};
 use tokio_io::codec::{Decoder, Encoder};
 
 use bytes::{BytesMut, Buf, BufMut, IntoBuf, LittleEndian};
@@ -243,7 +234,7 @@ pub struct MessageError {
 
 //
 impl MessageError {
-    pub fn new(error: String) -> MessageError {
+    pub fn _new(error: String) -> MessageError {
         let error = Error::new(ErrorKind::Other, error);
         MessageError::from(error)
     }

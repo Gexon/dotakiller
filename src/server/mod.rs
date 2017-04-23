@@ -2,24 +2,17 @@
 use tinyecs::*;
 
 use std::thread;
-//use std::rc::Rc;
-//use std::cell::RefCell;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 use tokio_core::reactor::Core;
 
-//use ::server::replicationserver::ReplicationServerSystem;
 use ::server::systems::ReplicationServerSystem;
 use ::server::replicationserver::ReplicationServer;
-//use ::server::monsterserver::MonsterServerSystem;
 use ::server::components::*;
 
 mod replicationserver;
-//mod replicationserver;
-//mod monsterserver;
 mod components;
-//mod connection;
 mod commands;
 mod proto;
 mod systems;
@@ -35,9 +28,6 @@ pub fn init(dk_world: &mut World) {
         // Создаем сервер:
         thread::spawn(|| {
             let core = Core::new().unwrap();
-            //let connections = Rc::new(RefCell::new(HashMap::new()));
-            //let connections_recive = Rc::new(RefCell::new(HashMap::new()));
-            //let connections_info = Rc::new(RefCell::new(HashMap::new()));
             let mut replication_server = ReplicationServer {
                 core: core,
                 connections: connections,

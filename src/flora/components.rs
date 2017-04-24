@@ -13,7 +13,7 @@ impl Component for FloraClass {}
 
 /// уникальный номер растения
 pub struct HerbId {
-    pub id: i64,
+    pub id: i32,
 }
 
 impl Component for HerbId {}

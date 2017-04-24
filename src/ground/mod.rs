@@ -19,6 +19,9 @@ pub fn init(dk_world: &mut World) {
     dk_world.set_system(SpawnMonsterSystem);
     dk_world.set_system(WindDirectionSystem);
     dk_world.set_system(FloraEventSystem);
+    dk_world.set_system(MonsterRequestJoinGroupSystem);
+    dk_world.set_system(MonsterAcceptingGroupSystem);
+    dk_world.set_system(MonsterMapSystem);
 
     {
         // вносим в этот мир немного земли
@@ -28,14 +31,14 @@ pub fn init(dk_world: &mut World) {
         entity.add_component(ClassGround);
         entity.add_component(WorldMap {
             flora: Map::new_empty(Size(140, 140), 0u8, 0u8),
-            monster: Map::new_empty(Size(140, 140), 0u8, 0u8),
+            monster: Map::new_empty(Size(140, 140), Vec::new(), Vec::new()),
         });
         entity.add_component(WindDirection { direction: Direction::North, start: PreciseTime::now() });
         entity.add_component(WorldLastId {
             flora_id: 0,
             monster_id: 0,
         });
-        entity.add_component(EventsMonsterToFlora { event: vec![] });
+        entity.add_component(EventsTo::new());
         entity.refresh();
     }
 }

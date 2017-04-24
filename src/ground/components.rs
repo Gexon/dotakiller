@@ -21,7 +21,6 @@ pub struct Position {
 
 impl Component for Position {}
 
-
 /// имя
 pub struct Name {
     pub name: String
@@ -30,21 +29,39 @@ pub struct Name {
 impl Component for Name {}
 
 
-
 /// Сообщения от монстров для пальм
-pub struct EventsMonsterToFlora {
-    // возникшие события. Может быть несколько.
-    pub event: Vec<EventEatFlora>,
+pub struct EventsTo {
+    // Событие на поедание пальмы.
+    pub event_eat_flora: Vec<EventEatFlora>,
+    // События для вожака о вступлении в группу.(от кого, кому)
+    pub request_join_group: Vec<(i32, i32)>,
+    // Ответ от члена стаи о принятии приглоса от вожака для вожака.(от кого, кому)
+    pub answer_accepting_group: Vec<(i32, i32)>,
+    // Событие от члена стаи для вожака о выходе из группы. (от кого, кому)
+    pub message_leave_group: Vec<(i32, i32)>,
+    // Событие от важака всем членам стаи о выходе вожака из стаи (от кого, кому)
+    pub lead_leave_group: Vec<(i32, i32)>,
 }
 
-impl Component for EventsMonsterToFlora {}
+impl Component for EventsTo {}
 
+impl EventsTo {
+    pub fn new() -> EventsTo {
+        EventsTo {
+            event_eat_flora: Vec::new(),
+            request_join_group: Vec::new(),
+            answer_accepting_group: Vec::new(),
+            message_leave_group: Vec::new(),
+            lead_leave_group: Vec::new(),
+        }
+    }
+}
 
 
 // храним последние id
 pub struct WorldLastId {
-    pub flora_id: i64,
-    pub monster_id: i64,
+    pub flora_id: i32,
+    pub monster_id: i32,
 }
 
 impl Component for WorldLastId {}
@@ -53,7 +70,7 @@ impl Component for WorldLastId {}
 // тут будем хранить все объекты на карте.
 pub struct WorldMap {
     pub flora: Map<u8>,
-    pub monster: Map<u8>,
+    pub monster: Map<Vec<i32>>,
 }
 
 impl Component for WorldMap {}

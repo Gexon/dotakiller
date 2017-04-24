@@ -42,7 +42,7 @@ impl Component for MonsterClass {}
 
 /// уникальный номер монстра
 pub struct MonsterId {
-    pub id: i64,
+    pub id: i32,
 }
 
 impl Component for MonsterId {}
@@ -89,15 +89,39 @@ impl MonsterState {
 
 /// характеристики монстра и его текущее состояние
 pub struct MonsterAttributes {
+    // скорость монстра
     pub speed: i32,
+    // силы монстра
     pub power: i32,
+    // сытость
     pub hungry: i32,
     // является ли вожаком
     pub lead: bool,
     // id вожака
     pub id_lead: i32,
+    // флаг группы
+    pub in_group: bool,
+    // список членов стаи(id), только для вожака.
+    pub group_members: Vec<i32>,
+    // нижний уровень сил монстра
     pub danger_power: i32,
+    // нижний уровень сытости монстра
     pub danger_hungry: i32,
+}
+impl MonsterAttributes {
+    pub fn new() -> MonsterAttributes {
+        MonsterAttributes {
+            speed: 1,
+            power: 1000,
+            hungry: 960,
+            lead: false,
+            id_lead: -1,
+            in_group: false,
+            group_members: Vec::new(),
+            danger_power: 960,
+            danger_hungry: 960,
+        }
+    }
 }
 
 impl Component for MonsterAttributes {}

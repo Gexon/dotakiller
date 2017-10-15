@@ -32,8 +32,8 @@ mod monster;
 mod ground;
 
 // port 6655
-const SERVER_IP: &'static str = "192.168.0.3";
-//const  SERVER_IP: &'static str = "194.87.237.144";
+//const SERVER_IP: &'static str = "192.168.0.3";
+const  SERVER_IP: &'static str = "185.40.31.100";
 static GROUND_SPEED: i64 = 10;
 static FLORA_SPEED: i64 = 100;//1000
 static MONSTER_SPEED: i64 = 4;//10

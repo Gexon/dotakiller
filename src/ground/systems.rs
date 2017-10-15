@@ -322,22 +322,22 @@ impl System for MonsterMapSystem {
         let ground = data.unwrap_entity();
         let mut world_map = ground.get_component::<WorldMap>();
         // Удаляем содержимое карты.
-        world_map.monster = Map::new(
-            Size(140, 140),
-            Vec::new(),
-            Vec::new(),
-        );
+//        world_map.monster = Map::new(
+//            Size(140, 140),
+//            Vec::new(),
+//            Vec::new(),
+//        );
 
         // перебираем все сущности
-        for entity in entities {
-            let position = entity.get_component::<Position>();
-            let monster_id = entity.get_component::<MonsterId>();
-            // оперделяем место
-            let target_point: Point = Point(position.x as i32, position.y as i32);
-            // втыкаем ее в карту
-            let vec = &mut world_map.monster[target_point];
-            vec.push(monster_id.id);
-        }
+//        for entity in entities {
+//            let position = entity.get_component::<Position>();
+//            let monster_id = entity.get_component::<MonsterId>();
+//            // оперделяем место
+//            let target_point: Point = Point(position.x as i32, position.y as i32);
+//            // втыкаем ее в карту
+//            let vec = &mut world_map.monster[target_point];
+//            vec.push(monster_id.id);
+//        }
     }
 }
 

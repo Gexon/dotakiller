@@ -191,7 +191,7 @@ impl Decoder for MessageCodec {
         let size = {
             let size = buf[..8].into_buf().get_u64::<LittleEndian>() as usize;
 
-            if size == 0 || size > 1048576 {
+            if size == 0 || size > 1_048_576 {
                 let error = Error::new(ErrorKind::InvalidData,
                                        format!("Неверный размер данных: {}",
                                                size));

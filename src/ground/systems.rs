@@ -6,8 +6,8 @@ use time::{PreciseTime, Duration};
 use GROUND_SPEED;
 
 use ::utility::map::Point;
-use ::utility::map::Map;
-use ::utility::map::Size;
+//use ::utility::map::Map;
+//use ::utility::map::Size;
 use ::utility::enums::*;
 use ::ground::components::*;
 use ::flora::components::*;
@@ -157,7 +157,7 @@ impl System for FloraEventSystem {
         let ground = data.unwrap_entity();
         let mut event_to_flora = ground.get_component::<EventsTo>();
         // извлекаем события из вектора событий от монстров
-        let mut event_vec = &mut event_to_flora.event_eat_flora;
+        let event_vec = &mut event_to_flora.event_eat_flora;
         if !event_vec.is_empty() {
             {
                 let event = event_vec.last_mut().unwrap();
@@ -319,8 +319,8 @@ impl System for MonsterMapSystem {
     }
 
     fn process_all(&mut self, entities: &mut Vec<&mut Entity>, _world: &mut WorldHandle, data: &mut DataList) {
-        let ground = data.unwrap_entity();
-        let mut world_map = ground.get_component::<WorldMap>();
+        //let ground = data.unwrap_entity();
+        //let mut world_map = ground.get_component::<WorldMap>();
         // Удаляем содержимое карты.
 //        world_map.monster = Map::new(
 //            Size(140, 140),

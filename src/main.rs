@@ -1,9 +1,9 @@
 // короче если компилятор спросит про openssl, то нужно ввести команду в консоли: sudo apt-get install libssl-dev
 
-extern crate byteorder;
+//extern crate byteorder;
 extern crate bytes;
-extern crate mio;
-extern crate slab;
+//extern crate mio;
+//extern crate slab;
 extern crate time;
 
 // tokio
@@ -20,9 +20,9 @@ extern crate slog;
 extern crate slog_stream;
 extern crate slog_stdlog;
 //#[macro_use]
-extern crate log;
+//extern crate log;
 
-extern crate bincode;
+//extern crate bincode;
 extern crate rustc_serialize;
 
 use tinyecs::*;
@@ -35,7 +35,9 @@ mod ground;
 
 // port 6655
 //const SERVER_IP: &'static str = "192.168.0.3";
-const  SERVER_IP: &'static str = "185.40.31.100";
+//const  SERVER_IP: &'static str = "185.40.31.100";
+const  SERVER_IP: &'static str = "0.0.0.0";
+
 static GROUND_SPEED: i64 = 10;
 static FLORA_SPEED: i64 = 100;//1000
 static MONSTER_SPEED: i64 = 4;//10

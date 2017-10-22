@@ -10,10 +10,11 @@ use std::str::{self};
 use std::net::SocketAddr;
 
 use futures::{self, future, Future, Sink};
-use futures::stream::{Stream};
+use futures::stream::Stream;
 use futures::sync::mpsc;
+//use futures::future::AndThen;
 use tokio_core::net::TcpListener;
-use tokio_io::{AsyncRead};
+use tokio_io::AsyncRead;
 
 use ::server::commands as comm;
 use ::server::proto::*;
@@ -48,9 +49,11 @@ impl ReplicationServer {
         // Это однопоточный сервер, поэтому мы можем просто использовать RC и RefCell в
         // HashMap хранилище всех известных соединений.
         // будем хранить тут список структуры подключения. для хранения данных о подключении.
-        let connections = self.connections.clone();
+        //let connections = self.connections.clone();
+        let connections = Arc::clone(&self.connections);
         //let _connections_recive = self.connections_recive.clone();
-        let connections_info = self.connections_info.clone();
+        //let connections_info = self.connections_info.clone();
+        let connections_info = Arc::clone(&self.connections_info);
 
         let srv = socket
             .incoming()
@@ -71,14 +74,17 @@ impl ReplicationServer {
                 // Определяем, что мы делаем для активного/текущего ввода/вывода.
                 // То есть, читаем кучу строк из сокета и обрабатываем их
                 // и в то же время мы также записываем любые строки из других сокетов.
-                let connections_inner = connections.clone();
-                let connections_info_inner = connections_info.clone();
+                //let connections_inner = connections.clone();
+                let connections_inner = Arc::clone(&connections);
+                //let connections_info_inner = connections_info.clone();
+                let connections_info_inner = Arc::clone(&connections_info);
 
                 // Model читает частями из сокета путем mapping-га в бесконечном цикле
                 // для каждой строки из сокета. Этот "loop" завершается с ошибкой
                 // после того как мы получили EOF на сокете.
                 // let _iter = stream::iter(iter::repeat(()).map(Ok::<(), Error>));
-                let connections_inner_1 = connections.clone();
+                //let connections_inner_1 = connections.clone();
+                let connections_inner_1 = Arc::clone(&connections);
 
                 let socket_reader = reader
                     // В случае ошибки отправляем её "отправителю" (socket_writer)
@@ -159,31 +165,45 @@ impl ReplicationServer {
                 //`WriteHalf<TcpStream>`.
                 // тут нужно собрать пакет для отправки.
                 // склеить размер данных в первые 8 байт и сами данные.
-                let socket_writer = rx.fold(writer, |writer, msg| match msg {
-                    Ok(msg) => {
-                        //println!("[SEND] {:?}", msg);
-                        writer.send(msg).map_err(|_| ()).boxed()
-                    }
-                    Err(error) => {
-                        if let Some(tx) = error.complete {
-                            writer
-                                .send(Message::Error(error.inner.to_string()))
-                                .map_err(|_| ())
-                                .and_then(|writer| tx.send(()).and_then(move |_| Ok(writer)))
-                                .boxed()
-                        } else {
-                            future::ok(writer).boxed()
+                let socket_writer
+                = rx.fold(writer, |writer, msg|
+                    match msg {
+                        Ok(msg) => {
+                            //println!("[SEND] {:?}", msg);
+                            //writer.send(msg).map_err(|_| ()).boxed()
+                            Box::new(future::ok(writer.send(msg).map_err(|_| ())))
                         }
-                    }
-                });
+                        Err(error) => {
+                            // вынимает из исходящего канала все сообщения и если в очередном собщении ошибка то
+                            if let Some(tx) = error.complete {
+                                // то отправляет вместо сообщения, текст ошибки.
+                                let _future =
+                                    writer
+                                        .send(Message::Error(error.inner.to_string()))
+                                        .map_err(|_| ())
+                                        .and_then(|writer| tx.send(()).and_then(move |_| Ok(writer)));
+                                Result(Box::new(_future))
+                                //                            writer
+                                //                                .send(Message::Error(error.inner.to_string()))
+                                //                                .map_err(|_| ())
+                                //                                .and_then(|writer| tx.send(()).and_then(move |_| Ok(writer)))
+                                //                                .boxed()
+                            } else {
+                                let _future = future::ok(writer);
+                                Box::new(_future)
+                            }
+                        }
+                    });
 
                 // клонируем connections_info чтоб вынуть из него Client
-                let connections_info_inner1 = connections_info.clone();
+                //let connections_info_inner1 = connections_info.clone();
+                let connections_info_inner1 = Arc::clone(&connections_info);
 
                 // Теперь, когда мы получили futures, представляющие каждую половину гнезда, мы
                 // используем `select` комбинатор ждать либо половину нужно сделать, чтобы
                 // рушить другие. Тогда мы порождать результат.
-                let connections = connections.clone();
+                //let connections = connections.clone();
+                let connections = Arc::clone(&connections);
                 let connection = socket_reader.map(|_| ()).select(socket_writer.map(|_| ()));
                 handle.spawn(connection.then(move |_| {
                     // Для каждого открытого соединения, кроме отправителя, отправить
@@ -202,7 +222,6 @@ impl ReplicationServer {
                                     .wait()
                                     .unwrap();
                             }
-
                         }
                     }
                     // ------------------------

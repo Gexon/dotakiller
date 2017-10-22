@@ -122,6 +122,7 @@ impl ReplicationServerSystem {
             // переписать всем флаг новичка на старичка
             //conn.is_new = false;
             //}
+
         }
     }
 }

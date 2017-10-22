@@ -22,9 +22,12 @@ pub fn init(dk_world: &mut World) {
         let connections_info = Arc::new(Mutex::new(HashMap::new()));
         let connections_recive = Arc::new(Mutex::new(HashMap::new()));
         let connections = Arc::new(Mutex::new(HashMap::new()));
-        let connections_info_clone = connections_info.clone();
-        let connections_recive_clone = connections_recive.clone();
-        let connections_clone = connections.clone();
+        //let connections_info_clone = connections_info.clone();
+        let connections_info_clone = Arc::clone(&connections_info);
+        //let connections_recive_clone = connections_recive.clone();
+        let connections_recive_clone = Arc::clone(&connections_recive);
+        //let connections_clone = connections.clone();
+        let connections_clone = Arc::clone(&connections);
         // Создаем сервер:
         thread::spawn(|| {
             let core = Core::new().unwrap();

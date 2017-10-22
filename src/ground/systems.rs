@@ -318,7 +318,7 @@ impl System for MonsterMapSystem {
         vec![aspect_all![ClassGround]]
     }
 
-    fn process_all(&mut self, entities: &mut Vec<&mut Entity>, _world: &mut WorldHandle, data: &mut DataList) {
+    fn process_all(&mut self, _entities: &mut Vec<&mut Entity>, _world: &mut WorldHandle, _data: &mut DataList) {
         //let ground = data.unwrap_entity();
         //let mut world_map = ground.get_component::<WorldMap>();
         // Удаляем содержимое карты.

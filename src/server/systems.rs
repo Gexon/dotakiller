@@ -52,7 +52,7 @@ impl System for ReplicationServerSystem {
                     let position = flora.get_component::<Position>();
                     let state = flora.get_component::<FloraState>();
                     let s = format!("updherb {} {} {} {} {}", id_herb.id, class.name, state.state, position.x, position.y);
-                    tx.send(Ok(Message::Raw(s))).unwrap();
+                    tx.unbounded_send(Ok(Message::Raw(s))).unwrap();
                 // основная репликация.
                 } else if flora.has_component::<Replication>() {
                     let id_herb = flora.get_component::<HerbId>();
@@ -60,7 +60,7 @@ impl System for ReplicationServerSystem {
                     let position = flora.get_component::<Position>();
                     let state = flora.get_component::<FloraState>();
                     let s = format!("updherb {} {} {} {} {}", id_herb.id, class.name, state.state, position.x, position.y);
-                    tx.send(Ok(Message::Raw(s))).unwrap();
+                    tx.unbounded_send(Ok(Message::Raw(s))).unwrap();
                 };
             });
             // Удалять флаг репликации тут! Иначе будет стопятьсот раз его пытаться удалить в каждом соединении.
@@ -80,7 +80,7 @@ impl System for ReplicationServerSystem {
                     let state = monster.get_component::< MonsterState > ();
                     let position = monster.get_component::< Position > ();
                     let s = format ! ("updmonstr {} {} {} {} {} {}", id_monstr.id, class.name, state.state, position.x, position.y, state.emo_state);
-                    tx.send(Ok(Message::Raw(s))).unwrap();
+                    tx.unbounded_send(Ok(Message::Raw(s))).unwrap();
                     // основная репликация.
                 } else if monster.has_component::<Replication>() {
                     let id_monstr = monster.get_component::< MonsterId > ();
@@ -88,7 +88,7 @@ impl System for ReplicationServerSystem {
                     let state = monster.get_component::< MonsterState > ();
                     let position = monster.get_component::< Position > ();
                     let s = format!("updmonstr {} {} {} {} {} {}", id_monstr.id, class.name, state.state, position.x, position.y, state.emo_state);
-                    tx.send(Ok(Message::Raw(s))).unwrap();
+                    tx.unbounded_send(Ok(Message::Raw(s))).unwrap();
                 }
             });
             // Удалять флаг репликации тут! Иначе будет стопятьсот раз его пытаться удалить в каждом соединении.

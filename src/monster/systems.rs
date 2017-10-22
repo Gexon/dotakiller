@@ -13,7 +13,7 @@ use ::ground::components::WindDirection;
 use ::ground::components::WorldMap;
 use ::ground::components::EventsTo;
 use ::monster::components::*;
-use ::monster::monster_graf_parser::*;
+use ::monster::monstergrafparser::*;
 
 
 /// Система восприятия
@@ -104,12 +104,14 @@ impl System for EventSystem {
                 //println!("Новое событие: монстр {} обнаружил еду!", monster_id.id);
                 // убираем событие потери цели если видим еду.
                 behaviour_event.event.retain(|x| x != &BehaviorEventEnum::TargetLost);
+                //todo потеря цели, непонятно, для чего убирать?
             } else if
                 // если не видно цели, то:
                 // проверяем наличие события обнаружения еды.
                 behaviour_event.event.contains(&BehaviorEventEnum::FoundFood) {
                 // если висит событие обнаружения еды, то убрать его из очереди событий
                 behaviour_event.event.retain(|x| x != &BehaviorEventEnum::FoundFood);
+                // todo лишняя проверка, убирать событие из очереди, в др месте.
             }
 
             // реакция на потерю цели.
@@ -129,6 +131,8 @@ impl System for EventSystem {
                 behaviour_event.event.push(BehaviorEventEnum::BecomeHungry);
                 monster_state.low_food = true;
                 //println!("Новое событие: монстр {} голоден!", monster_id.id);
+                // todo дублирующие друг друга переменные low_food и BecomeHungry
+                // todo убрать с очереди EatFull
             }
 
             //реакция на усталость.
@@ -138,6 +142,8 @@ impl System for EventSystem {
                 behaviour_event.event.push(BehaviorEventEnum::BecomeTired);
                 monster_state.low_power = true;
                 //println!("Новое событие: монстр {} устал!", monster_id.id);
+                // todo дублирующие друг друга переменные low_power и BecomeTired
+                // todo убрать из очереди PowerFull
             }
 
 
@@ -148,6 +154,8 @@ impl System for EventSystem {
                 behaviour_event.event.push(BehaviorEventEnum::EatFull);
                 monster_state.low_food = false;
                 //println!("Новое событие: монстр {} сыт!", monster_id.id);
+                // todo заменить числовые значеия 990 на переменные подгружаемые с БД
+                // todo вот тут нужно убирать BecomeHungry с очереди
             }
 
 
@@ -157,6 +165,7 @@ impl System for EventSystem {
                 behaviour_event.event.push(BehaviorEventEnum::PowerFull);
                 monster_state.low_power = false;
                 //println!("Новое событие: монстр {} отдохнул!", monster_id.id);
+                // todo тут убрать с очереди BecomeTired
             }
 
 

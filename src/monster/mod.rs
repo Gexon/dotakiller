@@ -7,7 +7,7 @@ use ::monster::systems::*;
 
 pub mod components;
 pub mod systems;
-pub mod monster_graf_parser;
+pub mod monstergrafparser;
 
 // todo (Генетические алгоритмы) передача кода behaviour tree потомкам монстра.
 // todo запилить мутации кода behaviour tree, либо скрещивания как у пчел с майнкрафта.

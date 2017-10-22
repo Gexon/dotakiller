@@ -18,6 +18,7 @@ use tokio_io::AsyncRead;
 
 use ::server::commands as comm;
 use ::server::proto::*;
+//use ::utility::boxfuture::Boxable;
 
 use SERVER_IP;
 
@@ -171,26 +172,24 @@ impl ReplicationServer {
                         Ok(msg) => {
                             //println!("[SEND] {:?}", msg);
                             //writer.send(msg).map_err(|_| ()).boxed()
-                            Box::new(future::ok(writer.send(msg).map_err(|_| ())))
+                            writer.send(msg).map_err(|_| ()).boxed()
                         }
                         Err(error) => {
                             // вынимает из исходящего канала все сообщения и если в очередном собщении ошибка то
                             if let Some(tx) = error.complete {
                                 // то отправляет вместо сообщения, текст ошибки.
-                                let _future =
-                                    writer
-                                        .send(Message::Error(error.inner.to_string()))
-                                        .map_err(|_| ())
-                                        .and_then(|writer| tx.send(()).and_then(move |_| Ok(writer)));
-                                Result(Box::new(_future))
+                                writer
+                                    .send(Message::Error(error.inner.to_string()))
+                                    .map_err(|_| ())
+                                    .and_then(|writer| tx.send(()).and_then(move |_| Ok(writer)))
+                                    .boxed()
                                 //                            writer
                                 //                                .send(Message::Error(error.inner.to_string()))
                                 //                                .map_err(|_| ())
                                 //                                .and_then(|writer| tx.send(()).and_then(move |_| Ok(writer)))
                                 //                                .boxed()
                             } else {
-                                let _future = future::ok(writer);
-                                Box::new(_future)
+                                future::ok(writer).boxed()
                             }
                         }
                     });

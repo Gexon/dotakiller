@@ -1,7 +1,6 @@
 // короче если компилятор спросит про openssl, то нужно ввести команду в консоли: sudo apt-get install libssl-dev
 
 extern crate bytes;
-//extern crate mio;
 //extern crate slab;
 extern crate time;
 

@@ -32,15 +32,9 @@ impl Component for Name {}
 /// Сообщения от монстров для пальм
 pub struct EventsTo {
     // Событие на поедание пальмы.
-    pub event_eat_flora: Vec<EventEatFlora>,
-    // События для вожака о вступлении в группу.(от кого, кому)
-    pub request_join_group: Vec<(i32, i32)>,
-    // Ответ от члена стаи о принятии приглоса от вожака для вожака.(от кого, кому)
-    pub answer_accepting_group: Vec<(i32, i32)>,
-    // Событие от члена стаи для вожака о выходе из группы. (от кого, кому)
-    pub message_leave_group: Vec<(i32, i32)>,
-    // Событие от важака всем членам стаи о выходе вожака из стаи (от кого, кому)
-    pub lead_leave_group: Vec<(i32, i32)>,
+    pub events_eat_flora: Vec<EventEatFlora>,
+    // События для взаимодействия при работе групп
+    pub events_group_monster: Vec<EventGroupMonster>,
 }
 
 impl Component for EventsTo {}
@@ -48,11 +42,8 @@ impl Component for EventsTo {}
 impl EventsTo {
     pub fn new() -> EventsTo {
         EventsTo {
-            event_eat_flora: Vec::new(),
-            request_join_group: Vec::new(),
-            answer_accepting_group: Vec::new(),
-            message_leave_group: Vec::new(),
-            lead_leave_group: Vec::new(),
+            events_eat_flora: Vec::new(),
+            events_group_monster: Vec::new(),
         }
     }
 }

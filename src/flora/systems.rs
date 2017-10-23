@@ -147,7 +147,7 @@ impl System for PlantDeadSystem {
 
         // перебираем все сущности
         for entity in entities {
-            let name = entity.get_component::<Name>(); // удалить, только для лога
+            //let name = entity.get_component::<Name>(); // удалить, только для лога
             //let id_herb = entity.get_component::<HerbId>(); // удалить, только для лога
 
             let mut state = entity.get_component::<FloraState>();

@@ -24,13 +24,29 @@ pub enum TargetType{
 }
 
 
+/// Направление
+pub enum EventTypeMonster {
+    RequestJoinGroup = 0, // События для вожака о вступлении в группу.(МОНСТР -> ВОЖДЮ)
+    AnswerAcceptingGroup = 1, // Ответ от члена стаи о принятии приглоса в группу (МОНСТР -> ВОЖДЮ)
+    MessageLeaveGroup = 2, // Событие от члена стаи для вожака о выходе из группы. (МОНСТР -> ВОЖДЮ)
+    LeadLeaveGroup = 3, // Событие от важака всем членам стаи о его выходе из стаи (ВОЖДЬ -> ВСЕМ)
+}
+
+
 /// Событие поедания растений монстрами
-// делаем по координатам,
-// для живых по id
+// делаем по координатам
 pub struct EventEatFlora{
     pub value: i32,
     pub x: f32,
     pub y: f32,
+}
+
+/// Событие для взаимодействия монстров друг с другом
+// для живых по id
+pub struct EventGroupMonster{
+    pub event: EventTypeMonster,
+    pub id_sender: i32,
+    pub id_receiver: i32,
 }
 
 /// Действия монстра.

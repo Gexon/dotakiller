@@ -411,6 +411,30 @@ fn next_step_around(position: &mut Position, delta: f32, monster_state: &mut Mon
     //println!("монстр ходит кругами: x{} y{}",
     //monster_state.target_point.x,
     //monster_state.target_point.y);
+    // todo     есть алгоритм движения по кругу для клетчатого поля
+    // https://stackoverflow.com/questions/398299/looping-in-a-spiral
+
+    /*
+    void Spiral( int X, int Y){
+    int x,y,dx,dy;
+    x = y = dx =0;
+    dy = -1;
+    int t = std::max(X,Y);
+    int maxI = t*t;
+    for(int i =0; i < maxI; i++){
+        if ((-X/2 <= x) && (x <= X/2) && (-Y/2 <= y) && (y <= Y/2)){
+            // DO STUFF...
+        }
+        if( (x == y) || ((x < 0) && (x == -y)) || ((x > 0) && (x == 1-y))){
+            t = dx;
+            dx = -dy;
+            dy = t;
+        }
+        x += dx;
+        y += dy;
+    }
+}
+    */
     // проверяем достижение цели
     if (
         (position.x as u32 == monster_state.target_point.x as u32)

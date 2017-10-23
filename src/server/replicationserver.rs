@@ -19,6 +19,7 @@ use tokio_io::AsyncRead;
 use ::server::commands as comm;
 use ::server::proto::*;
 //use ::utility::boxfuture::Boxable;
+//use ::utility::boxfuture::BoxFuture;
 
 use SERVER_IP;
 
@@ -166,30 +167,26 @@ impl ReplicationServer {
                 //`WriteHalf<TcpStream>`.
                 // тут нужно собрать пакет для отправки.
                 // склеить размер данных в первые 8 байт и сами данные.
+                //let socket_writer: BoxFuture
+                // Огромное спасибо Alexander Irbis@alexander-irbis за помощь в отладке этого участка кода!
                 let socket_writer
                 = rx.fold(writer, |writer, msg|
                     match msg {
                         Ok(msg) => {
                             //println!("[SEND] {:?}", msg);
-                            //writer.send(msg).map_err(|_| ()).boxed()
-                            writer.send(msg).map_err(|_| ()).boxed()
+                            Box::new(writer.send(msg).map_err(drop))
                         }
                         Err(error) => {
                             // вынимает из исходящего канала все сообщения и если в очередном собщении ошибка то
                             if let Some(tx) = error.complete {
                                 // то отправляет вместо сообщения, текст ошибки.
-                                writer
+                                Box::new(writer
                                     .send(Message::Error(error.inner.to_string()))
-                                    .map_err(|_| ())
+                                    .map_err(drop)
                                     .and_then(|writer| tx.send(()).and_then(move |_| Ok(writer)))
-                                    .boxed()
-                                //                            writer
-                                //                                .send(Message::Error(error.inner.to_string()))
-                                //                                .map_err(|_| ())
-                                //                                .and_then(|writer| tx.send(()).and_then(move |_| Ok(writer)))
-                                //                                .boxed()
+                                ) as Box<Future<Item=_, Error=_>>
                             } else {
-                                future::ok(writer).boxed()
+                                Box::new(future::ok(writer))
                             }
                         }
                     });

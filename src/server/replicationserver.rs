@@ -12,14 +12,11 @@ use std::net::SocketAddr;
 use futures::{self, future, Future, Sink};
 use futures::stream::Stream;
 use futures::sync::mpsc;
-//use futures::future::AndThen;
 use tokio_core::net::TcpListener;
 use tokio_io::AsyncRead;
 
 use ::server::commands as comm;
 use ::server::proto::*;
-//use ::utility::boxfuture::Boxable;
-//use ::utility::boxfuture::BoxFuture;
 
 use SERVER_IP;
 
@@ -51,10 +48,7 @@ impl ReplicationServer {
         // Это однопоточный сервер, поэтому мы можем просто использовать RC и RefCell в
         // HashMap хранилище всех известных соединений.
         // будем хранить тут список структуры подключения. для хранения данных о подключении.
-        //let connections = self.connections.clone();
         let connections = Arc::clone(&self.connections);
-        //let _connections_recive = self.connections_recive.clone();
-        //let connections_info = self.connections_info.clone();
         let connections_info = Arc::clone(&self.connections_info);
 
         let srv = socket
@@ -76,16 +70,13 @@ impl ReplicationServer {
                 // Определяем, что мы делаем для активного/текущего ввода/вывода.
                 // То есть, читаем кучу строк из сокета и обрабатываем их
                 // и в то же время мы также записываем любые строки из других сокетов.
-                //let connections_inner = connections.clone();
                 let connections_inner = Arc::clone(&connections);
-                //let connections_info_inner = connections_info.clone();
                 let connections_info_inner = Arc::clone(&connections_info);
 
                 // Model читает частями из сокета путем mapping-га в бесконечном цикле
                 // для каждой строки из сокета. Этот "loop" завершается с ошибкой
                 // после того как мы получили EOF на сокете.
                 // let _iter = stream::iter(iter::repeat(()).map(Ok::<(), Error>));
-                //let connections_inner_1 = connections.clone();
                 let connections_inner_1 = Arc::clone(&connections);
 
                 let socket_reader = reader
@@ -192,13 +183,11 @@ impl ReplicationServer {
                     });
 
                 // клонируем connections_info чтоб вынуть из него Client
-                //let connections_info_inner1 = connections_info.clone();
                 let connections_info_inner1 = Arc::clone(&connections_info);
 
                 // Теперь, когда мы получили futures, представляющие каждую половину гнезда, мы
                 // используем `select` комбинатор ждать либо половину нужно сделать, чтобы
                 // рушить другие. Тогда мы порождать результат.
-                //let connections = connections.clone();
                 let connections = Arc::clone(&connections);
                 let connection = socket_reader.map(|_| ()).select(socket_writer.map(|_| ()));
                 handle.spawn(connection.then(move |_| {

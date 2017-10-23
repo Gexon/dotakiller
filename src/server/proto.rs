@@ -124,7 +124,6 @@ impl FromStr for Message {
     type Err = (String);
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        //let mut words_iter = s.split(' ');
         let mut words_iter = s.split(' ').filter(|word| !word.is_empty());
         let header = words_iter
             .next()

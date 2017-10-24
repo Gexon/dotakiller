@@ -31,7 +31,7 @@ impl System for FloraEventSystem {
         let events_vec = &mut events_to.events_eat_flora;
         if !events_vec.is_empty() {
             {
-                let event : &mut EventEatFlora = events_vec.last_mut().unwrap();
+                let event: &mut EventEatFlora = events_vec.last_mut().unwrap();
 
                 // перебираем все сущности
                 for entity in entities {
@@ -84,49 +84,52 @@ impl System for MonsterEventSystem {
         let ground = data.unwrap_entity(); // общая сущность, хранит в себе очередь событий.
         let mut events_to = ground.get_component::<EventsTo>(); // очередь событий, всех, и флора и монстры.
         // извлекаем вектор с событиями из компоненты EventsTo
-        let events_vec = events_to.events_group_monster;
+        let mut events_vec: &mut Vec<EventGroupMonster> = &mut events_to.events_group_monster;
         // чекаем события из очереди событий групп монстра.
         if !events_vec.is_empty() {
-            // получаем ссылку на последнее событие в очереди
-            let ref event: EventGroupMonster = events_vec.last_mut().unwrap();
+            {
+                // получаем ссылку на последнее событие в очереди
+                let event: &mut EventGroupMonster = events_vec.last_mut().unwrap();
 
-            // работа с запросами RequestJoinGroup
-            // событие для ВОЖДЯ, прошение вступить в группу.
-            if event.event_type == EventTypeMonster::RequestJoinGroup {
-                let sender = event.id_sender; // отправитель запроса
-                let recipient = event.id_receiver; // этот краб - ВОЖДЬ, он принимает приглос.
-                // вынимаем вождя
-                for entity in entities {
-                    let monster_id = entity.get_component::<MonsterId>();
-                    if monster_id.id == recipient {
-                        println!("RequestJoinGroup.pop монстр-ВОЖДЬ {}", monster_id.id);
-                        let mut monster_attr = entity.get_component::<MonsterAttributes>(); // атрибуты ВОЖДЯ
-                        self.add_to_group(&mut monster_attr, sender, recipient, &mut events_vec);
-                        break;
+                // работа с запросами RequestJoinGroup
+                // событие для ВОЖДЯ, прошение вступить в группу.
+                if event.event_type == EventTypeMonster::RequestJoinGroup {
+                    let sender = event.id_sender; // отправитель запроса
+                    let recipient = event.id_receiver; // этот краб - ВОЖДЬ, он принимает приглос.
+                    // вынимаем вождя
+                    for entity in entities {
+                        let monster_id = entity.get_component::<MonsterId>();
+                        if monster_id.id == recipient {
+                            println!("RequestJoinGroup.pop монстр-ВОЖДЬ {}", monster_id.id);
+                            let mut monster_attr = entity.get_component::<MonsterAttributes>(); // атрибуты ВОЖДЯ
+                            self.add_to_group(&mut monster_attr, sender, recipient, &mut events_vec);
+                            break;
+                        }
                     }
                 }
             }
 
-
-            // работа с событием AnswerAcceptingGroup
-            // событие для просителя, меня приняли в группу.
-            if event.event_type == EventTypeMonster::AnswerAcceptingGroup {
-                let sender = event.id_sender; // отправитель запроса ВОЖДЬ
-                let recipient = event.id_receiver; // этот краб, новичек
-                // вынимаем получателя-новичка
-                for entity in entities {
-                    let monster_id = entity.get_component::<MonsterId>();
-                    if monster_id.id == recipient {
-                        println!("AnswerAcceptingGroup.pop монстр-новичек {}", monster_id.id);
-                        let mut monster_attr = entity.get_component::<MonsterAttributes>();
-                        self.accepting_group(&mut monster_attr, sender);
-                        break;
-                    }
-                }
-            }
+//            {
+//                // работа с событием AnswerAcceptingGroup
+//                // событие для просителя, меня приняли в группу.
+//                if event.event_type == EventTypeMonster::AnswerAcceptingGroup {
+//                    let sender = event.id_sender; // отправитель запроса ВОЖДЬ
+//                    let recipient = event.id_receiver; // этот краб, новичек
+//                    // вынимаем получателя-новичка
+//                    for entity in entities {
+//                        let monster_id = entity.get_component::<MonsterId>();
+//                        if monster_id.id == recipient {
+//                            println!("AnswerAcceptingGroup.pop монстр-новичек {}", monster_id.id);
+//                            let mut monster_attr = entity.get_component::<MonsterAttributes>();
+//                            self.accepting_group(&mut monster_attr, sender);
+//                            break;
+//                        }
+//                    }
+//                }
+//            }
 
             // убираем из очереди событйи, для предотвращения зацикливания при отсутствии монстра на месте.
-            events_to.events_group_monster.pop().unwrap();
+            events_vec.pop().unwrap();
         }
     }
 }

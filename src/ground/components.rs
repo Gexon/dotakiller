@@ -32,7 +32,7 @@ impl Component for Name {}
 
 /// Сообщения от монстров для пальм
 pub struct EventsTo {
-    // Событие на поедание пальмы.
+    // События на поедание пальмы.
     pub events_eat_flora: Vec<EventEatFlora>,
     // События для взаимодействия при работе групп
     pub events_group_monster: Vec<EventGroupMonster>,

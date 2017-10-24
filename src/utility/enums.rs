@@ -24,7 +24,8 @@ pub enum TargetType{
 }
 
 
-/// Направление
+/// Типы событий для монстров при работе с группами
+#[derive(PartialEq, Eq)]
 pub enum EventTypeMonster {
     RequestJoinGroup = 0, // События для вожака о вступлении в группу.(МОНСТР -> ВОЖДЮ)
     AnswerAcceptingGroup = 1, // Ответ от члена стаи о принятии приглоса в группу (МОНСТР -> ВОЖДЮ)
@@ -44,7 +45,7 @@ pub struct EventEatFlora{
 /// Событие для взаимодействия монстров друг с другом
 // для живых по id
 pub struct EventGroupMonster{
-    pub event: EventTypeMonster,
+    pub event_type: EventTypeMonster,
     pub id_sender: i32,
     pub id_receiver: i32,
 }

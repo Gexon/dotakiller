@@ -251,12 +251,13 @@ impl System for BioSystems {
                     monster_map.last_eating.y = monster_map.action_target.position.y;
                     //println!("запоминаем место хавки x{} y{}", monster_map.last_eating.x, monster_map.last_eating.y);
                     // очередь на уменьшение массы у пальмы
-                    let mut event_to_flora = ground.get_component::<EventsTo>();
-                    event_to_flora.event_eat_flora.push(EventEatFlora {
-                        value: 10,
-                        x: monster_map.action_target.position.x,
-                        y: monster_map.action_target.position.y,
-                    });
+                    let mut events_to  = ground.get_component::<EventsTo>();
+                    events_to.events_eat_flora.push(
+                        EventEatFlora {
+                            value: 10,
+                            x: monster_map.action_target.position.x,
+                            y: monster_map.action_target.position.y,
+                        });
                     //println!("event.push монстр {}", monster_id.id);
                     // наполняем монстру желудок
                     monster_attr.hungry += 10;

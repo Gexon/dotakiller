@@ -8,10 +8,12 @@ use ::utility::enums::Direction;
 use ::utility::map::Size;
 use ::ground::components::*;
 use ::ground::systems::*;
+use ::ground::eventsystems::*;
 
 
 pub mod components;
 pub mod systems;
+pub mod eventsystems;
 
 pub fn init(dk_world: &mut World) {
     // добавляем в мир систему спавна.
@@ -19,9 +21,8 @@ pub fn init(dk_world: &mut World) {
     dk_world.set_system(SpawnMonsterSystem);
     dk_world.set_system(WindDirectionSystem);
     dk_world.set_system(FloraEventSystem);
-    dk_world.set_system(MonsterRequestJoinGroupSystem);
-    dk_world.set_system(MonsterAcceptingGroupSystem);
-    dk_world.set_system(MonsterMapSystem);
+    dk_world.set_system(MonsterEventSystem);
+    //dk_world.set_system(MonsterMapSystem);
 
     {
         // вносим в этот мир немного земли

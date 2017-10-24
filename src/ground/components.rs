@@ -6,6 +6,7 @@ use time::PreciseTime;
 use ::utility::map::Map;
 use ::utility::enums::Direction;
 use ::utility::enums::EventEatFlora;
+use ::utility::enums::EventGroupMonster;
 
 
 pub struct ClassGround;

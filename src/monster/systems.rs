@@ -5,7 +5,7 @@ use time::{PreciseTime, Duration};
 
 use MONSTER_SPEED;
 
-use ::utility::map::Point;
+//use ::utility::map::Point;
 use ::utility::enums::*;
 use ::ground::components::Position;
 use ::ground::components::ClassGround;
@@ -49,9 +49,9 @@ impl System for PerceptionSystem {
                 for y in -2..3 {
                     let pos_x: i32 = (position.x.trunc() + x as f32) as i32;
                     let pos_y: i32 = (position.y.trunc() + y as f32) as i32;
-                    let scan_point: Point = Point(pos_x, pos_y); // Casting
+                    let scan_point: (i32, i32) = (pos_x, pos_y); // Casting
                     // Проверяем растет ли дерево по даденным координатам.
-                    if !monster_state.view_food && world_map.flora[scan_point] == 1 {
+                    if !monster_state.view_food && world_map.flora.contains_key(&scan_point) {
                         // добавляем растение в цель
                         monster_map.action_target.target_type = TargetType::Flora;
                         monster_map.action_target.position.x = pos_x as f32;

@@ -2,10 +2,11 @@
 // так же тут буду размещать компоненты и системы по терраморфингу.
 use tinyecs::*;
 use time::PreciseTime;
+use std::collections::HashMap;
 
-use ::utility::map::Map;
+//use ::utility::map::Map;
 use ::utility::enums::Direction;
-use ::utility::map::Size;
+//use ::utility::map::Size;
 use ::ground::components::*;
 use ::ground::systems::*;
 use ::ground::event_systems::*;
@@ -31,8 +32,7 @@ pub fn init(dk_world: &mut World) {
 
         entity.add_component(ClassGround);
         entity.add_component(WorldMap {
-            flora: Map::new_empty(Size(140, 140), 0u8, 0u8),
-            monster: Map::new_empty(Size(140, 140), Vec::new(), Vec::new()),
+            flora: HashMap::new(),
         });
         entity.add_component(WindDirection { direction: Direction::North, start: PreciseTime::now() });
         entity.add_component(WorldLastId {

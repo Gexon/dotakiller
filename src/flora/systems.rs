@@ -5,7 +5,7 @@ use time::{PreciseTime, Duration};
 
 use FLORA_SPEED;
 
-use ::utility::map::Point;
+//use ::utility::map::Point;
 use ::utility::enums::Direction;
 use ::ground::components::*;
 use ::flora::components::*;
@@ -154,8 +154,9 @@ impl System for PlantDeadSystem {
             let position = entity.get_component::<Position>();
 
             // помечаем место как пустое
-            let target_point: Point = Point(position.x.trunc() as i32, position.y.trunc() as i32); // Casting
-            world_map.flora[target_point] = 0;
+            let target_point: (i32, i32) = (position.x.trunc() as i32, position.y.trunc() as i32); // Casting
+            world_map.flora.remove(&target_point);
+
 
             if name.name != "cactus" {
                 // поручаем спавнеру, засумонить в наш мир кактус.

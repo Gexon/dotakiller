@@ -36,7 +36,8 @@ Andrey Lesnikov@ozkriff
 speaker73@speaker73
 pub monsters: HashMap<(i32, i32), Monster>
 hash.insert( (1,1), ObjectID);
-vikings.insert((1,2),Viking::new("Einar", "Norway"))
+vikings.insert((1,2),
+Viking::new("Einar", "Norway"))
 let mut grass= HashMap::new();
 grass.insert( (1,0), 25);
 а если хочешь достать
@@ -48,3 +49,12 @@ Palms.get((monstr.x,monstr.y))
 Если получил ид
 Значит монстр на клетке с пальмой
 
+let mut map = HashMap::new();
+map.insert(1, "a");
+assert_eq!(map.contains_key(&1), true);
+assert_eq!(map.contains_key(&2), false);
+
+let mut map = HashMap::new();
+map.insert(1, "a");
+assert_eq!(map.remove(&1), Some("a"));
+assert_eq!(map.remove(&1), None);

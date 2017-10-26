@@ -5,7 +5,7 @@ use time::{PreciseTime, Duration};
 
 use GROUND_SPEED;
 
-use ::utility::map::Point;
+//use ::utility::map::Point;
 //use ::utility::map::Map;
 //use ::utility::map::Size;
 use ::utility::enums::*;
@@ -39,12 +39,12 @@ impl System for SpawnFloraSystem {
             let spawn_point = entity.get_component::<SpawnFlora>();
 
             // проверяем свободно ли место спавна.
-            let target_point: Point = Point(spawn_point.x.trunc() as i32, spawn_point.y.trunc() as i32); // Casting
+            let target_point: (i32, i32) = (spawn_point.x.trunc() as i32, spawn_point.y.trunc() as i32); // Casting
 
             //println!("Пробуем создать сущность: x {}, y {}", target_point.0, target_point.1);
-            if world_map.flora[target_point] == 0 {
-                world_map.flora[target_point] = 1;
-
+            if !world_map.flora.contains_key(&target_point) {
+                world_map.flora.entry(target_point).or_insert_with(last_id.flora_id);
+                //world_map.flora.insert(target_point, last_id.flora_id);
                 // проверяем наличие заданных объектов.
                 // создаем объект Пальма.
                 let entity_object = world.entity_manager.create_entity();

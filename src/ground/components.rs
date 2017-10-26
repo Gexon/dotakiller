@@ -2,8 +2,9 @@
 
 use tinyecs::*;
 use time::PreciseTime;
+use std::collections::HashMap;
 
-use ::utility::map::Map;
+//use ::utility::map::Map;
 use ::utility::enums::Direction;
 use ::utility::enums::EventEatFlora;
 use ::utility::enums::EventGroupMonster;
@@ -59,10 +60,12 @@ pub struct WorldLastId {
 impl Component for WorldLastId {}
 
 
-// тут будем хранить все объекты на карте.
+// тут будем хранить все статичные объекты на карте.
 pub struct WorldMap {
-    pub flora: Map<u8>,
-    pub monster: Map<Vec<i32>>,
+    //pub flora: Map<u8>,
+    //use std::collections::HashMap;
+    //let mut map: HashMap<&str, isize> = HashMap::new();
+    pub flora: HashMap<(i32, i32), i32>, // (координата х, координата у), id
 }
 
 impl Component for WorldMap {}

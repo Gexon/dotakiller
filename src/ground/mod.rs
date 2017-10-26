@@ -8,12 +8,12 @@ use ::utility::enums::Direction;
 use ::utility::map::Size;
 use ::ground::components::*;
 use ::ground::systems::*;
-use ::ground::eventsystems::*;
+use ::ground::event_systems::*;
 
 
 pub mod components;
 pub mod systems;
-pub mod eventsystems;
+pub mod event_systems;
 
 pub fn init(dk_world: &mut World) {
     // добавляем в мир систему спавна.

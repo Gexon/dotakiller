@@ -8,10 +8,10 @@ use std::sync::{Arc, Mutex};
 use tokio_core::reactor::Core;
 
 use ::server::systems::ReplicationServerSystem;
-use ::server::replicationserver::ReplicationServer;
+use ::server::replication_server::ReplicationServer;
 use ::server::components::*;
 
-mod replicationserver;
+mod replication_server;
 mod components;
 mod commands;
 mod proto;

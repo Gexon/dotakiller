@@ -13,7 +13,7 @@ use ::ground::components::WindDirection;
 use ::ground::components::WorldMap;
 use ::ground::components::EventsTo;
 use ::monster::components::*;
-use ::monster::monstergrafparser::*;
+use ::monster::monster_graph::*;
 
 
 /// Система восприятия
@@ -34,6 +34,7 @@ impl System for PerceptionSystem {
         // сканируем вокруг, может есть еда или вода или др. монстр или ОБОРИГЕН!
         // сканируем с интервалом равным перемещению.
         let mut monster_class = entity.get_component::<MonsterClass>();
+        // todo пересмотреть интервал
         if monster_class.perception_time.to(PreciseTime::now()) > Duration::seconds(2 * MONSTER_SPEED) {
             let mut monster_map = entity.get_component::<MonsterMaps>();
             // сканируем окружность на предмет кактусов.
@@ -44,7 +45,7 @@ impl System for PerceptionSystem {
             // проверяем свободно ли место спавна.
             let position = entity.get_component::<Position>();
             //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
-            'outer: for x in -2..3 {
+            'outer: for x in -2..3 { // x от -2 до 0 и до 2, проверил на плейграунде.
                 for y in -2..3 {
                     let pos_x: i32 = (position.x.trunc() + x as f32) as i32;
                     let pos_y: i32 = (position.y.trunc() + y as f32) as i32;
@@ -61,6 +62,7 @@ impl System for PerceptionSystem {
                     {
                         // если мы попали сюда, значит не сработал break 'outer; а это значит что нет целей рядом.
                         // убираем растение из цели
+                        // todo переписать, или он не увидит никогда монстров
                         monster_map.action_target.target_type = TargetType::None;
                         monster_state.view_food = false;
                     }
@@ -260,6 +262,7 @@ impl System for BioSystems {
                         });
                     //println!("event.push монстр {}", monster_id.id);
                     // наполняем монстру желудок
+                    // todo переписат, необходимо подтверждение от пальмы/земли что его можно откусить
                     monster_attr.hungry += 10;
                 }
 

@@ -217,10 +217,7 @@ fn run_find_food(entity: &Entity) -> Status {
     }
 
     if behaviour_event.event.contains(&BehaviorEventEnum::FoundFood) {
-        // Те элементы, которые не удовлетворяют предикату удаляются!
-        /*let mut vec = vec![1, 2, 3, 4];
-        vec.retain(|&x| x%2 == 0);
-        assert_eq!(vec, [2, 4]);*/
+        // есть событие обнаружена еда, убираем событие из списка событий.
         behaviour_event.event.retain(|x| x != &BehaviorEventEnum::FoundFood);
         //println!("Монстр {} вижу пальму", monster_id.id);
         monster_attr.speed = 1;
@@ -441,8 +438,8 @@ fn _next_step_around2(position: &mut Position, monster_state: &mut MonsterState)
 // По кругу должен ходить.
 fn next_step_around(position: &mut Position, delta: f32, monster_state: &mut MonsterState) {
     //println!("монстр ходит кругами: x{} y{}",
-      //       monster_state.target_point.x,
-        //     monster_state.target_point.y);
+    //       monster_state.target_point.x,
+    //     monster_state.target_point.y);
 
     // проверяем достижение цели
     if (

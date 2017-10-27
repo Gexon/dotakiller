@@ -58,3 +58,25 @@ let mut map = HashMap::new();
 map.insert(1, "a");
 assert_eq!(map.remove(&1), Some("a"));
 assert_eq!(map.remove(&1), None);
+
+//--------------------------------------------------------------------------------
+@not-fl3 поясни пожалуйста что тут такое _bot: Bot, _pos: Position, _vel: Velocity?
+
+register_system!((AiSystem): |_bot: Bot, _pos: Position, _vel: Velocity|
+                 with (_players: aspect_all!(Player, Position),
+                       _targets: aspect_all!(SomeTarget, Position)) => {
+    _pos.x += _vel.x;
+    for target in _targets {
+        let Position {x, ..} = *target.get_component::<Position>();
+        if _pos.x >= x {
+            println!("Maybe attack this target?");
+        }
+    }
+    println!("Moving! position: {}, velocity: {}", _pos.x, _vel.x);
+});
+
+Fedor Logachev@not-fl3
+это превратится в
+
+let _bot = entity.get_component::<Bot>();
+let _pos = ....

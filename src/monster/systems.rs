@@ -21,60 +21,66 @@ pub struct PerceptionSystem;
 // тут типа чекает окружение, и помечает объекты что попадают в поле зения.
 impl System for PerceptionSystem {
     fn aspect(&self) -> Aspect {
-        aspect_all!(MonsterClass, MonsterState)
+        aspect_all!(MonsterClass)
     }
 
     fn data_aspects(&self) -> Vec<Aspect> {
-        vec![aspect_all![ClassGround]]
+        vec![aspect_all![ClassGround].optional(), aspect_all![MonsterClass].optional()]
     }
 
-    fn process_d(&mut self, entity: &mut Entity, data: &mut DataList) {
-        // здесь тоже меняются события.
-
+    // Вынимаем аспекты макросом, т.к. там безумие в коде.
+    impl_process!( self, _entity, | _monster_class: MonsterClass | with (_ground, _monsters) => {
         // сканируем вокруг, может есть еда или вода или др. монстр или ОБОРИГЕН!
-        // сканируем с интервалом равным перемещению.
-        let mut monster_class = entity.get_component::<MonsterClass>();
-        // todo пересмотреть интервал
-        if monster_class.perception_time.to(PreciseTime::now()) > Duration::seconds(2 * MONSTER_SPEED) {
-            let mut monster_map = entity.get_component::<MonsterMaps>();
-            // сканируем окружность на предмет кактусов.
-            //_MonsterMaps
-            let mut monster_state = entity.get_component::<MonsterState>();
-            let ground = data.unwrap_entity();
-            let world_map = ground.get_component::<WorldMap>();
-            // проверяем свободно ли место спавна.
-            let position = entity.get_component::<Position>();
-            //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
-            'outer: for x in -2..3 { // x от -2 до 0 и до 2, проверил на плейграунде.
-                for y in -2..3 {
-                    let pos_x: i32 = (position.x.trunc() + x as f32) as i32;
-                    let pos_y: i32 = (position.y.trunc() + y as f32) as i32;
-                    let scan_point: (i32, i32) = (pos_x, pos_y); // Casting
-                    // Проверяем растет ли дерево по даденным координатам.
-                    if !monster_state.view_food && world_map.flora.contains_key(&scan_point) {
-                        // добавляем растение в цель
-                        monster_map.action_target.target_type = TargetType::Flora;
-                        monster_map.action_target.position.x = pos_x as f32;
-                        monster_map.action_target.position.y = pos_y as f32;
-                        monster_state.view_food = true;
-                        break 'outer;
-                    };
-                    {
-                        // если мы попали сюда, значит не сработал break 'outer; а это значит что нет целей рядом.
-                        // убираем растение из цели
-                        // todo переписать, или он не увидит никогда монстров
-                        monster_map.action_target.target_type = TargetType::None;
-                        monster_state.view_food = false;
-                    }
-                }
-            }
 
+        let mut monster_class = _entity.get_component::< MonsterClass > ();
+        // проверяем таймеры, чтоб не спамить почем зря.
+        if monster_class.perception_time.to(PreciseTime::now()) > Duration::seconds(MONSTER_SPEED) {
+            // палим растения, если голодны BecomeHungry
+            let behaviour_event = _entity.get_component::<BehaviourEvents>(); // события
+            if behaviour_event.event.contains(&BehaviorEventEnum::BecomeHungry) {
+                let mut monster_map = _entity.get_component::< MonsterMaps > ();
+                let mut monster_state = _entity.get_component::< MonsterState > ();
+                let ground = &_ground[0];
+                let world_map = ground.get_component::< WorldMap > ();
+                // проверяем свободно ли место спавна.
+                let position = _entity.get_component::< Position > ();
+                //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+                'outer:
+                for x in - 2..3 {
+                    // x от -2 до 0 и до 2, проверил на плейграунде.
+                    for y in - 2..3 {
+                            let pos_x: i32 = (position.x.trunc() as i32 + x) as i32;
+                            let pos_y: i32 = (position.y.trunc() as i32 + y) as i32;
+                            let scan_point: (i32, i32) = (pos_x, pos_y); // Casting
+                            // Проверяем растет ли дерево по даденным координатам.
+                            if ! monster_state.view_food && world_map.flora.contains_key( & scan_point) {
+                                // добавляем растение в цель
+                                monster_map.action_target.target_type = TargetType::Flora;
+                                monster_map.action_target.position.x = pos_x as f32;
+                                monster_map.action_target.position.y = pos_y as f32;
+                                monster_state.view_food = true;
+                                break 'outer;
+                            };
+                        {
+                            // если мы попали сюда, значит не сработал break 'outer; а это значит что нет целей рядом.
+                            // убираем растение из цели
+                            // todo переписать, или он не увидит никогда монстров
+                            monster_map.action_target.target_type = TargetType::None;
+                            monster_state.view_food = false;
+                        }
+                    } // for
+                } // for
+            } // BecomeHungry
+
+
+
+            //...
 
             // фиксируем текущее время
             monster_class.perception_time = PreciseTime::now();
-        }
-    }
-}
+        } // timer
+    }); // макрос
+} //
 
 
 /// Генерация событий
@@ -253,7 +259,7 @@ impl System for BioSystems {
                     monster_map.last_eating.y = monster_map.action_target.position.y;
                     //println!("запоминаем место хавки x{} y{}", monster_map.last_eating.x, monster_map.last_eating.y);
                     // очередь на уменьшение массы у пальмы
-                    let mut events_to  = ground.get_component::<EventsTo>();
+                    let mut events_to = ground.get_component::<EventsTo>();
                     events_to.events_eat_flora.push(
                         EventEatFlora {
                             value: 10,

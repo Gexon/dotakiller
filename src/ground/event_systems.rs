@@ -45,7 +45,7 @@ impl System for FloraEventSystem {
                         if flora_state.mass > event.value {
                             flora_state.mass -= event.value;
                         } else { self.kill_flora(entity, &mut flora_state.mass) }
-                        //println!("Растение:{}, масса:{}", flora_id.id, flora_state.mass);
+                        //println!("Монстр сожрал растение:{}, масса:{}", flora_id.id, flora_state.mass);
                         break; // должен прервать for in
                     }
                 }

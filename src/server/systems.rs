@@ -47,12 +47,14 @@ impl System for ReplicationServerSystem {
             self.replication(|tx, _addr, conn| {
                 // Выполняем первичную репликацию, если клиент новый.
                 if conn.is_new {
+                    //println!("_floras {}", _floras.len());
                     let id_herb = flora.get_component::<HerbId>();
                     let class = flora.get_component::<Name>();
                     let position = flora.get_component::<Position>();
                     let state = flora.get_component::<FloraState>();
                     let s = format!("updherb {} {} {} {} {}", id_herb.id, class.name, state.state, position.x, position.y);
                     tx.unbounded_send(Ok(Message::Raw(s))).unwrap();
+                    //println!("PRIMARY_REPLICATION updherb id {}, {}, x={}, y={}", id_herb.id, class.name, position.x, position.y);
                 // основная репликация.
                 } else if flora.has_component::<Replication>() {
                     let id_herb = flora.get_component::<HerbId>();
@@ -61,6 +63,7 @@ impl System for ReplicationServerSystem {
                     let state = flora.get_component::<FloraState>();
                     let s = format!("updherb {} {} {} {} {}", id_herb.id, class.name, state.state, position.x, position.y);
                     tx.unbounded_send(Ok(Message::Raw(s))).unwrap();
+                    //println!("REPLICATION updherb id {}, {}, x={}, y={}", id_herb.id, class.name, position.x, position.y);
                 };
             });
             // Удалять флаг репликации тут! Иначе будет стопятьсот раз его пытаться удалить в каждом соединении.

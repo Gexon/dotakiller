@@ -32,7 +32,7 @@ pub fn exec_node(branch: &mut NodeBehavior, entity: &Entity, wind: &WindDirectio
                 // прерываем и выходим, запоминая курсор.
                 if status == Status::Running {
                     //println!("Running Sequencer cursor {}", *cursor);
-                    return status
+                    return status;
                 }
                 //}
             }
@@ -136,7 +136,7 @@ fn run_check_tired(entity: &Entity) -> Status {
         state.emo_state = 2;
         entity.add_component(Replication); // произошли изменения монстра.
         entity.refresh();
-        return Status::Success
+        return Status::Success;
     }
     //println!("монстр бодр");
     state.emo_state = 0;
@@ -154,7 +154,7 @@ fn run_sleep(entity: &Entity) -> Status {
         behaviour_state.event.retain(|x| x != &BehaviorEventEnum::BecomeTired);
         behaviour_state.action = BehaviorActions::Null;
         println!("монстр {} отдохнул", monster_id.id);
-        return Status::Success
+        return Status::Success;
     }
 
     behaviour_state.action = BehaviorActions::Sleep;
@@ -189,7 +189,7 @@ fn run_check_hungry(entity: &Entity) -> Status {
         state.emo_state = 1;
         entity.add_component(Replication); // произошли изменения монстра.
         entity.refresh();
-        return Status::Success
+        return Status::Success;
     }
     //println!("монстр сыт");
     state.emo_state = 0;
@@ -211,7 +211,7 @@ fn run_find_food(entity: &Entity) -> Status {
     entity.refresh();
     // если мы долго кружим
     if monster_state.find_around_count > 8 {
-        return Status::Failure
+        return Status::Failure;
     } else {
         monster_state.find_around_count += 1;
     }
@@ -224,7 +224,7 @@ fn run_find_food(entity: &Entity) -> Status {
         behaviour_event.event.retain(|x| x != &BehaviorEventEnum::FoundFood);
         //println!("Монстр {} вижу пальму", monster_id.id);
         monster_attr.speed = 1;
-        return Status::Success
+        return Status::Success;
     }
 
     //println!("Монстр {} ищет че бы поесть", monster_id.id);
@@ -249,11 +249,11 @@ fn run_meal(entity: &Entity) -> Status {
         behaviour_event.event.retain(|x| x != &BehaviorEventEnum::BecomeHungry);
         behaviour_event.action = BehaviorActions::Null;
         //println!("монстр {} наелся", monster_id.id);
-        return Status::Success
+        return Status::Success;
     } else if behaviour_event.event.contains(&BehaviorEventEnum::TargetLost) {
         //println!("монстр {} потерял цель", monster_id.id);
         behaviour_event.event.retain(|x| x != &BehaviorEventEnum::TargetLost);
-        return Status::Failure
+        return Status::Failure;
     }
 
     // пальму съесть
@@ -285,7 +285,7 @@ fn run_move_to_target(entity: &Entity) -> Status {
         // цель достигнута,
         //println!("монстр {} добрался до цели", monster_id.id);
         monster_state.find_around_count = 0;
-        return Status::Success
+        return Status::Success;
     } else {
         // цель не достигнута, делаем шаг в сторону цели.
         // расчеты по Х
@@ -328,7 +328,7 @@ fn run_check_memory_meal(entity: &Entity) -> Status {
     //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
     if monster_maps.last_eating.x < 0f32 {
         //println!("монстр {} не помнит где раньше питался", monster_id.id);
-        return Status::Failure
+        return Status::Failure;
     }
 
     monster_state.target_point.x = monster_maps.last_eating.x;
@@ -407,34 +407,43 @@ fn next_step(position: &mut Position, delta: f32, wind: &WindDirection) {
 
 /// Расчет следующего шага по кругу монстра.
 // По кругу должен ходить.
-fn next_step_around(position: &mut Position, delta: f32, monster_state: &mut MonsterState) {
-    //println!("монстр ходит кругами: x{} y{}",
-    //monster_state.target_point.x,
-    //monster_state.target_point.y);
-    // todo     есть алгоритм движения по кругу для клетчатого поля
+fn _next_step_around2(position: &mut Position, monster_state: &mut MonsterState) {
+    // алгоритм движения по кругу для клетчатого поля
     // https://stackoverflow.com/questions/398299/looping-in-a-spiral
+    let delta_x = monster_state.delta_x;
+    let delta_y = monster_state.delta_y;
+    let mut x: i32 = position.x as i32;
+    let mut y: i32 = position.y as i32;
+    let mut dx = delta_x;
+    let mut dy = delta_y;
 
-    /*
-    void Spiral( int X, int Y){
-    int x,y,dx,dy;
-    x = y = dx =0;
-    dy = -1;
-    int t = std::max(X,Y);
-    int maxI = t*t;
-    for(int i =0; i < maxI; i++){
-        if ((-X/2 <= x) && (x <= X/2) && (-Y/2 <= y) && (y <= Y/2)){
-            // DO STUFF...
-        }
-        if( (x == y) || ((x < 0) && (x == -y)) || ((x > 0) && (x == 1-y))){
-            t = dx;
-            dx = -dy;
-            dy = t;
-        }
-        x += dx;
-        y += dy;
+    if (x == y) || ((x < 0) && (x == -y)) || ((x > 0) && (x == 1 - y)) {
+        let t = dx;
+        dx = -dy;
+        dy = t;
+    };
+
+    x += dx;
+    y += dy;
+    monster_state.delta_x = dx;
+    monster_state.delta_y = dy;
+
+    if ((position.x as u32) < GROUND_SIZE)
+        && ((position.x as u32) > 0)
+        && ((position.y as u32) < GROUND_SIZE)
+        && ((position.y as u32) > 0) {
+        position.x = x as f32;
+        position.y = y as f32;
+        //println!("монстр ходит кругами: x{} y{}", position.x, position.y);
     }
 }
-    */
+
+// По кругу должен ходить.
+fn next_step_around(position: &mut Position, delta: f32, monster_state: &mut MonsterState) {
+    //println!("монстр ходит кругами: x{} y{}",
+      //       monster_state.target_point.x,
+        //     monster_state.target_point.y);
+
     // проверяем достижение цели
     if (
         (position.x as u32 == monster_state.target_point.x as u32)

@@ -66,6 +66,8 @@ pub struct MonsterState {
     pub move_target: PositionM,
     pub old_position: PositionM,
     pub target_point: PositionM,
+    pub delta_x: i32,
+    pub delta_y: i32,
 }
 
 impl Component for MonsterState {}
@@ -83,6 +85,8 @@ impl MonsterState {
             old_position: PositionM { x: 0f32, y: 0f32, direct: Direction::North },
             target_point: PositionM { x: 0f32, y: 0f32, direct: Direction::North },
             find_around_count: 0i32,
+            delta_x: 0,
+            delta_y: -1,
         }
     }
 }
@@ -113,7 +117,7 @@ impl MonsterAttributes {
         MonsterAttributes {
             speed: 1,
             power: 1000,
-            hungry: 960,
+            hungry: 900,
             lead: false,
             id_lead: -1,
             in_group: false,

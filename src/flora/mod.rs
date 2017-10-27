@@ -15,7 +15,7 @@ pub fn init(dk_world: &mut World) {
     dk_world.set_system(PlantRemoveSystem);
 
     for y in 0..1 {
-        for count in 0..10 {
+        for count in 0..1 {
             // поручаем спавнеру, засумонить в наш мир пальму.
             // создаем спавнер
             let mut entity_manager = dk_world.entity_manager();
@@ -23,7 +23,7 @@ pub fn init(dk_world: &mut World) {
 
             let _delta_x: f32 = count as f32;
             let delta_y: f32 = y as f32;
-            entity_spawner.add_component(SpawnFlora { name: "palm", x: 1f32 + _delta_x, y: 1f32 + delta_y});
+            entity_spawner.add_component(SpawnFlora { name: "palm", x: 10f32 + _delta_x, y: 10f32 + delta_y});
             entity_spawner.refresh();
         }
     }

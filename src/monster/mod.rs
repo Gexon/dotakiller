@@ -18,14 +18,14 @@ pub fn init(monster_world: &mut World) {
     monster_world.set_system(BioSystems);
     monster_world.set_system(PerceptionSystem);
 
-    for count in 0..2 {
+    for count in 0..1 {
         // поручаем спавнеру, засумонить в наш мир первого монстра!
         // создаем спавнер
         let mut entity_manager = monster_world.entity_manager();
         let entity_spawner = entity_manager.create_entity();
 
         let delta: f32 = count as f32;
-        entity_spawner.add_component(SpawnMonster { name: "monster", x: 1f32 + delta, y: 1f32 + delta });
+        entity_spawner.add_component(SpawnMonster { name: "monster", x: 10f32 + delta, y: 10f32 + delta });
         entity_spawner.refresh();
     }
 }

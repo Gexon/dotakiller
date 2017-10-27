@@ -40,34 +40,30 @@ impl System for SpawnFloraSystem {
 
             // проверяем свободно ли место спавна.
             let target_point: (i32, i32) = (spawn_point.x.trunc() as i32, spawn_point.y.trunc() as i32); // Casting
-
             //println!("Пробуем создать сущность: x {}, y {}", target_point.0, target_point.1);
-            if !world_map.flora.contains_key(&target_point) {
-                world_map.flora.entry(target_point).or_insert_with(|| {
-                    //world_map.flora.insert(target_point, last_id.flora_id);
-                    // создаем объект Пальма.
-                    let entity_object = world.entity_manager.create_entity();
-                    entity_object.add_component(Name { name: spawn_point.name.to_string() });
-                    entity_object.add_component(Position { x: spawn_point.x, y: spawn_point.y });
-                    entity_object.add_component(FloraClass);
-                    entity_object.add_component(Growth);
-                    entity_object.add_component(Replication); // требуется репликация.
-                    entity_object.add_component(FloraState {
-                        state: 1,
-                        growth_time: PreciseTime::now(),
-                        reproduction_time: PreciseTime::now(),
-                        dead: 0,
-                        mass: 20,
-                    });
-                    entity_object.add_component(HerbId { id: last_id.flora_id });
-                    entity_object.refresh();
-                    let id_herb = entity_object.get_component::<HerbId>();
-                    println!("Создаем сущность {} {}", spawn_point.name.to_string(), id_herb.id);
-                    let insert_id = last_id.flora_id;
-                    last_id.flora_id += 1;
-                    insert_id
+            world_map.flora.entry(target_point).or_insert_with(|| {
+                // создаем объект Пальма.
+                let entity_object = world.entity_manager.create_entity();
+                entity_object.add_component(Name { name: spawn_point.name.to_string() });
+                entity_object.add_component(Position { x: spawn_point.x, y: spawn_point.y });
+                entity_object.add_component(FloraClass);
+                entity_object.add_component(Growth);
+                entity_object.add_component(Replication); // требуется репликация.
+                entity_object.add_component(FloraState {
+                    state: 1,
+                    growth_time: PreciseTime::now(),
+                    reproduction_time: PreciseTime::now(),
+                    dead: 0,
+                    mass: 20,
                 });
-            }
+                entity_object.add_component(HerbId { id: last_id.flora_id });
+                entity_object.refresh();
+                let id_herb = entity_object.get_component::<HerbId>();
+                println!("Создаем сущность {} {}", spawn_point.name.to_string(), id_herb.id);
+                let insert_id = last_id.flora_id;
+                last_id.flora_id += 1;
+                insert_id
+            });
 
             entity.remove_component::<SpawnFlora>(); // удаляем компонент "Точка спавна/spawn_point"
             entity.delete();
@@ -100,11 +96,6 @@ impl System for SpawnMonsterSystem {
             // берем компонент "Точка спавна/spawn_point"
             let spawn_point = entity.get_component::<SpawnMonster>();
 
-            // проверяем свободно ли место спавна.
-            //let target_point: Point = Point(spawn_point.x.trunc() as i32, spawn_point.y.trunc() as i32); // Casting
-
-            //println!("Пробуем создать сущность: x {}, y {}", target_point.0, target_point.1);
-            // проверяем наличие заданных объектов.
             // создаем объект Монстр.
             let entity_object = world.entity_manager.create_entity();
             entity_object.add_component(Name { name: spawn_point.name.to_string() });
@@ -133,7 +124,6 @@ impl System for SpawnMonsterSystem {
             let monster_id = entity_object.get_component::<MonsterId>();
             println!("Создаем сущность {} {}", spawn_point.name.to_string(), monster_id.id);
             last_id.monster_id += 1;
-
 
             entity.remove_component::<SpawnMonster>(); // удаляем компонент "Точка спавна/spawn_point"
             entity.delete();

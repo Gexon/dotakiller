@@ -41,26 +41,26 @@ impl System for PlantReproductionSystem {
                     let mut target_y = position.y;
                     // определяем координаты выпавшей семки
                     match wind.direction {
-                        Direction::North => { if position.x < 140f32 { target_x = position.x + 1f32 } },
+                        Direction::North => { if position.x < 140f32 { target_x = position.x + 1f32 } }
                         Direction::NorthWest => {
                             if position.x < 140f32 { target_x = position.x + 1f32 };
                             if position.y > 0f32 { target_y = position.y - 1f32 };
-                        },
-                        Direction::West => { if position.y > 0f32 { target_y = position.y - 1f32 }; },
+                        }
+                        Direction::West => { if position.y > 0f32 { target_y = position.y - 1f32 }; }
                         Direction::WestSouth => {
                             if position.x > 0f32 { target_x = position.x - 1f32 };
                             if position.y > 0f32 { target_y = position.y - 1f32 };
-                        },
-                        Direction::South => { if position.x > 0f32 { target_x = position.x - 1f32 } },
+                        }
+                        Direction::South => { if position.x > 0f32 { target_x = position.x - 1f32 } }
                         Direction::SouthEast => {
                             if position.x > 0f32 { target_x = position.x - 1f32 };
                             if position.y < 140f32 { target_y = position.y + 1f32 };
-                        },
-                        Direction::East => { if position.y < 140f32 { target_y = position.y + 1f32 }; },
+                        }
+                        Direction::East => { if position.y < 140f32 { target_y = position.y + 1f32 }; }
                         Direction::EastNorth => {
                             if position.x < 140f32 { target_x = position.x + 1f32 };
                             if position.y < 140f32 { target_y = position.y + 1f32 };
-                        },
+                        }
                     }
                     //println!("Ветер уносит семена в направлении: {}", wind.direction);
                     // поручаем спавнеру, засумонить в наш мир пальму.
@@ -144,7 +144,7 @@ impl System for PlantDeadSystem {
     fn process_all(&mut self, entities: &mut Vec<&mut Entity>, world: &mut WorldHandle, data: &mut DataList) {
         let ground = data.unwrap_entity();
         let mut world_map = ground.get_component::<WorldMap>();
-
+        //println!("PlantDeadSystem - entities {}", entities.len());
         // перебираем все сущности
         for entity in entities {
             let name = entity.get_component::<Name>();
@@ -157,7 +157,7 @@ impl System for PlantDeadSystem {
             let target_point: (i32, i32) = (position.x.trunc() as i32, position.y.trunc() as i32); // Casting
             world_map.flora.remove(&target_point);
 
-
+            //println!("PlantDeadSystem - name {}", name.name);
             if name.name != "cactus" {
                 // поручаем спавнеру, засумонить в наш мир кактус.
                 // создаем спавнер

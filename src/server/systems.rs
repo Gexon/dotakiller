@@ -42,6 +42,7 @@ impl System for ReplicationServerSystem {
 
     // Вынимаем аспекты макросом, т.к. там безумие в коде.
     impl_process!(self, _entity, | _replication_server_class: ReplicationServerClass | with (_floras, _monsters) => {
+        // _replication_server_class - это компонента из _entity типа ReplicationServerClass
         // Репликация растений ------------------------
         for flora in _floras {
             self.replication(|tx, _addr, conn| {

@@ -32,9 +32,9 @@ impl System for PerceptionSystem {
     impl_process!( self, _entity, | _monster_class: MonsterClass | with (_ground, _monsters) => {
         // сканируем вокруг, может есть еда или вода или др. монстр или ОБОРИГЕН!
 
-        let mut monster_class = _entity.get_component::< MonsterClass > ();
+        // _monster_class - это: "let _monster_class = _entity.get_component::<MonsterClass>();
         // проверяем таймеры, чтоб не спамить почем зря.
-        if monster_class.perception_time.to(PreciseTime::now()) > Duration::seconds(MONSTER_SPEED) {
+        if _monster_class.perception_time.to(PreciseTime::now()) > Duration::seconds(MONSTER_SPEED) {
             // палим растения, если голодны BecomeHungry
             let behaviour_event = _entity.get_component::<BehaviourEvents>(); // события
             if behaviour_event.event.contains(&BehaviorEventEnum::BecomeHungry) {
@@ -53,7 +53,7 @@ impl System for PerceptionSystem {
                             let pos_y: i32 = (position.y.trunc() as i32 + y) as i32;
                             let scan_point: (i32, i32) = (pos_x, pos_y); // Casting
                             // Проверяем растет ли дерево по даденным координатам.
-                            if ! monster_state.view_food && world_map.flora.contains_key( & scan_point) {
+                            if !monster_state.view_food && world_map.flora.contains_key( & scan_point) {
                                 // добавляем растение в цель
                                 monster_map.action_target.target_type = TargetType::Flora;
                                 monster_map.action_target.position.x = pos_x as f32;
@@ -77,7 +77,7 @@ impl System for PerceptionSystem {
             //...
 
             // фиксируем текущее время
-            monster_class.perception_time = PreciseTime::now();
+            _monster_class.perception_time = PreciseTime::now();
         } // timer
     }); // макрос
 } //

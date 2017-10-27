@@ -33,7 +33,7 @@ impl System for PerceptionSystem {
         // сканируем вокруг, может есть еда или вода или др. монстр или ОБОРИГЕН!
 
         // _monster_class - это: "let _monster_class = _entity.get_component::<MonsterClass>();
-        // проверяем таймеры, чтоб не спамить почем зря.
+        // проверяем таймеры, чтоб не спамить почем зря
         if _monster_class.perception_time.to(PreciseTime::now()) > Duration::seconds(MONSTER_SPEED) {
             // палим растения, если голодны BecomeHungry
             let behaviour_event = _entity.get_component::<BehaviourEvents>(); // события

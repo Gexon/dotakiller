@@ -103,6 +103,8 @@ pub enum BehaviorEventEnum {
     PowerFull,
     // цель потеряна
     TargetLost,
+    // ищу группу
+    BecomeGroup,
 
 }
 

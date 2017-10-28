@@ -59,6 +59,7 @@ pub struct MonsterState {
     pub low_food: bool,
     // увидел еду
     pub view_food: bool,
+    pub view_monster: bool,
 
     pub dead: i32,
     // количество попыток поиска еды около себя.
@@ -80,6 +81,7 @@ impl MonsterState {
             low_power: false,
             low_food: false,
             view_food: false,
+            view_monster: false,
             dead: 0,
             move_target: PositionM { x: 0f32, y: 0f32, direct: Direction::North },
             old_position: PositionM { x: 0f32, y: 0f32, direct: Direction::North },
@@ -132,6 +134,7 @@ impl Component for MonsterAttributes {}
 
 
 /// тут будем хранить все объекты на карте.
+// память монстра
 pub struct MonsterMaps {
     pub action_target: ActionTarget,
     pub last_eating: PositionM,

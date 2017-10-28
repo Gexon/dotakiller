@@ -35,84 +35,90 @@ impl System for PerceptionSystem {
         // _monster_class - это: "let _monster_class = _entity.get_component::<MonsterClass>();
         // проверяем таймеры, чтоб не спамить почем зря
         if _monster_class.perception_time.to(PreciseTime::now()) > Duration::seconds(MONSTER_SPEED) {
-            // палим растения, если голодны BecomeHungry
-            let behaviour_event = _entity.get_component::<BehaviourEvents>(); // события
-            if behaviour_event.event.contains(&BehaviorEventEnum::BecomeHungry) {
-                let mut monster_map = _entity.get_component::< MonsterMaps > ();
-                let mut monster_state = _entity.get_component::< MonsterState > ();
-                let ground = &_ground[0];
-                let world_map = ground.get_component::< WorldMap > ();
-                // проверяем свободно ли место спавна.
-                let position = _entity.get_component::< Position > ();
-                //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
-                'outer:
-                for x in - 2..3 {
-                    // x от -2 до 0 и до 2, проверил на плейграунде.
-                    for y in - 2..3 {
-                            let pos_x: i32 = (position.x.trunc() as i32 + x) as i32;
-                            let pos_y: i32 = (position.y.trunc() as i32 + y) as i32;
-                            let scan_point: (i32, i32) = (pos_x, pos_y); // Casting
-                            // Проверяем растет ли дерево по даденным координатам.
-                            if !monster_state.view_food && world_map.flora.contains_key( & scan_point) {
-                                // добавляем растение в цель
-                                monster_map.action_target.target_type = TargetType::Flora;
-                                monster_map.action_target.position.x = pos_x as f32;
-                                monster_map.action_target.position.y = pos_y as f32;
-                                monster_state.view_food = true;
-                                break 'outer;
-                            };
-                        {
-                            // если мы попали сюда, значит не сработал break 'outer; а это значит что нет целей рядом.
-                            // убираем растение из цели
-                            // todo переписать, или он не увидит никогда монстров
-                            monster_map.action_target.target_type = TargetType::None;
-                            monster_state.view_food = false;
-                        }
-                    } // for
-                } // for
-            } // BecomeHungry
 
-
-            // Ищем ВОЖДЯ. BecomeGroup
-            let behaviour_event = _entity.get_component::<BehaviourEvents>(); // события
-            if behaviour_event.event.contains(&BehaviorEventEnum::BecomeGroup) {
-                let mut monster_mem = _entity.get_component::< MonsterMaps > ();
-                let mut monster_state = _entity.get_component::< MonsterState > ();
-                let position = _entity.get_component::< Position > ();
-                //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
-                // перебираем всех монстров
-                for monster in _monsters {
-                    let target_pos = monster.get_component::< Position > ();
-                    'outer_mons:
+            {
+                // палим растения, если голодны. BecomeHungry
+                let behaviour_event = _entity.get_component::<BehaviourEvents>(); // события
+                if behaviour_event.event.contains(&BehaviorEventEnum::BecomeHungry) {
+                    let mut monster_map = _entity.get_component::< MonsterMaps > ();
+                    let mut monster_state = _entity.get_component::< MonsterState > ();
+                    let ground = &_ground[0];
+                    let world_map = ground.get_component::< WorldMap > ();
+                    // проверяем свободно ли место спавна.
+                    let position = _entity.get_component::< Position > ();
+                    //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+                    'outer:
                     for x in - 2..3 {
                         // x от -2 до 0 и до 2, проверил на плейграунде.
                         for y in - 2..3 {
                                 let pos_x: i32 = (position.x.trunc() as i32 + x) as i32;
                                 let pos_y: i32 = (position.y.trunc() as i32 + y) as i32;
-                                let cursor_pos: (i32, i32) = (pos_x, pos_y);
-                                let target_pos: (i32, i32) = (target_pos.x as i32, target_pos.y as i32);
-
-                                // Проверяем есть ли монстр по даденным координатам.
-                                if cursor_pos == target_pos {
-                                    // добавляем монстра в цель
-                                    monster_mem.action_target.target_type = TargetType::Monster;
-                                    monster_mem.action_target.position.x = pos_x as f32;
-                                    monster_mem.action_target.position.y = pos_y as f32;
-                                    monster_state.view_monster = true;
-                                    break 'outer_mons;
+                                let scan_point: (i32, i32) = (pos_x, pos_y); // Casting
+                                // Проверяем растет ли дерево по даденным координатам.
+                                if !monster_state.view_food && world_map.flora.contains_key( & scan_point) {
+                                    // добавляем растение в цель
+                                    monster_map.action_target.target_type = TargetType::Flora;
+                                    monster_map.action_target.position.x = pos_x as f32;
+                                    monster_map.action_target.position.y = pos_y as f32;
+                                    monster_state.view_food = true;
+                                    break 'outer;
                                 };
                             {
                                 // если мы попали сюда, значит не сработал break 'outer; а это значит что нет целей рядом.
-                                // убираем monstra из цели
+                                // убираем растение из цели
                                 // todo переписать, или он не увидит никогда монстров
-                                monster_mem.action_target.target_type = TargetType::None;
-                                monster_state.view_monster = false;
+                                monster_map.action_target.target_type = TargetType::None;
+                                monster_state.view_food = false;
                             }
-                        } // for y
-                    } // for x
-                } // for monster
+                        } // for
+                    } // for
+                } // BecomeHungry
+            }
 
-            } // Конец поиск ВОЖДЯ
+
+            {
+                // Ищем ВОЖДЯ. BecomeGroup
+                let behaviour_event = _entity.get_component::<BehaviourEvents>(); // события
+                if behaviour_event.event.contains(&BehaviorEventEnum::BecomeGroup) {
+                    let mut monster_mem = _entity.get_component::< MonsterMaps > ();
+                    let mut monster_state = _entity.get_component::< MonsterState > ();
+                    let position = _entity.get_component::< Position > ();
+                    //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+                    // перебираем всех монстров
+                    for monster in _monsters {
+                        let target_pos = monster.get_component::< Position > ();
+                        'outer_mons:
+                        for x in - 2..3 {
+                            // x от -2 до 0 и до 2, проверил на плейграунде.
+                            for y in - 2..3 {
+                                    let pos_x: i32 = (position.x.trunc() as i32 + x) as i32;
+                                    let pos_y: i32 = (position.y.trunc() as i32 + y) as i32;
+                                    let cursor_pos: (i32, i32) = (pos_x, pos_y);
+                                    let target_pos: (i32, i32) = (target_pos.x as i32, target_pos.y as i32);
+
+                                    // Проверяем есть ли монстр по даденным координатам.
+                                    if cursor_pos == target_pos {
+                                        // добавляем монстра в цель
+                                        monster_mem.action_target.target_type = TargetType::Monster;
+                                        monster_mem.action_target.position.x = pos_x as f32;
+                                        monster_mem.action_target.position.y = pos_y as f32;
+                                        monster_state.view_monster = true;
+                                        break 'outer_mons;
+                                    };
+                                {
+                                    // если мы попали сюда, значит не сработал break 'outer; а это значит что нет целей рядом.
+                                    // убираем monstra из цели
+                                    // todo переписать, или он не увидит никогда монстров
+                                    monster_mem.action_target.target_type = TargetType::None;
+                                    monster_state.view_monster = false;
+                                }
+                            } // for y
+                        } // for x
+                    } // for monster
+
+                } // Конец поиск ВОЖДЯ
+            }
+
 
 
 

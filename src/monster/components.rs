@@ -210,7 +210,8 @@ impl SelectionTree {
                 // корневая нода, хранит последовательность
                 behavior: BehaviorEnum::Sequencer(vec![
                     NodeBehavior {
-                        // второй слой, нода выбора, проверка голода.
+
+                        // ветка голода. второй слой, нода выбора.
                         behavior: BehaviorEnum::If(
                             Box::new(NodeBehavior {
                                 behavior: BehaviorEnum::Action(BehaviorActions::CheckHungry),
@@ -239,7 +240,7 @@ impl SelectionTree {
                                                 cursor: 0,
                                             }),
                                             Box::new(NodeBehavior {
-                                                behavior: BehaviorEnum::Action(BehaviorActions::Walk),
+                                                behavior: BehaviorEnum::Action(BehaviorActions::Null),
                                                 cursor: 0,
                                             }),
                                         ),
@@ -249,12 +250,14 @@ impl SelectionTree {
                                 cursor: 0,
                             }),
                             Box::new(NodeBehavior {
-                                behavior: BehaviorEnum::Action(BehaviorActions::Walk),
+                                behavior: BehaviorEnum::Action(BehaviorActions::Null),
                                 cursor: 0,
                             })
                         ),
                         cursor: 0,
                     },
+
+                    // ветка усталости
                     NodeBehavior {
                         behavior: BehaviorEnum::If(
                             Box::new(
@@ -269,18 +272,42 @@ impl SelectionTree {
                                 }),
                             Box::new(
                                 NodeBehavior {
-                                    behavior: BehaviorEnum::Action(BehaviorActions::Walk),
+                                    behavior: BehaviorEnum::Action(BehaviorActions::Null),
                                     cursor: 0,
                                 }),
                         ),
                         cursor: 0,
-                    }
+                    },
+
+                    // ветка ходьбы
+                    NodeBehavior {
+                        behavior: BehaviorEnum::Action(BehaviorActions::Walk),
+                        cursor: 0,
+                    },
+
+                    // тут можно еще веток напихать
+
                 ]),
                 cursor: 0,
             };
 
         SelectionTree {
             selector: node_root,
+        }
+    }
+
+    //
+    pub fn _get_graph() -> NodeBehavior {
+
+        // парсер графа с БД
+
+
+
+
+
+        NodeBehavior {
+            behavior: BehaviorEnum::Action(BehaviorActions::Null),
+            cursor: 0,
         }
     }
 }

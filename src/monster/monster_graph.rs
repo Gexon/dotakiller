@@ -414,6 +414,7 @@ fn _next_step_around2(position: &mut Position, monster_state: &mut MonsterState)
     let mut dx = delta_x;
     let mut dy = delta_y;
 
+    // середа спирали в начале координат (0.0). Вроде =)
     if (x == y) || ((x < 0) && (x == -y)) || ((x > 0) && (x == 1 - y)) {
         let t = dx;
         dx = -dy;

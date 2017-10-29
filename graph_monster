@@ -1,0 +1,25 @@
+digraph MonstrBehavior {
+	rankdir=LR;
+	Sequencer_01 -> If_01 [ label = "Голод" ]
+        Sequencer_01 -> If_02 [ label = "Усталость" ]
+        Sequencer_01 -> Action_02 [label = Walk]
+
+	If_01 -> Action_01 [label = "CheckHungry"]
+	If_01 -> If_03 [label = "FindFood"]
+	If_01 -> Action_03 [label = Null]
+
+	If_03 -> Action_04 [label=FindFood]
+	If_03 -> Action_05 [label = "Meal"]
+	If_03 -> If_04 [label=CheckMemMeal]
+
+	If_04 -> Action_06 [label=CheckMemMeal]
+	If_04 -> Action_07 [label=MoveToTarget]
+	If_04 -> Action_08 [label=null]
+
+	If_02 -> Action_09 [label=CheckTired]
+	If_02 -> Action_10 [label=Sleep]
+	If_02 -> Action_11 [label=null]
+	
+
+
+}

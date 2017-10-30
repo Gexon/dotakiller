@@ -6,6 +6,10 @@ use ::utility::enums::*;
 pub fn monster_graph_parser(_in_graph: &[(i32, i32)]) -> NodeBehavior {
     // читаем так: my_vec[i].0, my_vec[i].1
     //
+    for node in _in_graph {
+        println!("edge1 {}, edge2 {}", node.0, node.1);
+    }
+
 
     // заполняем граф руками, в будущем загрузка из БД.
     //корень

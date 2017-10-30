@@ -19,10 +19,10 @@ pub fn get_name(auth_token: &i64) -> String {
 // пихаем в вектор куски массива по два числа Vec<(i32, i32)>
 pub fn get_monster_graph() -> Vec<(i32, i32)> {
     //
+    //println!("get_monster_graph");
     let context = mysql::Pool::new("mysql://root:dk@localhost:3306").unwrap();
-    let execution = context.prep_exec("SELECT edge_1, edge_2\
-                                            FROM dotakiller.graph_monster\
-                                            ", ()).unwrap();
+    let execution = context.prep_exec(" SELECT * \
+                                        FROM dotakiller.graph_monster", ()).unwrap();
 
     let data: Vec<(i32, i32)> = execution.map(|u_result| {
         let mut result = u_result.unwrap();

@@ -1,10 +1,11 @@
 // описание компонент монстра
 
 use tinyecs::*;
-use time::{PreciseTime};
+use time::PreciseTime;
 
-//use ::utility::map::Map;
 use ::utility::enums::*;
+use ::utility::db_query::get_monster_graph;
+use ::utility::graph_parser::monster_graph_parser;
 
 /// Координаты на полигоне.
 pub struct PositionM {
@@ -114,6 +115,7 @@ pub struct MonsterAttributes {
     // нижний уровень сытости монстра
     pub danger_hungry: i32,
 }
+
 impl MonsterAttributes {
     pub fn new() -> MonsterAttributes {
         MonsterAttributes {
@@ -125,7 +127,8 @@ impl MonsterAttributes {
             in_group: false,
             group_members: Vec::new(),
             danger_power: 960,
-            danger_hungry: 960,
+            danger_hungry: 960, // rand 800 // rand 450 // rand 700 каждое потомство рандомно.
+            // шанс 10% 500, 9 из 10 потомков -> 500
         }
     }
 }
@@ -203,112 +206,19 @@ impl SelectionTree {
         // возможно необходимо выставить ограничение на количество попыток выполнения текущей задачи,
         // чтоб предотвратить зацикливание.
         //
-        // заполняем граф руками, в будущем загрузка из БД.
-        let node_root: NodeBehavior =
-        //корень
-            NodeBehavior {
-                // корневая нода, хранит последовательность
-                behavior: BehaviorEnum::Sequencer(vec![
-                    NodeBehavior {
-
-                        // ветка голода. второй слой, нода выбора.
-                        behavior: BehaviorEnum::If(
-                            Box::new(NodeBehavior {
-                                behavior: BehaviorEnum::Action(BehaviorActions::CheckHungry),
-                                cursor: 0,
-                            }),
-                            Box::new(NodeBehavior {
-                                // третий слой, нода выбора, проверка поиска еды.
-                                behavior: BehaviorEnum::If(
-                                    Box::new(NodeBehavior {
-                                        behavior: BehaviorEnum::Action(BehaviorActions::FindFood),
-                                        cursor: 0,
-                                    }),
-                                    Box::new(NodeBehavior {
-                                        behavior: BehaviorEnum::Action(BehaviorActions::Meal),
-                                        cursor: 0,
-                                    }),
-                                    Box::new(NodeBehavior {
-                                        // четвертый слой, поиск в памяти места еды
-                                        behavior: BehaviorEnum::If(
-                                            Box::new(NodeBehavior {
-                                                behavior: BehaviorEnum::Action(BehaviorActions::CheckMemMeal),
-                                                cursor: 0,
-                                            }),
-                                            Box::new(NodeBehavior {
-                                                behavior: BehaviorEnum::Action(BehaviorActions::MoveToTarget),
-                                                cursor: 0,
-                                            }),
-                                            Box::new(NodeBehavior {
-                                                behavior: BehaviorEnum::Action(BehaviorActions::Null),
-                                                cursor: 0,
-                                            }),
-                                        ),
-                                        cursor: 0,
-                                    }),
-                                ),
-                                cursor: 0,
-                            }),
-                            Box::new(NodeBehavior {
-                                behavior: BehaviorEnum::Action(BehaviorActions::Null),
-                                cursor: 0,
-                            })
-                        ),
-                        cursor: 0,
-                    },
-
-                    // ветка усталости
-                    NodeBehavior {
-                        behavior: BehaviorEnum::If(
-                            Box::new(
-                                NodeBehavior {
-                                    behavior: BehaviorEnum::Action(BehaviorActions::CheckTired),
-                                    cursor: 0,
-                                }),
-                            Box::new(
-                                NodeBehavior {
-                                    behavior: BehaviorEnum::Action(BehaviorActions::Sleep),
-                                    cursor: 0,
-                                }),
-                            Box::new(
-                                NodeBehavior {
-                                    behavior: BehaviorEnum::Action(BehaviorActions::Null),
-                                    cursor: 0,
-                                }),
-                        ),
-                        cursor: 0,
-                    },
-
-                    // ветка ходьбы
-                    NodeBehavior {
-                        behavior: BehaviorEnum::Action(BehaviorActions::Walk),
-                        cursor: 0,
-                    },
-
-                    // тут можно еще веток напихать
-
-                ]),
-                cursor: 0,
-            };
 
         SelectionTree {
-            selector: node_root,
+            selector: SelectionTree::get_graph(),
         }
     }
 
     //
-    pub fn _get_graph() -> NodeBehavior {
+    pub fn get_graph() -> NodeBehavior {
+        // получаем граф с БД (список, хешмап, вектор, массив?)
+        let graph = get_monster_graph();
 
-        // парсер графа с БД
-
-
-
-
-
-        NodeBehavior {
-            behavior: BehaviorEnum::Action(BehaviorActions::Null),
-            cursor: 0,
-        }
+        // передаем его в парсер
+        monster_graph_parser(&graph)
     }
 }
 
@@ -327,11 +237,12 @@ impl _Genome {
     pub fn _new() -> _Genome {
         // храним программу селектора. в будущем загрузка из БД
         // event, state
-        let behavior = vec![0, 0];
-        let body = vec![0, 0];
+        let behavior = vec![0, 0]; //
+        //let behavior_slave = vec![0, 0]; // пассивные гены
+        let _body = vec![0, 0];
         _Genome {
             behaviour: behavior,
-            body: body,
+            body: _body,
         }
     }
 }

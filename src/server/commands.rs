@@ -4,7 +4,7 @@ use time;
 use std::str::{self, FromStr};
 use std::num::ParseIntError;
 
-use ::utility::dbqury as db;
+use ::utility::db_query as db;
 use ::server::proto::Connect;
 use ::server::proto::Message;
 

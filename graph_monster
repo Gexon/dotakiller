@@ -1,8 +1,8 @@
 digraph MonstrBehavior {
 	rankdir=LR;
 	Sequencer_01 -> If_01 [ label = "Голод" ]
-        Sequencer_01 -> If_02 [ label = "Усталость" ]
-        Sequencer_01 -> Action_02 [label = Walk]
+    Sequencer_01 -> If_02 [ label = "Усталость" ]
+    Sequencer_01 -> Action_02 [label = Walk]
 
 	If_01 -> Action_01 [label = "CheckHungry"]
 	If_01 -> If_03 [label = "FindFood"]

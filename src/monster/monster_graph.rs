@@ -17,10 +17,10 @@ pub fn exec_node(branch: &mut NodeBehavior, entity: &Entity, wind: &WindDirectio
     // внутри него behavior = Sequencer
     // Sequencer содержит в себе вектор из NodeBehavior.
     let cursor: &mut usize = &mut branch.cursor;
-    let behavior: &mut BehaviorEnum = &mut branch.behavior;
+    let behavior: &mut NodeType = &mut branch.behavior;
     match *behavior {
         // последовательность, до первого узла Fail, либо выполняет все и возвращает Success
-        BehaviorEnum::Sequencer(ref mut vec_sequence) => {
+        NodeType::Sequencer(ref mut vec_sequence) => {
             //println!("Sequencer cursor:{}", *cursor);
             for (index, node_beh) in vec_sequence.iter_mut().enumerate().skip(*cursor) {
                 //if index >= cursor { //.skip(cursor) пропускает все до cursor
@@ -42,7 +42,7 @@ pub fn exec_node(branch: &mut NodeBehavior, entity: &Entity, wind: &WindDirectio
         }
 
         //
-        BehaviorEnum::If(ref mut beh_enum1, ref mut beh_enum2, ref mut beh_enum3) => {
+        NodeType::If(ref mut beh_enum1, ref mut beh_enum2, ref mut beh_enum3) => {
             //println!("If cursor:{}", *cursor);
             match *cursor {
                 1 => {
@@ -80,7 +80,7 @@ pub fn exec_node(branch: &mut NodeBehavior, entity: &Entity, wind: &WindDirectio
         }
 
         //
-        BehaviorEnum::Action(beh_act) => {
+        NodeType::Action(beh_act) => {
             //
             exec_action(beh_act, entity, wind)
         }

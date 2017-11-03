@@ -108,28 +108,26 @@ pub enum BehaviorEventEnum {
 
 }
 
-/// Список узлов графа
-pub enum BehaviorEnum {
+/// Типы узлов графа
+pub enum NodeType {
     //функция, которая должна выполниться при посещении данного узла.
     Action(BehaviorActions),
     // тут все ясно
     If(Box<NodeBehavior>, Box<NodeBehavior>, Box<NodeBehavior>),
-    //последовательность, до первого узла Fail, либо выполняет все и возвращает Success
+    // последовательность, до первого узла Fail, либо выполняет все и возвращает Success
     Sequencer(Vec<NodeBehavior>),
-    //до первого узла возвращающего Success
+    // до первого узла возвращающего Success
     _Selector(Vec<NodeBehavior>),
-    //роль цикла
-    _While(Box<BehaviorEnum>, Vec<BehaviorEnum>),
+    // роль цикла
+    _While(Box<NodeType>, Vec<NodeType>),
 }
 
 /// Узел графа
 pub struct NodeBehavior {
     // функция, которая должна выполниться при посещении данного узла.
-    pub behavior: BehaviorEnum,
+    pub behavior: NodeType,
     // курсор, указывает на выполняющийся дочерний узел.
     pub cursor: usize,
-    // статус выполнения.
-    //pub status: Status,
 }
 
 

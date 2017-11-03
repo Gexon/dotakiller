@@ -9,7 +9,7 @@ pub fn monster_graph_parser(_in_graph: &[(i32, i32)]) -> NodeBehavior {
     let mut max_edge1: i32 = 0;
     let mut cursor_edge1: i32 = 0;
     graph = NodeBehavior {
-        behavior: BehaviorEnum::Sequencer(Vec!()),
+        behavior: NodeType::Sequencer(Vec!()),
         cursor: 0,
     };
 
@@ -28,7 +28,7 @@ pub fn monster_graph_parser(_in_graph: &[(i32, i32)]) -> NodeBehavior {
 
     // реализация
     // 1. ищем максимальный узел из которого выходят стрелки
-    let index: i32 = 0i32;
+    let mut index: i32 = 0i32;
     for node in _in_graph {
         index += 1;
         if node.0 > max_edge1 {
@@ -36,22 +36,31 @@ pub fn monster_graph_parser(_in_graph: &[(i32, i32)]) -> NodeBehavior {
             cursor_edge1 = index;
         }
     }
-    // 2. беерм номер узла из которого  он выходит и создаем узел.
+    // 2. берем номер узла из которого  он выходит и создаем узел.
     match _in_graph[cursor_edge1].0 {
         1 => {
+            // ожидается 01_Sequencer_Root
             // обнуляем чтоб не парсить повторно в итерациях.
             _in_graph[cursor_edge1].0 = 0;
             // если это Sequencer, то нам нужен вектор из Vec<NodeBehavior>,
-            // который мы положим в graph
-            let seque_vec: Vec<NodeBehavior> = vec![];
+            // который мы положим в узел и отдадим его дальше.
+            let sequencer_vec: Vec<NodeBehavior> = vec![];
 
             if _in_graph[cursor_edge1].0 == 1i32 {
                 graph
             }
+
+            // готовим контейнер под узел, который будем возвращать.
+            let return_node: NodeType = NodeType::Sequencer(sequencer_vec);
+            // результат, выход из функции.
+            NodeBehavior {
+                behavior: return_enum,
+                cursor: 0,
+            }
         }
-        2,
-        3,
-        6,
+        2 |
+        3 |
+        6 |
         10 => {}
         _ => {}
     }
@@ -61,20 +70,20 @@ pub fn monster_graph_parser(_in_graph: &[(i32, i32)]) -> NodeBehavior {
     for node in _in_graph {
         println!("edge1 {}, edge2 {}", node.0, node.1);
         /*
-         	  	1 	1 	01_Sequencer_Root
-	  	  	  	2 	2 	02_If_Hungry
-	  	  	  	3 	3 	03_If_Tired
-	  	  	  	4 	4 	04_Action_Walk
-	  	  	  	5 	5 	05_Action_CheckHungry
-	  	  	  	6 	6 	06_If_FindFood
-	  	  	  	7 	7 	07_Action_Null
-	  	  	  	8 	8 	08_Action_FindFood
-	  	  	  	9 	9 	09_Action_Meal
-	  	  	  	10 	10 	10_If_CheckMemMeal
-	  	  	  	11 	11 	11_Action_CheckMemMeal
-	  	  	  	12 	12 	12_Action_MoveToTarget
-	  	  	  	13 	13 	13_Action_CheckTired
-	  	  	  	14 	14 	14_Action_Sleep
+         	  	01_Sequencer_Root
+	  	  	  	02_If_Hungry
+	  	  	  	03_If_Tired
+	  	  	  	04_Action_Walk
+	  	  	  	05_Action_CheckHungry
+	  	  	  	06_If_FindFood
+	  	  	  	07_Action_Null
+	  	  	  	08_Action_FindFood
+	  	  	  	09_Action_Meal
+	  	  	  	10_If_CheckMemMeal
+	  	  	  	11_Action_CheckMemMeal
+	  	  	  	12_Action_MoveToTarget
+	  	  	  	13_Action_CheckTired
+	  	  	  	14_Action_Sleep
         */
         /*
         edge1 1, edge2 2
@@ -100,38 +109,38 @@ pub fn monster_graph_parser(_in_graph: &[(i32, i32)]) -> NodeBehavior {
     //корень
     NodeBehavior {
         // корневая нода, хранит последовательность
-        behavior: BehaviorEnum::Sequencer(vec![
+        behavior: NodeType::Sequencer(vec![
             NodeBehavior {
                 // ветка голода. второй слой, нода выбора.
-                behavior: BehaviorEnum::If(
+                behavior: NodeType::If(
                     Box::new(NodeBehavior {
-                        behavior: BehaviorEnum::Action(BehaviorActions::CheckHungry),
+                        behavior: NodeType::Action(BehaviorActions::CheckHungry),
                         cursor: 0,
                     }),
                     Box::new(NodeBehavior {
                         // третий слой, нода выбора, проверка поиска еды.
-                        behavior: BehaviorEnum::If(
+                        behavior: NodeType::If(
                             Box::new(NodeBehavior {
-                                behavior: BehaviorEnum::Action(BehaviorActions::FindFood),
+                                behavior: NodeType::Action(BehaviorActions::FindFood),
                                 cursor: 0,
                             }),
                             Box::new(NodeBehavior {
-                                behavior: BehaviorEnum::Action(BehaviorActions::Meal),
+                                behavior: NodeType::Action(BehaviorActions::Meal),
                                 cursor: 0,
                             }),
                             Box::new(NodeBehavior {
                                 // четвертый слой, поиск в памяти места еды
-                                behavior: BehaviorEnum::If(
+                                behavior: NodeType::If(
                                     Box::new(NodeBehavior {
-                                        behavior: BehaviorEnum::Action(BehaviorActions::CheckMemMeal),
+                                        behavior: NodeType::Action(BehaviorActions::CheckMemMeal),
                                         cursor: 0,
                                     }),
                                     Box::new(NodeBehavior {
-                                        behavior: BehaviorEnum::Action(BehaviorActions::MoveToTarget),
+                                        behavior: NodeType::Action(BehaviorActions::MoveToTarget),
                                         cursor: 0,
                                     }),
                                     Box::new(NodeBehavior {
-                                        behavior: BehaviorEnum::Action(BehaviorActions::Null),
+                                        behavior: NodeType::Action(BehaviorActions::Null),
                                         cursor: 0,
                                     }),
                                 ),
@@ -141,7 +150,7 @@ pub fn monster_graph_parser(_in_graph: &[(i32, i32)]) -> NodeBehavior {
                         cursor: 0,
                     }),
                     Box::new(NodeBehavior {
-                        behavior: BehaviorEnum::Action(BehaviorActions::Null),
+                        behavior: NodeType::Action(BehaviorActions::Null),
                         cursor: 0,
                     })
                 ),
@@ -149,20 +158,20 @@ pub fn monster_graph_parser(_in_graph: &[(i32, i32)]) -> NodeBehavior {
             },
             // ветка усталости
             NodeBehavior {
-                behavior: BehaviorEnum::If(
+                behavior: NodeType::If(
                     Box::new(
                         NodeBehavior {
-                            behavior: BehaviorEnum::Action(BehaviorActions::CheckTired),
+                            behavior: NodeType::Action(BehaviorActions::CheckTired),
                             cursor: 0,
                         }),
                     Box::new(
                         NodeBehavior {
-                            behavior: BehaviorEnum::Action(BehaviorActions::Sleep),
+                            behavior: NodeType::Action(BehaviorActions::Sleep),
                             cursor: 0,
                         }),
                     Box::new(
                         NodeBehavior {
-                            behavior: BehaviorEnum::Action(BehaviorActions::Null),
+                            behavior: NodeType::Action(BehaviorActions::Null),
                             cursor: 0,
                         }),
                 ),
@@ -170,7 +179,7 @@ pub fn monster_graph_parser(_in_graph: &[(i32, i32)]) -> NodeBehavior {
             },
             // ветка ходьбы
             NodeBehavior {
-                behavior: BehaviorEnum::Action(BehaviorActions::Walk),
+                behavior: NodeType::Action(BehaviorActions::Walk),
                 cursor: 0,
             },
             // тут можно еще веток напихать

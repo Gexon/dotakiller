@@ -13,6 +13,14 @@ pub fn monster_graph_parser(_in_graph: &[(i32, i32)]) -> NodeBehavior {
         cursor: 0,
     };
 
+    // необходимо переобразовать список ребер к списку смежностей.
+    let vec_vertex: Vec<(i32, Vec<i32>)>;
+    for in_edge in _in_graph {
+        //
+
+
+    }
+
     // сборка графа
     // граф собираем задом-наперед, т.к. в прямой последовательности будут сложности
     // с вложением одного узла в другой.
@@ -38,6 +46,7 @@ pub fn monster_graph_parser(_in_graph: &[(i32, i32)]) -> NodeBehavior {
     }
     // 2. берем номер узла из которого  он выходит и создаем узел.
     match _in_graph[cursor_edge1].0 {
+        // узел 1 имеет тип секвенсор. если появиться еще узлы с таким типом, то они будут добавлены сюда
         1 => {
             // ожидается 01_Sequencer_Root
             // обнуляем чтоб не парсить повторно в итерациях.
@@ -46,9 +55,12 @@ pub fn monster_graph_parser(_in_graph: &[(i32, i32)]) -> NodeBehavior {
             // который мы положим в узел и отдадим его дальше.
             let sequencer_vec: Vec<NodeBehavior> = vec![];
 
-            if _in_graph[cursor_edge1].0 == 1i32 {
-                graph
-            }
+            // заполнить вектор узлами
+            // берем все ребра которые имеют начало равное значению 1
+            // берем значение конца ребра и создаем по нему узел, который помещаем в вектор.
+
+
+
 
             // готовим контейнер под узел, который будем возвращать.
             let return_node: NodeType = NodeType::Sequencer(sequencer_vec);
@@ -86,21 +98,21 @@ pub fn monster_graph_parser(_in_graph: &[(i32, i32)]) -> NodeBehavior {
 	  	  	  	14_Action_Sleep
         */
         /*
-        edge1 1, edge2 2
-        edge1 1, edge2 3
-        edge1 1, edge2 4
-        edge1 2, edge2 5
-        edge1 2, edge2 6
-        edge1 2, edge2 7
-        edge1 6, edge2 8
-        edge1 6, edge2 9
-        edge1 6, edge2 10
-        edge1 10, edge2 11
-        edge1 10, edge2 12
-        edge1 10, edge2 7
-        edge1 3, edge2 13
-        edge1 3, edge2 14
-        edge1 3, edge2 7
+         1,  2
+         1,  3
+         1,  4
+         2,  5
+         2,  6
+         2,  7
+         6,  8
+         6,  9
+         6,  10
+         10, 11
+         10, 12
+         10, 7
+         3,  13
+         3,  14
+         3,  7
         */
     }
 

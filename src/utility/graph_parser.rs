@@ -3,8 +3,8 @@
 use ::utility::enums::*;
 
 /// парсим граф монстра
-pub fn monster_graph_parser(_in_graph: &[(i32, i32)]) -> NodeBehavior {
-    get_node(edge_list, 1)
+pub fn monster_graph_parser(in_graph: &[(i32, i32)]) -> NodeBehavior {
+    get_node(in_graph, 1)
 
     /*
         // заполняем граф руками, в будущем загрузка из БД.
@@ -164,9 +164,6 @@ pub fn get_node(edge_list: &[(i32, i32)], pos: i32) -> NodeBehavior {
         5 => {
             graph.behavior = NodeType::Action(BehaviorActions::CheckHungry);
         }
-        7 => {
-            graph.behavior = NodeType::Action(BehaviorActions::Null);
-        }
         8 => {
             graph.behavior = NodeType::Action(BehaviorActions::FindFood);
         }
@@ -184,6 +181,11 @@ pub fn get_node(edge_list: &[(i32, i32)], pos: i32) -> NodeBehavior {
         }
         14 => {
             graph.behavior = NodeType::Action(BehaviorActions::Sleep);
+        }
+
+        // ставить только в конце
+        _ => {
+            graph.behavior = NodeType::Action(BehaviorActions::Null);
         }
     }
 
@@ -223,4 +225,13 @@ pub fn get_node(edge_list: &[(i32, i32)], pos: i32) -> NodeBehavior {
      3,  14
      3,  7
     */
+}
+
+// возвращает заглушку NodeBehavior  Action
+pub fn get_null(pos: i32) -> NodeBehavior {
+    NodeBehavior{
+        behavior: NodeType::Action(BehaviorActions::Null),
+        cursor: pos as usize,
+    }
+
 }

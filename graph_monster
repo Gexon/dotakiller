@@ -1,25 +1,30 @@
 digraph MonstrBehavior {
 	rankdir=LR;
-	Sequencer_01 -> If_01 [ label = "Голод" ]
-    Sequencer_01 -> If_02 [ label = "Усталость" ]
-    Sequencer_01 -> Action_02 [label = Walk]
 
-	If_01 -> Action_01 [label = "CheckHungry"]
-	If_01 -> If_03 [label = "FindFood"]
-	If_01 -> Action_03 [label = Null]
+	Sequencer_01 -> If_02 [ label = Hungry ]
+	Sequencer_01 -> If_03 [ label = Sleep ]
+	Sequencer_01 -> Action_04 [label = Walk]
+	Sequencer_01 -> If_15 [label = Group]
 
-	If_03 -> Action_04 [label=FindFood]
-	If_03 -> Action_05 [label = "Meal"]
-	If_03 -> If_04 [label=CheckMemMeal]
+	If_02 -> Action_05 [label = "CheckHungry"]
+	If_02 -> If_06 [label = "FindFood"]
+	If_02 -> Action_07 [label = Null]
 
-	If_04 -> Action_06 [label=CheckMemMeal]
-	If_04 -> Action_07 [label=MoveToTarget]
-	If_04 -> Action_08 [label=null]
+	If_06 -> Action_08 [label=FindFood]
+	If_06 -> Action_09 [label = "Meal"]
+	If_06 -> If_10 [label=CheckMemMeal]
 
-	If_02 -> Action_09 [label=CheckTired]
-	If_02 -> Action_10 [label=Sleep]
-	If_02 -> Action_11 [label=null]
-	
+	If_10 -> Action_11 [label=CheckMemMeal]
+	If_10 -> Action_12 [label=MoveToTarget]
+	If_10 -> Action_07 [label=null]
+
+	If_03 -> Action_13 [label=CheckTired]
+	If_03 -> Action_14 [label=Sleep]
+	If_03 -> Action_07 [label=null]
+
+	If_15 -> Action_16 [label=CheckInGroup]
+	If_15 -> Action_07 [label=null]
+	If_15 -> Action_17 [label=JoinGroup]
 
 
 }

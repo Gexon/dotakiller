@@ -7,88 +7,88 @@ pub fn monster_graph_parser(in_graph: &[(i32, i32)]) -> NodeBehavior {
     get_node(in_graph, 1)
 
     /*
-        // заполняем граф руками, в будущем загрузка из БД.
-        //корень
-        NodeBehavior {
-            // корневая нода, хранит последовательность
-            behavior: NodeType::Sequencer(vec![
-                NodeBehavior {
-                    // ветка голода. второй слой, нода выбора.
-                    behavior: NodeType::If(
-                        Box::new(NodeBehavior {
-                            behavior: NodeType::Action(BehaviorActions::CheckHungry),
-                            cursor: 0,
-                        }),
-                        Box::new(NodeBehavior {
-                            // третий слой, нода выбора, проверка поиска еды.
-                            behavior: NodeType::If(
-                                Box::new(NodeBehavior {
-                                    behavior: NodeType::Action(BehaviorActions::FindFood),
-                                    cursor: 0,
-                                }),
-                                Box::new(NodeBehavior {
-                                    behavior: NodeType::Action(BehaviorActions::Meal),
-                                    cursor: 0,
-                                }),
-                                Box::new(NodeBehavior {
-                                    // четвертый слой, поиск в памяти места еды
-                                    behavior: NodeType::If(
-                                        Box::new(NodeBehavior {
-                                            behavior: NodeType::Action(BehaviorActions::CheckMemMeal),
-                                            cursor: 0,
-                                        }),
-                                        Box::new(NodeBehavior {
-                                            behavior: NodeType::Action(BehaviorActions::MoveToTarget),
-                                            cursor: 0,
-                                        }),
-                                        Box::new(NodeBehavior {
-                                            behavior: NodeType::Action(BehaviorActions::Null),
-                                            cursor: 0,
-                                        }),
-                                    ),
-                                    cursor: 0,
-                                }),
-                            ),
-                            cursor: 0,
-                        }),
-                        Box::new(NodeBehavior {
-                            behavior: NodeType::Action(BehaviorActions::Null),
-                            cursor: 0,
-                        })
-                    ),
-                    cursor: 0,
-                },
-                // ветка усталости
-                NodeBehavior {
-                    behavior: NodeType::If(
-                        Box::new(
-                            NodeBehavior {
-                                behavior: NodeType::Action(BehaviorActions::CheckTired),
+            // заполняем граф руками, в будущем загрузка из БД.
+            //корень
+            NodeBehavior {
+                // корневая нода, хранит последовательность
+                behavior: NodeType::Sequencer(vec![
+                    NodeBehavior {
+                        // ветка голода. второй слой, нода выбора.
+                        behavior: NodeType::If(
+                            Box::new(NodeBehavior {
+                                behavior: NodeType::Action(BehaviorActions::CheckHungry),
                                 cursor: 0,
                             }),
-                        Box::new(
-                            NodeBehavior {
-                                behavior: NodeType::Action(BehaviorActions::Sleep),
+                            Box::new(NodeBehavior {
+                                // третий слой, нода выбора, проверка поиска еды.
+                                behavior: NodeType::If(
+                                    Box::new(NodeBehavior {
+                                        behavior: NodeType::Action(BehaviorActions::FindFood),
+                                        cursor: 0,
+                                    }),
+                                    Box::new(NodeBehavior {
+                                        behavior: NodeType::Action(BehaviorActions::Meal),
+                                        cursor: 0,
+                                    }),
+                                    Box::new(NodeBehavior {
+                                        // четвертый слой, поиск в памяти места еды
+                                        behavior: NodeType::If(
+                                            Box::new(NodeBehavior {
+                                                behavior: NodeType::Action(BehaviorActions::CheckMemMeal),
+                                                cursor: 0,
+                                            }),
+                                            Box::new(NodeBehavior {
+                                                behavior: NodeType::Action(BehaviorActions::MoveToTarget),
+                                                cursor: 0,
+                                            }),
+                                            Box::new(NodeBehavior {
+                                                behavior: NodeType::Action(BehaviorActions::Null),
+                                                cursor: 0,
+                                            }),
+                                        ),
+                                        cursor: 0,
+                                    }),
+                                ),
                                 cursor: 0,
                             }),
-                        Box::new(
-                            NodeBehavior {
+                            Box::new(NodeBehavior {
                                 behavior: NodeType::Action(BehaviorActions::Null),
                                 cursor: 0,
-                            }),
-                    ),
-                    cursor: 0,
-                },
-                // ветка ходьбы
-                NodeBehavior {
-                    behavior: NodeType::Action(BehaviorActions::Walk),
-                    cursor: 0,
-                },
-                // тут можно еще веток напихать
-            ]),
-            cursor: 0,
-        }
-        */
+                            })
+                        ),
+                        cursor: 0,
+                    },
+                    // ветка усталости
+                    NodeBehavior {
+                        behavior: NodeType::If(
+                            Box::new(
+                                NodeBehavior {
+                                    behavior: NodeType::Action(BehaviorActions::CheckTired),
+                                    cursor: 0,
+                                }),
+                            Box::new(
+                                NodeBehavior {
+                                    behavior: NodeType::Action(BehaviorActions::Sleep),
+                                    cursor: 0,
+                                }),
+                            Box::new(
+                                NodeBehavior {
+                                    behavior: NodeType::Action(BehaviorActions::Null),
+                                    cursor: 0,
+                                }),
+                        ),
+                        cursor: 0,
+                    },
+                    // ветка ходьбы
+                    NodeBehavior {
+                        behavior: NodeType::Action(BehaviorActions::Walk),
+                        cursor: 0,
+                    },
+                    // тут можно еще веток напихать
+                ]),
+                cursor: 0,
+            }
+            */
 }
 
 // получение очередного узла графа
@@ -115,7 +115,7 @@ pub fn get_node(edge_list: &[(i32, i32)], pos: i32) -> NodeBehavior {
             };
             graph.behavior = NodeType::Sequencer(seq_vec);
         }
-        2 | 3 | 6 | 10 => {
+        2 | 3 | 6 | 10 | 15 => {
             // ищем три ребра что выходят из нашего IF  узла
             for node in edge_list {
                 if node.0 == pos {
@@ -182,6 +182,12 @@ pub fn get_node(edge_list: &[(i32, i32)], pos: i32) -> NodeBehavior {
         14 => {
             graph.behavior = NodeType::Action(BehaviorActions::Sleep);
         }
+        16 => {
+            graph.behavior = NodeType::Action(BehaviorActions::CheckInGroup);
+        }
+        17 => {
+            graph.behavior = NodeType::Action(BehaviorActions::JoinGroup);
+        }
 
         // ставить только в конце
         _ => {
@@ -191,47 +197,12 @@ pub fn get_node(edge_list: &[(i32, i32)], pos: i32) -> NodeBehavior {
 
     // вертаем ответ
     graph
-
-    /*
-         	  	01_Sequencer_Root
-	  	  	  	02_If_Hungry
-	  	  	  	03_If_Tired
-	  	  	  	04_Action_Walk
-	  	  	  	05_Action_CheckHungry
-	  	  	  	06_If_FindFood
-	  	  	  	07_Action_Null
-	  	  	  	08_Action_FindFood
-	  	  	  	09_Action_Meal
-	  	  	  	10_If_CheckMemMeal
-	  	  	  	11_Action_CheckMemMeal
-	  	  	  	12_Action_MoveToTarget
-	  	  	  	13_Action_CheckTired
-	  	  	  	14_Action_Sleep
-        */
-    /*
-     1,  2
-     1,  3
-     1,  4
-     2,  5
-     2,  6
-     2,  7
-     6,  8
-     6,  9
-     6,  10
-     10, 11
-     10, 12
-     10, 7
-     3,  13
-     3,  14
-     3,  7
-    */
 }
 
 // возвращает заглушку NodeBehavior  Action
 pub fn get_null(pos: i32) -> NodeBehavior {
-    NodeBehavior{
+    NodeBehavior {
         behavior: NodeType::Action(BehaviorActions::Null),
         cursor: pos as usize,
     }
-
 }

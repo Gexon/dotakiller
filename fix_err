@@ -9,4 +9,6 @@ rustup default nightly
 rustup default nightly-2017-11-02-x86_64-unknown-linux-gnu
 
 
-
+// это после обновления ubuntu на 17.10, слетела php
+sudo a2enmod php7.1
+sudo systemctl restart apache2

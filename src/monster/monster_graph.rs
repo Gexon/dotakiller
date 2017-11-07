@@ -115,6 +115,10 @@ fn exec_action(action: BehaviorActions, entity: &Entity, wind: &WindDirection) -
         BehaviorActions::MoveToTarget => run_move_to_target(entity),
         // Проверка в памяти инф о еде
         BehaviorActions::CheckMemMeal => run_check_memory_meal(entity),
+        // Проверяем в группе ли монстр.
+        BehaviorActions::CheckInGroup => run_check_in_group(entity),
+        // Вступаем в группу.
+        BehaviorActions::JoinGroup => run_join_to_group(entity),
     }
 }
 
@@ -509,4 +513,20 @@ fn next_step_around(position: &mut Position, delta: f32, monster_state: &mut Mon
             } else { position.y -= delta };
         }
     }
+}
+
+
+/// проверяет в группе ли монстр
+fn run_check_in_group(entity: &Entity)-> Status{
+    // тут код)
+    Status::Failure
+
+}
+
+
+/// вступаем в группу
+fn run_join_to_group(entity: &Entity)-> Status{
+    // тут код)
+    Status::Failure
+
 }

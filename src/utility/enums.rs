@@ -95,12 +95,16 @@ pub enum BehaviorEventEnum {
     _FoundWater,
     // Обнаружена еда.
     FoundFood,
+    // Обнаружен монстер.
+    FoundMonster,
     // Наступил голод.
     BecomeHungry,
     // Наступила жажда.
     _BecomeThirsty,
     // Утомился.
     BecomeTired,
+    // Треба группа
+    NeedGroup,
     // Монстр насытился.
     EatFull,
     // Монстр напился.
@@ -109,8 +113,6 @@ pub enum BehaviorEventEnum {
     PowerFull,
     // цель потеряна
     TargetLost,
-    // ищу группу
-    BecomeGroup,
 
 }
 

@@ -47,6 +47,9 @@ impl System for PerceptionSystem {
                     // проверяем свободно ли место спавна.
                     let position = _entity.get_component::< Position > ();
                     //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+                    // очищаем цель
+                    monster_map.action_target.target_type = TargetType::None;
+                    monster_state.view_food = false;
                     'outer:
                     for x in - 2..3 {
                         // x от -2 до 0 и до 2, проверил на плейграунде.
@@ -63,13 +66,6 @@ impl System for PerceptionSystem {
                                     monster_state.view_food = true;
                                     break 'outer;
                                 };
-                            {
-                                // если мы попали сюда, значит не сработал break 'outer; а это значит что нет целей рядом.
-                                // убираем растение из цели
-                                // todo переписать, или он не увидит никогда монстров
-                                monster_map.action_target.target_type = TargetType::None;
-                                monster_state.view_food = false;
-                            }
                         } // for
                     } // for
                 } // BecomeHungry
@@ -79,52 +75,32 @@ impl System for PerceptionSystem {
             {
                 // Ищем ВОЖДЯ. BecomeGroup
                 let behaviour_event = _entity.get_component::<BehaviourEvents>(); // события
-                if behaviour_event.event.contains(&BehaviorEventEnum::BecomeGroup) {
-                    let mut monster_mem = _entity.get_component::< MonsterMaps > ();
+                if behaviour_event.event.contains(&BehaviorEventEnum::NeedGroup) {
+                    let mut monster_mem = _entity.get_component::< MonsterMaps > (); // это типа память, для хранения цели
                     let mut monster_state = _entity.get_component::< MonsterState > ();
                     let position = _entity.get_component::< Position > ();
+
                     //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+                    // очистка цели
+                    monster_mem.action_target.target_type = TargetType::None;
+                    monster_state.view_monster = false;
                     // перебираем всех монстров
                     for monster in _monsters {
+                        if _entity.id == monster.id {continue};
                         let target_pos = monster.get_component::< Position > ();
-                        'outer_mons:
-                        for x in - 2..3 {
-                            // x от -2 до 0 и до 2, проверил на плейграунде.
-                            for y in - 2..3 {
-                                    let pos_x: i32 = (position.x.trunc() as i32 + x) as i32;
-                                    let pos_y: i32 = (position.y.trunc() as i32 + y) as i32;
-                                    let cursor_pos: (i32, i32) = (pos_x, pos_y);
-                                    let target_pos: (i32, i32) = (target_pos.x as i32, target_pos.y as i32);
-
-                                    // Проверяем есть ли монстр по даденным координатам.
-                                    if cursor_pos == target_pos {
-                                        // добавляем монстра в цель
-                                        monster_mem.action_target.target_type = TargetType::Monster;
-                                        monster_mem.action_target.position.x = pos_x as f32;
-                                        monster_mem.action_target.position.y = pos_y as f32;
-                                        monster_state.view_monster = true;
-                                        break 'outer_mons;
-                                    };
-                                {
-                                    // если мы попали сюда, значит не сработал break 'outer; а это значит что нет целей рядом.
-                                    // убираем monstra из цели
-                                    // todo переписать, или он не увидит никогда монстров
-                                    monster_mem.action_target.target_type = TargetType::None;
-                                    monster_state.view_monster = false;
-                                }
-                            } // for y
-                        } // for x
+                        let dist: i32 = ((position.x - target_pos.x).powf(2.0)+
+                            (position.y - target_pos.y).powf(2.0)).sqrt() as i32;
+                        if dist < 3 {
+                            // добавляем монстра в цель
+                            monster_mem.action_target.target_type = TargetType::Monster;
+                            monster_mem.action_target.position.x = target_pos.x;
+                            monster_mem.action_target.position.y = target_pos.y;
+                            monster_state.view_monster = true;
+                            break;
+                        }
                     } // for monster
-
                 } // Конец поиск ВОЖДЯ
-            }
-
-
-
-
-
-
-
+            } // Конец  Ищем ВОЖДЯ. BecomeGroup
 
             // фиксируем текущее время
             _monster_class.perception_time = PreciseTime::now();
@@ -223,6 +199,12 @@ impl System for EventSystem {
                 monster_state.low_power = false;
                 //println!("Новое событие: монстр {} отдохнул!", monster_id.id);
                 // todo тут убрать с очереди BecomeTired
+            }
+
+            // реакция на обнаружение другого монстра
+            if monster_state.view_monster
+                && !behaviour_event.event.contains(&BehaviorEventEnum::FoundMonster) {
+                behaviour_event.event.push(BehaviorEventEnum::FoundMonster);
             }
 
 

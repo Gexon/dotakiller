@@ -216,6 +216,7 @@ fn run_find_food(entity: &Entity) -> Status {
     entity.refresh();
     // если мы долго кружим
     if monster_state.find_around_count > 8 {
+        monster_state.find_around_count = 0;
         return Status::Failure;
     } else {
         monster_state.find_around_count += 1;
@@ -536,14 +537,16 @@ fn run_find_monsters(entity: &Entity) -> Status {
     entity.refresh();
     // если мы долго кружим
     if monster_state.find_around_count > 8 {
+        monster_state.find_around_count = 0;
+        println!("Монстр {} долго кружит в поисках друзей", monster_id.id);
         return Status::Failure;
     } else {
         monster_state.find_around_count += 1;
     }
 
-    if behaviour_event.event.contains(&BehaviorEventEnum::FoundFood) {
-        // есть событие обнаружена еда, убираем событие из списка событий.
-        behaviour_event.event.retain(|x| x != &BehaviorEventEnum::FoundFood);
+    if behaviour_event.event.contains(&BehaviorEventEnum::FoundMonster) {
+        // есть событие обнаружен монстр, убираем событие из списка событий.
+        behaviour_event.event.retain(|x| x != &BehaviorEventEnum::FoundMonster);
         println!("Монстр {} видит коллегу", monster_id.id);
         monster_attr.speed = 1;
         return Status::Success;
@@ -558,8 +561,14 @@ fn run_find_monsters(entity: &Entity) -> Status {
 fn run_check_in_group(entity: &Entity) -> Status {
     // MonsterAttributes
     let monster_attr = entity.get_component::<MonsterAttributes>(); // атрибуты/характеристики
+    let mut behaviour_event = entity.get_component::<BehaviourEvents>(); // события
     if monster_attr.in_group {
         return Status::Success;
+    }
+    // NeedGroup
+    if !behaviour_event.event.contains(&BehaviorEventEnum::NeedGroup) {
+        //println!("Создаем монстру событие NeedGroup");
+        behaviour_event.event.push(BehaviorEventEnum::NeedGroup);
     }
     Status::Failure
 }
@@ -567,15 +576,12 @@ fn run_check_in_group(entity: &Entity) -> Status {
 
 /// вступаем в группу
 fn run_join_to_group(entity: &Entity) -> Status {
-    let behaviour_event = entity.get_component::<BehaviourEvents>(); // события
-    let mut state = entity.get_component::<MonsterState>(); // состояние монстра
-    // BecomeGroup
-    if !behaviour_event.event.contains(&BehaviorEventEnum::BecomeGroup) {
-        //println!("монстр голоден");
-        state.emo_state = 1;
-        entity.add_component(Replication); // произошли изменения монстра.
-        entity.refresh();
-        return Status::Success;
-    }
+    let _behaviour_event = entity.get_component::<BehaviourEvents>(); // события
+    let mut _state = entity.get_component::<MonsterState>(); // состояние монстра
+    //
+    //if !behaviour_event.event.contains(&BehaviorEventEnum::BecomeGroup) {
+    println!("монстр просит принять в группу");
+    //      return Status::Success;
+    //    }
     Status::Failure
 }

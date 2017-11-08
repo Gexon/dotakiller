@@ -162,7 +162,6 @@ impl System for EventSystem {
                 //println!("Новое событие: монстр {} обнаружил еду!", monster_id.id);
                 // убираем событие потери цели если видим еду.
                 behaviour_event.event.retain(|x| x != &BehaviorEventEnum::TargetLost);
-                //todo потеря цели, непонятно, для чего убирать?
             } else if
                 // если не видно цели, то:
                 // проверяем наличие события обнаружения еды.

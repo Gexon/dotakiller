@@ -115,7 +115,7 @@ pub fn get_node(edge_list: &[(i32, i32)], pos: i32) -> NodeBehavior {
             };
             graph.behavior = NodeType::Sequencer(seq_vec);
         }
-        2 | 3 | 6 | 10 | 15 => {
+        2 | 3 | 6 | 10 | 15 | 17 => {
             // ищем три ребра что выходят из нашего IF  узла
             for node in edge_list {
                 if node.0 == pos {
@@ -185,7 +185,10 @@ pub fn get_node(edge_list: &[(i32, i32)], pos: i32) -> NodeBehavior {
         16 => {
             graph.behavior = NodeType::Action(BehaviorActions::CheckInGroup);
         }
-        17 => {
+        18 => {
+            graph.behavior = NodeType::Action(BehaviorActions::FindMonsters);
+        }
+        19 => {
             graph.behavior = NodeType::Action(BehaviorActions::JoinGroup);
         }
 

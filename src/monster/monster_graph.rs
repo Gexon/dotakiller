@@ -115,6 +115,8 @@ fn exec_action(action: BehaviorActions, entity: &Entity, wind: &WindDirection) -
         BehaviorActions::MoveToTarget => run_move_to_target(entity),
         // Проверка в памяти инф о еде
         BehaviorActions::CheckMemMeal => run_check_memory_meal(entity),
+        // поиск монстра
+        BehaviorActions::FindMonsters => run_find_monsters(entity),
         // Проверяем в группе ли монстр.
         BehaviorActions::CheckInGroup => run_check_in_group(entity),
         // Вступаем в группу.
@@ -196,7 +198,6 @@ fn run_check_hungry(entity: &Entity) -> Status {
         return Status::Success;
     }
     //println!("монстр сыт");
-    state.emo_state = 0;
     Status::Failure
 }
 
@@ -242,6 +243,7 @@ fn run_find_water(_entity: &Entity) -> Status {
 /// Действие монстра "трапезничать"
 fn run_meal(entity: &Entity) -> Status {
     let mut behaviour_event = entity.get_component::<BehaviourEvents>(); // события
+    let mut state = entity.get_component::<MonsterState>(); // состояние монстра
     //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
 
     // наелся
@@ -250,6 +252,9 @@ fn run_meal(entity: &Entity) -> Status {
         behaviour_event.event.retain(|x| x != &BehaviorEventEnum::BecomeHungry);
         behaviour_event.action = BehaviorActions::Null;
         //println!("монстр {} наелся", monster_id.id);
+        state.emo_state = 0;
+        entity.add_component(Replication); // произошли изменения монстра.
+        entity.refresh();
         return Status::Success;
     } else if behaviour_event.event.contains(&BehaviorEventEnum::TargetLost) {
         //println!("монстр {} потерял цель", monster_id.id);
@@ -516,17 +521,61 @@ fn next_step_around(position: &mut Position, delta: f32, monster_state: &mut Mon
 }
 
 
-/// проверяет в группе ли монстр
-fn run_check_in_group(entity: &Entity)-> Status{
-    // тут код)
-    Status::Failure
+/// ищем других монстров вокруг себя
+fn run_find_monsters(entity: &Entity) -> Status {
+    let mut monster_attr = entity.get_component::<MonsterAttributes>(); // атрибуты/характеристики
+    let mut monster_state = entity.get_component::<MonsterState>();
+    let mut behaviour_event = entity.get_component::<BehaviourEvents>(); // события
+    let mut position = entity.get_component::<Position>();
+    let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+    // поиск другого монстра. ходим по окружности
+    if monster_attr.speed == 1 { monster_attr.speed = 2 };
+    next_step_around(&mut position, monster_attr.speed as f32, &mut monster_state);
+    //
+    entity.add_component(Replication); // произошли изменения монстра.
+    entity.refresh();
+    // если мы долго кружим
+    if monster_state.find_around_count > 8 {
+        return Status::Failure;
+    } else {
+        monster_state.find_around_count += 1;
+    }
 
+    if behaviour_event.event.contains(&BehaviorEventEnum::FoundFood) {
+        // есть событие обнаружена еда, убираем событие из списка событий.
+        behaviour_event.event.retain(|x| x != &BehaviorEventEnum::FoundFood);
+        println!("Монстр {} видит коллегу", monster_id.id);
+        monster_attr.speed = 1;
+        return Status::Success;
+    }
+
+    println!("Монстр {} ищет соратников", monster_id.id);
+    Status::Running
+}
+
+
+/// проверяет в группе ли монстр
+fn run_check_in_group(entity: &Entity) -> Status {
+    // MonsterAttributes
+    let monster_attr = entity.get_component::<MonsterAttributes>(); // атрибуты/характеристики
+    if monster_attr.in_group {
+        return Status::Success;
+    }
+    Status::Failure
 }
 
 
 /// вступаем в группу
-fn run_join_to_group(entity: &Entity)-> Status{
-    // тут код)
+fn run_join_to_group(entity: &Entity) -> Status {
+    let behaviour_event = entity.get_component::<BehaviourEvents>(); // события
+    let mut state = entity.get_component::<MonsterState>(); // состояние монстра
+    // BecomeGroup
+    if !behaviour_event.event.contains(&BehaviorEventEnum::BecomeGroup) {
+        //println!("монстр голоден");
+        state.emo_state = 1;
+        entity.add_component(Replication); // произошли изменения монстра.
+        entity.refresh();
+        return Status::Success;
+    }
     Status::Failure
-
 }

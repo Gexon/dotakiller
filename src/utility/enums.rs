@@ -78,6 +78,8 @@ pub enum BehaviorActions {
     MoveToTarget,
     // Пошерудить в памяти о последнем месте с едой.
     CheckMemMeal,
+    // Поиск монстров.
+    FindMonsters,
     // Проверяем в группе ли монстр.
     CheckInGroup,
     // Вступаем в группу.

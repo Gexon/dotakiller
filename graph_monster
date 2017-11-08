@@ -24,7 +24,11 @@ digraph MonstrBehavior {
 
 	If_15 -> Action_16 [label=CheckInGroup]
 	If_15 -> Action_07 [label=null]
-	If_15 -> Action_17 [label=JoinGroup]
+	If_15 -> If_17 [label=FindMonsters]
+
+	If_17 -> Action_18 [label=FindMonsters]
+	If_17 -> Action_19 [label=JoinGroup]
+	If_17 -> Action_07 [label=null]
 
 
 }

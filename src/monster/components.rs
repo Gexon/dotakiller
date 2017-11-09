@@ -138,19 +138,17 @@ impl Component for MonsterAttributes {}
 
 /// тут будем хранить все объекты на карте.
 // память монстра
-pub struct MonsterMaps {
+pub struct MonsterMem {
     pub action_target: ActionTarget,
     pub last_eating: PositionM,
-    //pub view_map: Map<u8>,
-    //pub foods_map: Vec<ActionTarget>,
-    //pub waters_map: Map<u8>,
+
 }
 
-impl Component for MonsterMaps {}
+impl Component for MonsterMem {}
 
-impl MonsterMaps {
-    pub fn new() -> MonsterMaps {
-        MonsterMaps {
+impl MonsterMem {
+    pub fn new() -> MonsterMem {
+        MonsterMem {
             action_target: ActionTarget {
                 position: PositionM {
                     x: 0f32,

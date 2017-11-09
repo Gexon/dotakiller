@@ -119,7 +119,7 @@ impl System for SpawnMonsterSystem {
 
             });
             entity_object.add_component(MonsterAttributes::new());
-            entity_object.add_component(MonsterMaps::new());
+            entity_object.add_component(MonsterMem::new());
             entity_object.refresh();
             let monster_id = entity_object.get_component::<MonsterId>();
             println!("Создаем сущность {} {}", spawn_point.name.to_string(), monster_id.id);

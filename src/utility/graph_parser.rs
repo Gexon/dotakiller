@@ -100,7 +100,7 @@ pub fn get_node(edge_list: &[(i32, i32)], pos: i32) -> NodeBehavior {
     // создаем пустой узел нашего графа
     let mut graph: NodeBehavior = NodeBehavior {
         behavior: NodeType::Sequencer(Vec::new()),
-        cursor: pos as usize,
+        cursor: 0,
     };
 
     // кладем в узел следующие узлы

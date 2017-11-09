@@ -18,7 +18,7 @@ pub fn init(monster_world: &mut World) {
     monster_world.set_system(BioSystems);
     monster_world.set_system(PerceptionSystem);
 
-    for count in 0..10 {
+    for count in 0..1 {
         // поручаем спавнеру, засумонить в наш мир первого монстра!
         // создаем спавнер
         let mut entity_manager = monster_world.entity_manager();

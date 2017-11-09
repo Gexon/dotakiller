@@ -103,6 +103,8 @@ pub enum BehaviorEventEnum {
     _BecomeThirsty,
     // Утомился.
     BecomeTired,
+    // Треба еда
+    NeedFood,
     // Треба группа
     NeedGroup,
     // Монстр насытился.

@@ -11,6 +11,7 @@ use ::utility::enums::*;
 
 
 /// Обход графа
+// Нельзя допускать одновременое исполнение всех веток !
 pub fn exec_node(branch: &mut NodeBehavior, entity: &Entity, wind: &WindDirection) -> Status {
     //println!(">>> exec_node");
     // при первом проходе, будет 1 узел NodeBehavior
@@ -21,9 +22,10 @@ pub fn exec_node(branch: &mut NodeBehavior, entity: &Entity, wind: &WindDirectio
     match *behavior {
         // последовательность, до первого узла Fail, либо выполняет все и возвращает Success
         NodeType::Sequencer(ref mut vec_sequence) => {
-            //println!("Sequencer cursor:{}", *cursor);
+            println!("ROOT cursor:{}", *cursor);
             for (index, node_beh) in vec_sequence.iter_mut().enumerate().skip(*cursor) {
-                //if index >= cursor { //.skip(cursor) пропускает все до cursor
+                //.skip(cursor) пропускает все до cursor
+                println!("Sequencer cursor:{}", index);
                 *cursor = index; // пометить узел на котором мы торчим
                 let node_branch: &mut NodeBehavior = &mut (*node_beh);
                 //println!("index {}", index);
@@ -31,13 +33,12 @@ pub fn exec_node(branch: &mut NodeBehavior, entity: &Entity, wind: &WindDirectio
                 // что делать если нам вернули что процесс еще выполняется?
                 // прерываем и выходим, запоминая курсор.
                 if status == Status::Running {
-                    //println!("Running Sequencer cursor {}", *cursor);
+                    println!("RUNNING Sequencer cursor {}", *cursor);
                     return status;
                 }
-                //}
             }
             *cursor = 0; // успех или провал, обнуляем курсор, т.к. начинать полюбасу поновой)))
-            //println!("return2 Sequencer cursor {}", cursor);
+            println!("RETURN Sequencer cursor {}", cursor);
             Status::Success
         }
 
@@ -126,8 +127,8 @@ fn exec_action(action: BehaviorActions, entity: &Entity, wind: &WindDirection) -
 
 /// Действие монстра "инициализация"
 fn run_null(_entity: &Entity) -> Status {
-    //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
-    //println!("Init монстр {}", monster_id.id);
+    let monster_id = _entity.get_component::<MonsterId>(); // удалить. для отладки
+    println!("run_null монстр {}", monster_id.id);
     Status::Success
 }
 
@@ -135,16 +136,16 @@ fn run_null(_entity: &Entity) -> Status {
 fn run_check_tired(entity: &Entity) -> Status {
     let behaviour_event = entity.get_component::<BehaviourEvents>(); // события
     let mut state = entity.get_component::<MonsterState>(); // состояние монстра
-    //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
-    //println!("монстр {} проверяет усталость", monster_id.id);
+    let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+    println!("монстр {} проверяет усталость", monster_id.id);
     if behaviour_event.event.contains(&BehaviorEventEnum::BecomeTired) {
-        //println!("монстр устал");
+        println!("монстр устал");
         state.emo_state = 2;
         entity.add_component(Replication); // произошли изменения монстра.
         entity.refresh();
         return Status::Success;
     }
-    //println!("монстр бодр");
+    println!("монстр бодр");
     state.emo_state = 0;
     Status::Failure
 }
@@ -180,24 +181,32 @@ fn run_walk(entity: &Entity, wind: &WindDirection) -> Status {
     behaviour_state.action = BehaviorActions::Walk;
     entity.add_component(Replication); // произошли изменения монстра.
     entity.refresh();
-    //println!("Монстр гуляет",);
+    println!("Монстр гуляет", );
     Status::Success
 }
 
 /// Действие монстра "проверить голод"
 fn run_check_hungry(entity: &Entity) -> Status {
-    let behaviour_event = entity.get_component::<BehaviourEvents>(); // события
+    let mut behaviour_event = entity.get_component::<BehaviourEvents>(); // события
     let mut state = entity.get_component::<MonsterState>(); // состояние монстра
-    //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
-    //println!("монстр {} проверяет голод", monster_id.id);
+    let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+    println!("монстр {} проверяет голод", monster_id.id);
+
+    //
+
     if behaviour_event.event.contains(&BehaviorEventEnum::BecomeHungry) {
-        //println!("монстр голоден");
+        // NeedFood - для активизаци сканирования вокруг чебя.
+        if !behaviour_event.event.contains(&BehaviorEventEnum::NeedFood) {
+            println!("Создаем монстру событие NeedFood");
+            behaviour_event.event.push(BehaviorEventEnum::NeedFood);
+        }
+        println!("монстр голоден");
         state.emo_state = 1;
         entity.add_component(Replication); // произошли изменения монстра.
         entity.refresh();
         return Status::Success;
     }
-    //println!("монстр сыт");
+    println!("монстр сыт");
     Status::Failure
 }
 
@@ -207,13 +216,8 @@ fn run_find_food(entity: &Entity) -> Status {
     let mut monster_state = entity.get_component::<MonsterState>();
     let mut behaviour_event = entity.get_component::<BehaviourEvents>(); // события
     let mut position = entity.get_component::<Position>();
-    //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
-    // поиск пищи. ходим по окружности
-    if monster_attr.speed == 1 { monster_attr.speed = 2 };
-    next_step_around(&mut position, monster_attr.speed as f32, &mut monster_state);
-    //
-    entity.add_component(Replication); // произошли изменения монстра.
-    entity.refresh();
+    let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+
     // если мы долго кружим
     if monster_state.find_around_count > 8 {
         monster_state.find_around_count = 0;
@@ -225,12 +229,17 @@ fn run_find_food(entity: &Entity) -> Status {
     if behaviour_event.event.contains(&BehaviorEventEnum::FoundFood) {
         // есть событие обнаружена еда, убираем событие из списка событий.
         behaviour_event.event.retain(|x| x != &BehaviorEventEnum::FoundFood);
-        //println!("Монстр {} вижу пальму", monster_id.id);
+        println!("Монстр {} вижу пальму", monster_id.id);
         monster_attr.speed = 1;
         return Status::Success;
     }
 
-    //println!("Монстр {} ищет че бы поесть", monster_id.id);
+    println!("Монстр {} ищет че бы поесть", monster_id.id);
+    // поиск пищи. ходим по окружности
+    if monster_attr.speed == 1 { monster_attr.speed = 2 };
+    next_step_around(&mut position, monster_attr.speed as f32, &mut monster_state);
+    entity.add_component(Replication); // произошли изменения монстра.
+    entity.refresh();
     Status::Running
 }
 
@@ -245,27 +254,28 @@ fn run_find_water(_entity: &Entity) -> Status {
 fn run_meal(entity: &Entity) -> Status {
     let mut behaviour_event = entity.get_component::<BehaviourEvents>(); // события
     let mut state = entity.get_component::<MonsterState>(); // состояние монстра
-    //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+    let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
 
     // наелся
     if behaviour_event.event.contains(&BehaviorEventEnum::EatFull) {
         behaviour_event.event.retain(|x| x != &BehaviorEventEnum::EatFull);
         behaviour_event.event.retain(|x| x != &BehaviorEventEnum::BecomeHungry);
+        behaviour_event.event.retain(|x| x != &BehaviorEventEnum::NeedFood);
         behaviour_event.action = BehaviorActions::Null;
-        //println!("монстр {} наелся", monster_id.id);
+        println!("монстр {} наелся", monster_id.id);
         state.emo_state = 0;
         entity.add_component(Replication); // произошли изменения монстра.
         entity.refresh();
         return Status::Success;
     } else if behaviour_event.event.contains(&BehaviorEventEnum::TargetLost) {
-        //println!("монстр {} потерял цель", monster_id.id);
+        println!("монстр {} потерял цель", monster_id.id);
         behaviour_event.event.retain(|x| x != &BehaviorEventEnum::TargetLost);
         return Status::Failure;
     }
 
     // пальму съесть
     behaviour_event.action = BehaviorActions::Meal;
-    //println!("монстр {} ест", monster_id.id);
+    println!("монстр {} ест", monster_id.id);
     Status::Running
 }
 
@@ -331,7 +341,7 @@ fn run_move_to_target(entity: &Entity) -> Status {
 /// Действие монстра "пошарить в памяти в поисках последнего места еды"
 fn run_check_memory_meal(entity: &Entity) -> Status {
     let mut monster_state = entity.get_component::<MonsterState>();
-    let monster_maps = entity.get_component::<MonsterMaps>();
+    let monster_maps = entity.get_component::<MonsterMem>();
     //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
     if monster_maps.last_eating.x < 0f32 {
         //println!("монстр {} не помнит где раньше питался", monster_id.id);
@@ -522,23 +532,43 @@ fn next_step_around(position: &mut Position, delta: f32, monster_state: &mut Mon
 }
 
 
+/// проверяет в группе ли монстр
+fn run_check_in_group(entity: &Entity) -> Status {
+    // MonsterAttributes
+    let monster_attr = entity.get_component::<MonsterAttributes>(); // атрибуты/характеристики
+    let mut behaviour_event = entity.get_component::<BehaviourEvents>(); // события
+    if monster_attr.in_group {
+        println!("Монстр в группе");
+        return Status::Success;
+    }
+    // NeedGroup
+    if !behaviour_event.event.contains(&BehaviorEventEnum::NeedGroup) {
+        println!("Создаем монстру событие NeedGroup");
+        behaviour_event.event.push(BehaviorEventEnum::NeedGroup);
+    }
+    println!("Монстр не в группе");
+    Status::Failure
+}
+
+
 /// ищем других монстров вокруг себя
 fn run_find_monsters(entity: &Entity) -> Status {
+    println!("run_find_monsters - start");
     let mut monster_attr = entity.get_component::<MonsterAttributes>(); // атрибуты/характеристики
     let mut monster_state = entity.get_component::<MonsterState>();
     let mut behaviour_event = entity.get_component::<BehaviourEvents>(); // события
     let mut position = entity.get_component::<Position>();
     let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
-    // поиск другого монстра. ходим по окружности
-    if monster_attr.speed == 1 { monster_attr.speed = 2 };
-    next_step_around(&mut position, monster_attr.speed as f32, &mut monster_state);
-    //
-    entity.add_component(Replication); // произошли изменения монстра.
-    entity.refresh();
+
     // если мы долго кружим
     if monster_state.find_around_count > 8 {
         monster_state.find_around_count = 0;
         println!("Монстр {} долго кружит в поисках друзей", monster_id.id);
+        // Выпиливаем NeedGroup, чтоб не сканировало
+        if behaviour_event.event.contains(&BehaviorEventEnum::NeedGroup) {
+            behaviour_event.event.retain(|x| x != &BehaviorEventEnum::NeedGroup);
+        }
+
         return Status::Failure;
     } else {
         monster_state.find_around_count += 1;
@@ -553,24 +583,12 @@ fn run_find_monsters(entity: &Entity) -> Status {
     }
 
     println!("Монстр {} ищет соратников", monster_id.id);
+    // поиск другого монстра. ходим по окружности
+    if monster_attr.speed == 1 { monster_attr.speed = 2 };
+    next_step_around(&mut position, monster_attr.speed as f32, &mut monster_state);
+    entity.add_component(Replication); // произошли изменения монстра.
+    entity.refresh();
     Status::Running
-}
-
-
-/// проверяет в группе ли монстр
-fn run_check_in_group(entity: &Entity) -> Status {
-    // MonsterAttributes
-    let monster_attr = entity.get_component::<MonsterAttributes>(); // атрибуты/характеристики
-    let mut behaviour_event = entity.get_component::<BehaviourEvents>(); // события
-    if monster_attr.in_group {
-        return Status::Success;
-    }
-    // NeedGroup
-    if !behaviour_event.event.contains(&BehaviorEventEnum::NeedGroup) {
-        //println!("Создаем монстру событие NeedGroup");
-        behaviour_event.event.push(BehaviorEventEnum::NeedGroup);
-    }
-    Status::Failure
 }
 
 

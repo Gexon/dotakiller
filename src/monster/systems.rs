@@ -33,14 +33,17 @@ impl System for PerceptionSystem {
         // сканируем вокруг, может есть еда или вода или др. монстр или ОБОРИГЕН!
 
         // _monster_class - это: "let _monster_class = _entity.get_component::<MonsterClass>();
+        let mut check_err: bool = false; // для предупреждения об одновременном сканировании.
         // проверяем таймеры, чтоб не спамить почем зря
         if _monster_class.perception_time.to(PreciseTime::now()) > Duration::seconds(MONSTER_SPEED) {
 
             {
-                // палим растения, если голодны. BecomeHungry
+                // палим растения, если голодны. NeedFood
                 let behaviour_event = _entity.get_component::<BehaviourEvents>(); // события
-                if behaviour_event.event.contains(&BehaviorEventEnum::BecomeHungry) {
-                    let mut monster_map = _entity.get_component::< MonsterMaps > ();
+                if behaviour_event.event.contains(&BehaviorEventEnum::NeedFood) {
+                    check_err = true;
+                    //println!("Ищем еды. NeedFood");
+                    let mut monster_map = _entity.get_component::< MonsterMem > ();
                     let mut monster_state = _entity.get_component::< MonsterState > ();
                     let ground = &_ground[0];
                     let world_map = ground.get_component::< WorldMap > ();
@@ -73,10 +76,13 @@ impl System for PerceptionSystem {
 
 
             {
-                // Ищем ВОЖДЯ. BecomeGroup
+                // Ищем ВОЖДЯ. NeedGroup
                 let behaviour_event = _entity.get_component::<BehaviourEvents>(); // события
                 if behaviour_event.event.contains(&BehaviorEventEnum::NeedGroup) {
-                    let mut monster_mem = _entity.get_component::< MonsterMaps > (); // это типа память, для хранения цели
+                    if check_err {println!("PerceptionSystem - Ошибка одновременного сканирования.")};
+                    check_err = true;
+                    //println!("Ищем ВОЖДЯ. NeedGroup");
+                    let mut monster_mem = _entity.get_component::< MonsterMem > (); // это типа память, для хранения цели
                     let mut monster_state = _entity.get_component::< MonsterState > ();
                     let position = _entity.get_component::< Position > ();
 
@@ -102,6 +108,9 @@ impl System for PerceptionSystem {
                 } // Конец поиск ВОЖДЯ
             } // Конец  Ищем ВОЖДЯ. BecomeGroup
 
+            if check_err {}; // заглушка чтоб не пиликало
+
+
             // фиксируем текущее время
             _monster_class.perception_time = PreciseTime::now();
         } // timer
@@ -124,8 +133,8 @@ impl System for EventSystem {
             let mut behaviour_event = entity.get_component::<BehaviourEvents>(); // события
             let mut monster_state = entity.get_component::<MonsterState>();
             let monster_attr = entity.get_component::<MonsterAttributes>(); //
-            let monster_map = entity.get_component::<MonsterMaps>();
-            //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+            let monster_map = entity.get_component::<MonsterMem>();
+            let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
 
 
             // реакция на обнаружение еды.
@@ -163,7 +172,7 @@ impl System for EventSystem {
                 && !behaviour_event.event.contains(&BehaviorEventEnum::BecomeHungry) {
                 behaviour_event.event.push(BehaviorEventEnum::BecomeHungry);
                 monster_state.low_food = true;
-                //println!("Новое событие: монстр {} голоден!", monster_id.id);
+                println!("Новое событие: монстр {} голоден!", monster_id.id);
                 // todo дублирующие друг друга переменные low_food и BecomeHungry
                 // todo убрать с очереди EatFull
             }
@@ -179,7 +188,6 @@ impl System for EventSystem {
                 // todo убрать из очереди PowerFull
             }
 
-
             // реакция на наелся
             if monster_state.low_food && (monster_attr.hungry > 990)
                 // Монстр насытился
@@ -190,7 +198,6 @@ impl System for EventSystem {
                 // todo заменить числовые значеия 990 на переменные подгружаемые с БД
                 // todo вот тут нужно убирать BecomeHungry с очереди
             }
-
 
             // реакция на отдохнул
             if monster_state.low_power && (monster_attr.power > 990)
@@ -206,7 +213,6 @@ impl System for EventSystem {
                 && !behaviour_event.event.contains(&BehaviorEventEnum::FoundMonster) {
                 behaviour_event.event.push(BehaviorEventEnum::FoundMonster);
             }
-
 
             // фиксируем текущее время
             monster_class.event_time = PreciseTime::now();
@@ -268,7 +274,7 @@ impl System for BioSystems {
         if monster_class.bios_time.to(PreciseTime::now()) > Duration::seconds(2 * MONSTER_SPEED) {
             let ground = data.unwrap_entity();
             let mut monster_attr = entity.get_component::<MonsterAttributes>();
-            let mut monster_map = entity.get_component::<MonsterMaps>();
+            let mut monster_map = entity.get_component::<MonsterMem>();
             let behaviour_state = entity.get_component::<BehaviourEvents>(); // состояние
             //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
 

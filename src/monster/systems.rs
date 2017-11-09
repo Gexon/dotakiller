@@ -78,8 +78,8 @@ impl System for PerceptionSystem {
             {
                 // Ищем ВОЖДЯ. NeedGroup
                 let behaviour_event = _entity.get_component::<BehaviourEvents>(); // события
-                if behaviour_event.event.contains(&BehaviorEventEnum::NeedGroup) {
-                    if check_err {println!("PerceptionSystem - Ошибка одновременного сканирования.")};
+                if check_err {println!("PerceptionSystem - Ошибка одновременного сканирования.")};
+                if behaviour_event.event.contains(&BehaviorEventEnum::NeedGroup) && !check_err {
                     check_err = true;
                     //println!("Ищем ВОЖДЯ. NeedGroup");
                     let mut monster_mem = _entity.get_component::< MonsterMem > (); // это типа память, для хранения цели

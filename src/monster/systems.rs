@@ -78,7 +78,6 @@ impl System for PerceptionSystem {
             {
                 // Ищем ВОЖДЯ. NeedGroup
                 let behaviour_event = _entity.get_component::<BehaviourEvents>(); // события
-                if check_err {println!("PerceptionSystem - Ошибка одновременного сканирования.")};
                 if behaviour_event.event.contains(&BehaviorEventEnum::NeedGroup) && !check_err {
                     check_err = true;
                     //println!("Ищем ВОЖДЯ. NeedGroup");
@@ -106,7 +105,13 @@ impl System for PerceptionSystem {
                         }
                     } // for monster
                 } // Конец поиск ВОЖДЯ
+                else {
+                if behaviour_event.event.contains(&BehaviorEventEnum::NeedGroup) && check_err {
+                        println!("PerceptionSystem - Ошибка одновременного сканирования.");
+                    };
+                }
             } // Конец  Ищем ВОЖДЯ. BecomeGroup
+
 
             if check_err {}; // заглушка чтоб не пиликало
 

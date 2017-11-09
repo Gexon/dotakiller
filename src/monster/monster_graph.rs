@@ -22,23 +22,22 @@ pub fn exec_node(branch: &mut NodeBehavior, entity: &Entity, wind: &WindDirectio
     match *behavior {
         // последовательность, до первого узла Fail, либо выполняет все и возвращает Success
         NodeType::Sequencer(ref mut vec_sequence) => {
-            //println!("ROOT cursor:{}", *cursor);
+            println!("ROOT cursor:{}", *cursor);
             for (index, node_beh) in vec_sequence.iter_mut().enumerate().skip(*cursor) {
                 //.skip(cursor) пропускает все до cursor
-                //println!("Sequencer cursor:{}", index);
+                println!("Sequencer cursor:{}", index);
                 *cursor = index; // пометить узел на котором мы торчим
                 let node_branch: &mut NodeBehavior = &mut (*node_beh);
-                //println!("index {}", index);
                 let status = exec_node(node_branch, entity, wind);
                 // что делать если нам вернули что процесс еще выполняется?
                 // прерываем и выходим, запоминая курсор.
                 if status == Status::Running {
-                    //println!("RUNNING Sequencer cursor {}", *cursor);
+                    println!("RUNNING Sequencer cursor {}", *cursor);
                     return status;
                 }
             }
             *cursor = 0; // успех или провал, обнуляем курсор, т.к. начинать полюбасу поновой)))
-            //println!("RETURN Sequencer cursor {}", cursor);
+            println!("RETURN Sequencer cursor {}", cursor);
             Status::Success
         }
 
@@ -128,7 +127,7 @@ fn exec_action(action: BehaviorActions, entity: &Entity, wind: &WindDirection) -
 /// Действие монстра "инициализация"
 fn run_null(_entity: &Entity) -> Status {
     let monster_id = _entity.get_component::<MonsterId>(); // удалить. для отладки
-    //println!("run_null монстр {}", monster_id.id);
+    println!("run_null монстр {}", monster_id.id);
     Status::Success
 }
 
@@ -221,6 +220,11 @@ fn run_find_food(entity: &Entity) -> Status {
     // если мы долго кружим
     if monster_state.find_around_count > 8 {
         monster_state.find_around_count = 0;
+        println!("Долго ищем еду, прекратить поиски");
+        if behaviour_event.event.contains(&BehaviorEventEnum::NeedFood) {
+            println!("Выпиливаем монстру событие NeedFood");
+            behaviour_event.event.retain(|x| x != &BehaviorEventEnum::NeedFood);
+        }
         return Status::Failure;
     } else {
         monster_state.find_around_count += 1;
@@ -260,6 +264,7 @@ fn run_meal(entity: &Entity) -> Status {
     if behaviour_event.event.contains(&BehaviorEventEnum::EatFull) {
         behaviour_event.event.retain(|x| x != &BehaviorEventEnum::EatFull);
         behaviour_event.event.retain(|x| x != &BehaviorEventEnum::BecomeHungry);
+        println!("Выпиливаем монстру событие NeedFood");
         behaviour_event.event.retain(|x| x != &BehaviorEventEnum::NeedFood);
         behaviour_event.action = BehaviorActions::Null;
         println!("монстр {} наелся", monster_id.id);
@@ -270,6 +275,7 @@ fn run_meal(entity: &Entity) -> Status {
     } else if behaviour_event.event.contains(&BehaviorEventEnum::TargetLost) {
         println!("монстр {} потерял цель", monster_id.id);
         behaviour_event.event.retain(|x| x != &BehaviorEventEnum::TargetLost);
+        println!("Выпиливаем монстру событие NeedFood");
         behaviour_event.event.retain(|x| x != &BehaviorEventEnum::NeedFood); // убираем чтоб не возникло ошибки сканирования.
         return Status::Failure;
     }
@@ -567,6 +573,7 @@ fn run_find_monsters(entity: &Entity) -> Status {
         println!("Монстр {} долго кружит в поисках друзей", monster_id.id);
         // Выпиливаем NeedGroup, чтоб не сканировало
         if behaviour_event.event.contains(&BehaviorEventEnum::NeedGroup) {
+            println!("Выпиливаем монстру событие NeedGroup");
             behaviour_event.event.retain(|x| x != &BehaviorEventEnum::NeedGroup);
         }
 

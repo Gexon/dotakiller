@@ -1,0 +1,25 @@
+//Настройка сети в виртуалке - сетевой мост. И не забудь подключить кабель краб!!
+
+// всегда в новой системе нехватает этой херни
+failed to run custom build command for `openssl-sys-extras v0.7.14`
+sudo apt-get install libssl-dev
+
+// это после обновления ubuntu на 17.10, слетела php
+sudo a2enmod php7.1
+sudo systemctl restart apache2
+
+// вырубить ipv6 (на VPS такое делал, т.к. не хотел в интернет ходить)
+1. Проверяем, включен ли IPV6, для этого в терминале
+     cat /proc/sys/net/ipv6/conf/all/disable_ipv6
+     если ответ  0 - ipv6 включен, 1 - отключен.
+2.  Открываем  файл /etc/sysctl.conf
+     sudo gedit /etc/sysctl.conf
+    и в конце вставляем следующие строки -
+     #disable ipv6
+     net.ipv6.conf.all.disable_ipv6 = 1
+     net.ipv6.conf.default.disable_ipv6 = 1
+     net.ipv6.conf.lo.disable_ipv6 = 1
+  Сохраняем файл.
+3.Применяем
+sysctl -p
+4. Проверяем по пункту 1.

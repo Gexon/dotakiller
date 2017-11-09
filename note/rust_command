@@ -1,0 +1,35 @@
+// удаление ненужных сборок раста
+rustup toolchain uninstall <версия>
+nightly-2017-11-03-x86_64-unknown-linux-gnu
+
+// настройка гита на новый репозиторий.
+$ git config --global user.name "John Doe"
+$ git config --global user.email johndoe@example.com
+// скачать репозиторий
+git clone https://github.com/Gexon/palmtest.git
+// скомпилить все крейты.
+cargo clean && cargo build
+// обновить крейты(не работает если меняеш исходник. надо убирать и заново ставить в томл-лок)
+cargo update
+
+// после установки rustup необходимо перелогиниться
+// Clippy ставишь-компилируешь с найтли, потом чекаешь свой стабильный через
+rustup run nightly cargo clippy
+//обновить
+rustup update
+// обновить, ночное
+rustup install nightly
+// обновить Clippy
+rustup run nightly cargo install -f clippy
+rustup default nightly
+// перекомпилить clippy после обновления/смены раста
+cargo install -f clippy
+
+// какая-то муть
+rustup install nightly-2017-11-02
+cargo install clippy
+cargo uninstall clippy
+rustup show
+rustup default nightly
+rustup default nightly nightly-x86_64-unknown-linux-gnu
+rustup default nightly-2017-11-02-x86_64-unknown-linux-gnu

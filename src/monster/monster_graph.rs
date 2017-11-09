@@ -22,22 +22,22 @@ pub fn exec_node(branch: &mut NodeBehavior, entity: &Entity, wind: &WindDirectio
     match *behavior {
         // последовательность, до первого узла Fail, либо выполняет все и возвращает Success
         NodeType::Sequencer(ref mut vec_sequence) => {
-            println!("ROOT cursor:{}", *cursor);
+            //println!("ROOT cursor:{}", *cursor);
             for (index, node_beh) in vec_sequence.iter_mut().enumerate().skip(*cursor) {
                 //.skip(cursor) пропускает все до cursor
-                println!("Sequencer cursor:{}", index);
+                //println!("Sequencer cursor:{}", index);
                 *cursor = index; // пометить узел на котором мы торчим
                 let node_branch: &mut NodeBehavior = &mut (*node_beh);
                 let status = exec_node(node_branch, entity, wind);
                 // что делать если нам вернули что процесс еще выполняется?
                 // прерываем и выходим, запоминая курсор.
                 if status == Status::Running {
-                    println!("RUNNING Sequencer cursor {}", *cursor);
+                    //println!("RUNNING Sequencer cursor {}", *cursor);
                     return status;
                 }
             }
             *cursor = 0; // успех или провал, обнуляем курсор, т.к. начинать полюбасу поновой)))
-            println!("RETURN Sequencer cursor {}", cursor);
+            //println!("RETURN Sequencer cursor {}", cursor);
             Status::Success
         }
 
@@ -126,8 +126,8 @@ fn exec_action(action: BehaviorActions, entity: &Entity, wind: &WindDirection) -
 
 /// Действие монстра "инициализация"
 fn run_null(_entity: &Entity) -> Status {
-    let monster_id = _entity.get_component::<MonsterId>(); // удалить. для отладки
-    println!("run_null монстр {}", monster_id.id);
+    //let monster_id = _entity.get_component::<MonsterId>(); // удалить. для отладки
+    //println!("run_null монстр {}", monster_id.id);
     Status::Success
 }
 
@@ -135,16 +135,16 @@ fn run_null(_entity: &Entity) -> Status {
 fn run_check_tired(entity: &Entity) -> Status {
     let behaviour_event = entity.get_component::<BehaviourEvents>(); // события
     let mut state = entity.get_component::<MonsterState>(); // состояние монстра
-    let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
-    println!("монстр {} проверяет усталость", monster_id.id);
+    //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+    //println!("монстр {} проверяет усталость", monster_id.id);
     if behaviour_event.event.contains(&BehaviorEventEnum::BecomeTired) {
-        println!("монстр устал");
+        //println!("монстр устал");
         state.emo_state = 2;
         entity.add_component(Replication); // произошли изменения монстра.
         entity.refresh();
         return Status::Success;
     }
-    println!("монстр бодр");
+    //println!("монстр бодр");
     state.emo_state = 0;
     Status::Failure
 }
@@ -159,7 +159,7 @@ fn run_sleep(entity: &Entity) -> Status {
         behaviour_state.event.retain(|x| x != &BehaviorEventEnum::PowerFull);
         behaviour_state.event.retain(|x| x != &BehaviorEventEnum::BecomeTired);
         behaviour_state.action = BehaviorActions::Null;
-        println!("монстр {} отдохнул", monster_id.id);
+        //println!("монстр {} отдохнул", monster_id.id);
         return Status::Success;
     }
 
@@ -188,8 +188,8 @@ fn run_walk(entity: &Entity, wind: &WindDirection) -> Status {
 fn run_check_hungry(entity: &Entity) -> Status {
     let mut behaviour_event = entity.get_component::<BehaviourEvents>(); // события
     let mut state = entity.get_component::<MonsterState>(); // состояние монстра
-    let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
-    println!("монстр {} проверяет голод", monster_id.id);
+    //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+    //println!("монстр {} проверяет голод", monster_id.id);
 
     //
 
@@ -575,6 +575,7 @@ fn run_find_monsters(entity: &Entity) -> Status {
         if behaviour_event.event.contains(&BehaviorEventEnum::NeedGroup) {
             println!("Выпиливаем монстру событие NeedGroup");
             behaviour_event.event.retain(|x| x != &BehaviorEventEnum::NeedGroup);
+            behaviour_event.event.retain(|x| x != &BehaviorEventEnum::TargetLost);
         }
 
         return Status::Failure;
@@ -586,6 +587,8 @@ fn run_find_monsters(entity: &Entity) -> Status {
         // есть событие обнаружен монстр, убираем событие из списка событий.
         behaviour_event.event.retain(|x| x != &BehaviorEventEnum::FoundMonster);
         println!("Монстр {} видит коллегу", monster_id.id);
+        println!("Выпиливаем монстру событие NeedGroup");
+        behaviour_event.event.retain(|x| x != &BehaviorEventEnum::NeedGroup);
         monster_attr.speed = 1;
         return Status::Success;
     }

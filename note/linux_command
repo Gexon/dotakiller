@@ -1,0 +1,27 @@
+// Копирование по SSH
+$ scp ./dk_server user@185.40.31.100:dotakiller/
+
+// работа с screen
+$ screen -ls (Ctrl + a +c - новое окно, Ctrl + a +d - отсоединить консольную сессию и оставить ее запущенной, screen -r -присоединиться к отсоединенной сессии).
+$ screen -r 12836 (подключиться к существующей сессии).
+
+// команды для X11
+~/IdeaProjects/loginserver/target/release/loginserver &
+~/IdeaProjects/chatserver/target/release/chatserver &
+~/Загрузки/idea-IC-172.4343.14/bin/idea.sh &
+// параметры xminga, чтоб все было пучком.
+:0 -clipboard -multiwindow -dpi 96 -xkblayout us,ru -xkbvariant winkeys -xkboptions grp:ctrl_shift_toggle
+
+//Вывести список процессов: ps axu
+Убить процесс: kill 25609
+
+// вывод стека ошибок
+RUST_BACKTRACE=1 cargo run
+
+// обновить репозиторий убунту
+sudo apt-get update
+sudo apt-get dist-upgrade
+// обновление убунту
+sudo apt-get update && sudo apt-get upgrade -y && reboot
+
+

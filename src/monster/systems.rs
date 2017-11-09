@@ -42,7 +42,6 @@ impl System for PerceptionSystem {
                 let behaviour_event = _entity.get_component::<BehaviourEvents>(); // события
                 if behaviour_event.event.contains(&BehaviorEventEnum::NeedFood) {
                     check_err = true;
-                    //println!("Ищем еды. NeedFood");
                     let mut monster_map = _entity.get_component::< MonsterMem > ();
                     let mut monster_state = _entity.get_component::< MonsterState > ();
                     let ground = &_ground[0];
@@ -51,6 +50,7 @@ impl System for PerceptionSystem {
                     let position = _entity.get_component::< Position > ();
                     //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
                     // очищаем цель
+                    println!("PerceptionSystem - Ищем еды. Очищаем цель");
                     monster_map.action_target.target_type = TargetType::None;
                     monster_state.view_food = false;
                     'outer:
@@ -63,6 +63,7 @@ impl System for PerceptionSystem {
                                 // Проверяем растет ли дерево по даденным координатам.
                                 if !monster_state.view_food && world_map.flora.contains_key( & scan_point) {
                                     // добавляем растение в цель
+                                    println!("PerceptionSystem - Ищем еды. Добавляем растение в цель");
                                     monster_map.action_target.target_type = TargetType::Flora;
                                     monster_map.action_target.position.x = pos_x as f32;
                                     monster_map.action_target.position.y = pos_y as f32;
@@ -105,11 +106,9 @@ impl System for PerceptionSystem {
                         }
                     } // for monster
                 } // Конец поиск ВОЖДЯ
-                else {
-                if behaviour_event.event.contains(&BehaviorEventEnum::NeedGroup) && check_err {
+                else if behaviour_event.event.contains(&BehaviorEventEnum::NeedGroup) && check_err {
                         println!("PerceptionSystem - Ошибка одновременного сканирования.");
                     };
-                }
             } // Конец  Ищем ВОЖДЯ. BecomeGroup
 
 

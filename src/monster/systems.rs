@@ -40,10 +40,10 @@ impl System for PerceptionSystem {
             {
                 // палим растения, если голодны. NeedFood
                 let behaviour_event = _entity.get_component::<BehaviourEvents>(); // события
+                let mut monster_state = _entity.get_component::< MonsterState > ();
                 if behaviour_event.event.contains(&BehaviorEventEnum::NeedFood) {
                     check_err = true;
                     let mut monster_map = _entity.get_component::< MonsterMem > ();
-                    let mut monster_state = _entity.get_component::< MonsterState > ();
                     let ground = &_ground[0];
                     let world_map = ground.get_component::< WorldMap > ();
                     // проверяем свободно ли место спавна.
@@ -73,17 +73,18 @@ impl System for PerceptionSystem {
                         } // for
                     } // for
                 } // BecomeHungry
+                else if monster_state.view_food { monster_state.view_food = false };
             }
 
 
             {
                 // Ищем ВОЖДЯ. NeedGroup
                 let behaviour_event = _entity.get_component::<BehaviourEvents>(); // события
+                let mut monster_state = _entity.get_component::< MonsterState > ();
                 if behaviour_event.event.contains(&BehaviorEventEnum::NeedGroup) && !check_err {
                     check_err = true;
                     //println!("Ищем ВОЖДЯ. NeedGroup");
                     let mut monster_mem = _entity.get_component::< MonsterMem > (); // это типа память, для хранения цели
-                    let mut monster_state = _entity.get_component::< MonsterState > ();
                     let position = _entity.get_component::< Position > ();
 
                     //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
@@ -106,9 +107,12 @@ impl System for PerceptionSystem {
                         }
                     } // for monster
                 } // Конец поиск ВОЖДЯ
-                else if behaviour_event.event.contains(&BehaviorEventEnum::NeedGroup) && check_err {
-                        println!("PerceptionSystem - Ошибка одновременного сканирования.");
-                    };
+                else {
+                        if behaviour_event.event.contains(&BehaviorEventEnum::NeedGroup) && check_err {
+                            println!("PerceptionSystem - Ошибка одновременного сканирования.");
+                        };
+                        if monster_state.view_monster {monster_state.view_monster = false};
+                    }
             } // Конец  Ищем ВОЖДЯ. BecomeGroup
 
 
@@ -148,7 +152,7 @@ impl System for EventSystem {
                 // если в векторе behaviour_events.event, нет события FoundFood
                 // то, добавляем его туда.
                 behaviour_event.event.push(BehaviorEventEnum::FoundFood);
-                //println!("Новое событие: монстр {} обнаружил еду!", monster_id.id);
+                println!("Новое событие: монстр {} обнаружил еду!", monster_id.id);
                 // убираем событие потери цели если видим еду.
                 behaviour_event.event.retain(|x| x != &BehaviorEventEnum::TargetLost);
             } else if

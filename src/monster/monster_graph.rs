@@ -295,6 +295,36 @@ fn run_water_intake(_entity: &Entity) -> Status {
     Status::Success
 }
 
+// TODO: сделать как-нибудь по-человечески
+fn make_step_to(
+    position: &mut ::ground::components::Position,
+    target: ::monster::components::PositionM,
+    monster_state: &mut ::monster::components::MonsterState,
+    delta: f32,
+) {
+    // расчеты по Х
+    if position.x < target.x {
+        monster_state.old_position.x = position.x;
+
+        position.x = f32::min(position.x + delta, target.x);
+    } else if position.x > target.x {
+        monster_state.old_position.x = position.x;
+
+        position.x = f32::max(position.x - delta, target.x);
+    }
+
+    // расчеты по Y
+    if position.y < target.y {
+        monster_state.old_position.y = position.y;
+
+        position.y = f32::min(position.y + delta, target.y);
+    } else if position.y > target.y {
+        monster_state.old_position.y = position.y;
+
+        position.y = f32::max(position.y - delta, target.y);
+    }
+}
+
 /// Действие монстра "движение к цели"
 fn run_move_to_target(entity: &Entity) -> Status {
     let monster_attr = entity.get_component::<MonsterAttributes>(); // атрибуты/характеристики
@@ -314,31 +344,7 @@ fn run_move_to_target(entity: &Entity) -> Status {
         return Status::Success;
     } else {
         // цель не достигнута, делаем шаг в сторону цели.
-        // расчеты по Х
-        if position.x < monster_state.target_point.x {
-            monster_state.old_position.x = position.x;
-            if position.x + delta > monster_state.target_point.x {
-                position.x = monster_state.target_point.x
-            } else { position.x += delta };
-        } else if position.x > monster_state.target_point.x {
-            monster_state.old_position.x = position.x;
-            if position.x - delta < monster_state.target_point.x {
-                position.x = monster_state.target_point.x
-            } else { position.x -= delta };
-        }
-
-        // расчеты по Y
-        if position.y < monster_state.target_point.y {
-            monster_state.old_position.y = position.y;
-            if position.y + delta > monster_state.target_point.y {
-                position.y = monster_state.target_point.y
-            } else { position.y += delta };
-        } else if position.y > monster_state.target_point.y {
-            monster_state.old_position.y = position.y;
-            if position.y - delta < monster_state.target_point.y {
-                position.y = monster_state.target_point.y
-            } else { position.y -= delta };
-        }
+        make_step_to(&mut position, monster_state.target_point, &mut monster_state, delta);
     }
 
     entity.add_component(Replication); // произошли изменения монстра.
@@ -512,31 +518,7 @@ fn next_step_around(position: &mut Position, delta: f32, monster_state: &mut Mon
         //println!("NEW target_x {}, target_y {}", monster_state.target_point.x, monster_state.target_point.y);
     } else {
         // цель не достигнута, делаем шаг в сторону цели.
-        // расчеты по Х
-        if position.x < monster_state.target_point.x {
-            monster_state.old_position.x = position.x;
-            if position.x + delta > monster_state.target_point.x {
-                position.x = monster_state.target_point.x
-            } else { position.x += delta };
-        } else if position.x > monster_state.target_point.x {
-            monster_state.old_position.x = position.x;
-            if position.x - delta < monster_state.target_point.x {
-                position.x = monster_state.target_point.x
-            } else { position.x -= delta };
-        }
-
-        // расчеты по Y
-        if position.y < monster_state.target_point.y {
-            monster_state.old_position.y = position.y;
-            if position.y + delta > monster_state.target_point.y {
-                position.y = monster_state.target_point.y
-            } else { position.y += delta };
-        } else if position.y > monster_state.target_point.y {
-            monster_state.old_position.y = position.y;
-            if position.y - delta < monster_state.target_point.y {
-                position.y = monster_state.target_point.y
-            } else { position.y -= delta };
-        }
+        make_step_to(position, monster_state.target_point, monster_state, delta);
     }
 }
 
@@ -663,51 +645,23 @@ fn move_to_lead(entity: &Entity) -> Status {
     // let y_tpoint = monster_state.target_point.y;
     // println!("монстр {} идет к цели: x{} y{}", monster_id.id, x_tpoint, y_tpoint, );
     // проверяем достижение цели
-    if monster_state.lead_point.is_some() {
-        let lead_pos_option = monster_state.lead_point; // происходит копирование, я навтыкал дериктив Copy
-        if let Some(ref lead_pos) = lead_pos_option {
-            if (position.x as u32 == lead_pos.x as u32)
-                && (position.y as u32 == lead_pos.y as u32) {
-                // цель достигнута,
-                //println!("монстр {} добрался до цели", monster_id.id);
-                monster_state.find_around_count = 0;
-                return Status::Success;
-            } else {
-                // цель не достигнута, делаем шаг в сторону цели.
-                // расчеты по Х
-                if position.x < lead_pos.x {
-                    monster_state.old_position.x = position.x;
-                    if position.x + delta > lead_pos.x {
-                        position.x = lead_pos.x
-                    } else { position.x += delta };
-                } else if position.x > lead_pos.x {
-                    monster_state.old_position.x = position.x;
-                    if position.x - delta < lead_pos.x {
-                        position.x = lead_pos.x
-                    } else { position.x -= delta };
-                }
 
-                // расчеты по Y
-                if position.y < lead_pos.y {
-                    monster_state.old_position.y = position.y;
-                    if position.y + delta > lead_pos.y {
-                        position.y = lead_pos.y
-                    } else { position.y += delta };
-                } else if position.y > lead_pos.y {
-                    monster_state.old_position.y = position.y;
-                    if position.y - delta < lead_pos.y {
-                        position.y = lead_pos.y
-                    } else { position.y -= delta };
-                }
-            }
+    if let Some(lead_pos) = monster_state.lead_point {
+        if (position.x as u32, position.y as u32) == (lead_pos.x as u32, lead_pos.y as u32) {
+            // цель достигнута,
+            //println!("монстр {} добрался до цели", monster_id.id);
+            monster_state.find_around_count = 0;
+            return Status::Success;
+        } else {
+            // цель не достигнута, делаем шаг в сторону цели.
+            make_step_to(&mut position, lead_pos, &mut monster_state, delta);
         }
-
 
         entity.add_component(Replication); // произошли изменения монстра.
         entity.refresh();
 
-        return Status::Running;
+        Status::Running
     } else {
-        return Status::Failure;
+        Status::Failure
     }
 }

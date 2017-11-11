@@ -266,6 +266,56 @@ impl System for MonsterEventSystem {
                     self.send_leave_lead_event(vec_event_leave_lead, &mut events_vec);
                 }
             }
+
+            // Обновление координат ВОЖДЯ у членов
+            if !events_vec.is_empty() {
+                let mut in_entry = false;
+                {
+                    // получаем ссылку на последнее событие в очереди
+                    let event: &mut EventGroupMonster = events_vec.last_mut().unwrap();
+
+                    // работа с запросами UpdateLeadPoint
+                    // событие обновления координат ВОЖДя у членов
+                    if event.event_type == EventTypeMonster::UpdateLeadPoint {
+                        in_entry = true;
+                        let sender = event.id_sender; // отправитель член группы
+                        let recipient = event.id_receiver; // принимает ВОЖДЬ
+                        let mut target_point: Option<PositionM> = None;
+
+                        // вынимаем координаты ВОЖДЯ
+                        for entity in &*entities {
+                            let monster_id = entity.get_component::<MonsterId>();
+                            if monster_id.id == recipient {
+                                let position = entity.get_component::<Position>();
+                                target_point = Some(PositionM{
+                                    x: position.x,
+                                    y: position.y,
+                                    direct: Direction::North,
+                                });
+                                break;
+                            }
+                        } // for entity
+
+                        // передаем координаты ВОЖДЯ монстру
+                        for entity in &*entities {
+                            let monster_id = entity.get_component::<MonsterId>();
+                            if monster_id.id == sender {
+                                let mut monster_state = entity.get_component::<MonsterState>(); // атрибуты/характеристики
+                                monster_state.lead_point = target_point;
+                                println!("Обновление координат ВОЖДЯ {} у монстра {}", recipient, sender, );
+                                break;
+                            }
+                        } // for entity
+                    }
+                }
+                if in_entry {
+                    // убираем из очереди событйи, для предотвращения зацикливания при отсутствии монстра на месте.
+                    events_vec.pop().unwrap();
+                    //self.send_leave_lead_event(vec_event_leave_lead, &mut events_vec);
+                }
+            }
+
+            // конец обновления координат ВОЖДЯ у членов -------------------------------
         }
     }
 }

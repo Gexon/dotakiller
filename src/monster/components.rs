@@ -8,6 +8,7 @@ use ::utility::db_query::get_monster_graph;
 use ::utility::graph_parser::monster_graph_parser;
 
 /// Координаты на полигоне.
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PositionM {
     pub x: f32,
     pub y: f32,
@@ -69,6 +70,7 @@ pub struct MonsterState {
     pub move_target: PositionM,
     pub old_position: PositionM,
     pub target_point: PositionM,
+    pub lead_point: Option<PositionM>,
     pub delta_x: i32,
     pub delta_y: i32,
 }
@@ -88,6 +90,7 @@ impl MonsterState {
             move_target: PositionM { x: 0f32, y: 0f32, direct: Direction::North },
             old_position: PositionM { x: 0f32, y: 0f32, direct: Direction::North },
             target_point: PositionM { x: 0f32, y: 0f32, direct: Direction::North },
+            lead_point: None,
             find_around_count: 0i32,
             delta_x: 0,
             delta_y: -1,

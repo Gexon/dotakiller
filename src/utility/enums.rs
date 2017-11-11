@@ -2,6 +2,7 @@
 // спс Adaman'у, за подсказки по энумам.
 
 /// Направление
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Direction {
     North = 0,
     NorthWest = 1,
@@ -33,6 +34,7 @@ pub enum EventTypeMonster {
     MessageLeaveGroup = 2, // Событие от члена стаи для ВОЖДЯ о выходе из группы. (МОНСТР -> ВОЖДЮ)
     AnswerLeavingGroup = 3, // Ответ от ВОЖДЯ стаи для члена о его исключении из группы. (ВОЖДЬ -> МОНСТР)
     LeadLeaveGroup = 4, // Событие от ВОЖДЯ всем членам стаи о его выходе из стаи (ВОЖДЬ -> ВСЕМ)
+    UpdateLeadPoint = 5, // Обновить координаты цели-ВОЖДЯ
 }
 
 

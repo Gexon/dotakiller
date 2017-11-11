@@ -17,6 +17,7 @@ pub struct PositionM {
 
 
 /// Информация о цели(Еда, Жертва, Враг, Лидер)
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ActionTarget {
     pub position: PositionM,
     pub target_type: TargetType,
@@ -44,6 +45,7 @@ impl Component for MonsterClass {}
 
 
 /// уникальный номер монстра
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct MonsterId {
     pub id: i32,
 }
@@ -52,6 +54,7 @@ impl Component for MonsterId {}
 
 
 /// информация о состоянии монстра
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct MonsterState {
     pub state: i32,
     // emo
@@ -142,6 +145,7 @@ impl Component for MonsterAttributes {}
 
 /// тут будем хранить все объекты на карте.
 // память монстра
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct MonsterMem {
     pub action_target: ActionTarget,
     pub last_eating: PositionM,
@@ -173,6 +177,7 @@ impl MonsterMem {
 
 
 /// Сосотояние монстра, для Behaviour Tree
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct _BehaviourGlobalState {
     //    Всего 2 глобальных состояния:
     //    0.  Инициализация, ошибка.

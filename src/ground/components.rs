@@ -15,6 +15,7 @@ impl Component for ClassGround {}
 
 
 /// Координаты на полигоне.
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Position {
     pub x: f32,
     pub y: f32,
@@ -51,6 +52,7 @@ impl EventsTo {
 
 
 // храним последние id
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct WorldLastId {
     pub flora_id: i32,
     pub monster_id: i32,
@@ -67,6 +69,7 @@ pub struct WorldMap {
 impl Component for WorldMap {}
 
 // куда дует ветер. 0 - это типа север(+Х)
+#[derive(Clone, Copy)]
 pub struct WindDirection {
     pub direction: Direction,
     pub start: PreciseTime,
@@ -95,6 +98,7 @@ impl Component for _Physic {
 
 
 /// Для спавна травы
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SpawnFlora {
     pub name: &'static str,
     pub x: f32,
@@ -105,6 +109,7 @@ impl Component for SpawnFlora {}
 
 
 /// Для спавна монстров
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SpawnMonster {
     pub name: &'static str,
     pub x: f32,

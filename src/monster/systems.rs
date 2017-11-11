@@ -9,7 +9,6 @@ use MONSTER_SPEED;
 use ::utility::enums::*;
 use ::ground::components::Position;
 use ::ground::components::ClassGround;
-use ::ground::components::WindDirection;
 use ::ground::components::WorldMap;
 use ::ground::components::EventsTo;
 use ::monster::components::*;
@@ -50,7 +49,7 @@ impl System for PerceptionSystem {
                     let position = _entity.get_component::< Position > ();
                     //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
                     // очищаем цель
-                    println!("PerceptionSystem - Ищем еды. Очищаем цель");
+                    //println!("PerceptionSystem - Ищем еды. Очищаем цель");
                     monster_map.action_target.target_type = TargetType::None;
                     monster_state.view_food = false;
                     'outer:
@@ -63,7 +62,7 @@ impl System for PerceptionSystem {
                                 // Проверяем растет ли дерево по даденным координатам.
                                 if !monster_state.view_food && world_map.flora.contains_key( & scan_point) {
                                     // добавляем растение в цель
-                                    println!("PerceptionSystem - Ищем еды. Добавляем растение в цель");
+                                    //println!("PerceptionSystem - Ищем еды. Добавляем растение в цель");
                                     monster_map.action_target.target_type = TargetType::Flora;
                                     monster_map.action_target.position.x = pos_x as f32;
                                     monster_map.action_target.position.y = pos_y as f32;
@@ -95,13 +94,13 @@ impl System for PerceptionSystem {
                     for monster in _monsters {
                         if _entity.id == monster.id {continue};
                         let target_pos = monster.get_component::< Position > ();
+                        let monster_id = monster.get_component::< MonsterId > ();
                         let dist: i32 = ((position.x - target_pos.x).powf(2.0)+
                             (position.y - target_pos.y).powf(2.0)).sqrt() as i32;
                         if dist < 3 {
                             // добавляем монстра в цель
                             monster_mem.action_target.target_type = TargetType::Monster;
-                            monster_mem.action_target.position.x = target_pos.x;
-                            monster_mem.action_target.position.y = target_pos.y;
+                            monster_mem.action_target.target_id = monster_id.id;
                             monster_state.view_monster = true;
                             break;
                         }
@@ -142,7 +141,7 @@ impl System for EventSystem {
             let mut monster_state = entity.get_component::<MonsterState>();
             let monster_attr = entity.get_component::<MonsterAttributes>(); //
             let monster_map = entity.get_component::<MonsterMem>();
-            let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+            //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
 
 
             // реакция на обнаружение еды.
@@ -152,7 +151,7 @@ impl System for EventSystem {
                 // если в векторе behaviour_events.event, нет события FoundFood
                 // то, добавляем его туда.
                 behaviour_event.event.push(BehaviorEventEnum::FoundFood);
-                println!("Новое событие: монстр {} обнаружил еду!", monster_id.id);
+                //println!("Новое событие: монстр {} обнаружил еду!", monster_id.id);
                 // убираем событие потери цели если видим еду.
                 behaviour_event.event.retain(|x| x != &BehaviorEventEnum::TargetLost);
             } else if
@@ -180,7 +179,7 @@ impl System for EventSystem {
                 && !behaviour_event.event.contains(&BehaviorEventEnum::BecomeHungry) {
                 behaviour_event.event.push(BehaviorEventEnum::BecomeHungry);
                 monster_state.low_food = true;
-                println!("Новое событие: монстр {} голоден!", monster_id.id);
+                //println!("Новое событие: монстр {} голоден!", monster_id.id);
                 // todo дублирующие друг друга переменные low_food и BecomeHungry
                 // todo убрать с очереди EatFull
             }
@@ -250,11 +249,11 @@ impl System for SelectorSystem {
             let mut selection_tree = entity.get_component::<SelectionTree>();
             // сумоним ветер
             let ground = data.unwrap_entity();
-            let wind = ground.get_component::<WindDirection>();
+            //let wind = ground.get_component::<WindDirection>();
             // дерево поведений собственной персоны
             let node: &mut NodeBehavior = &mut selection_tree.selector;
             // один тик,  обход дерева.
-            exec_node(node, entity, &wind);
+            exec_node(node, entity, ground);
             //let status: Status = exec_node(node, entity, &wind);
             //println!("node.status {:?}, node.cursor {}", status, node.cursor);
 
@@ -282,7 +281,7 @@ impl System for BioSystems {
         if monster_class.bios_time.to(PreciseTime::now()) > Duration::seconds(2 * MONSTER_SPEED) {
             let ground = data.unwrap_entity();
             let mut monster_attr = entity.get_component::<MonsterAttributes>();
-            let mut monster_map = entity.get_component::<MonsterMem>();
+            let mut monster_memory = entity.get_component::<MonsterMem>();
             let behaviour_state = entity.get_component::<BehaviourEvents>(); // состояние
             //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
 
@@ -294,24 +293,23 @@ impl System for BioSystems {
             }
 
             // hungry
+            // todo перенести в monster_graph
             if behaviour_state.action == BehaviorActions::Meal {
-                // найти нужную пальму
-                //let target = &mut (&mut monster_map.action_target);
-                //let target = &monster_map.action_target;
-                if monster_map.action_target.target_type == TargetType::Flora {
+                // проверяем что в цели, растение ли?
+                if monster_memory.action_target.target_type == TargetType::Flora {
                     // запоминаем место хавки
-                    monster_map.last_eating.x = monster_map.action_target.position.x;
-                    monster_map.last_eating.y = monster_map.action_target.position.y;
-                    //println!("запоминаем место хавки x{} y{}", monster_map.last_eating.x, monster_map.last_eating.y);
-                    // очередь на уменьшение массы у пальмы
+                    monster_memory.last_eating.x = monster_memory.action_target.position.x;
+                    monster_memory.last_eating.y = monster_memory.action_target.position.y;
+                    // println!("запоминаем место хавки x{} y{}", monster_map.last_eating.x, monster_map.last_eating.y);
+                    // в очередь событий добавляем поедание пальмы.
                     let mut events_to = ground.get_component::<EventsTo>();
                     events_to.events_eat_flora.push(
                         EventEatFlora {
                             value: 10,
-                            x: monster_map.action_target.position.x,
-                            y: monster_map.action_target.position.y,
+                            x: monster_memory.action_target.position.x,
+                            y: monster_memory.action_target.position.y,
                         });
-                    //println!("event.push монстр {}", monster_id.id);
+                    // println!("event.push монстр {}", monster_id.id);
                     // наполняем монстру желудок
                     // todo переписат, необходимо подтверждение от пальмы/земли что его можно откусить
                     monster_attr.hungry += 10;

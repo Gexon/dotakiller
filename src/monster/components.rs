@@ -19,6 +19,7 @@ pub struct PositionM {
 pub struct ActionTarget {
     pub position: PositionM,
     pub target_type: TargetType,
+    pub target_id: i32,
 }
 
 
@@ -156,6 +157,7 @@ impl MonsterMem {
                     direct: Direction::North,
                 },
                 target_type: TargetType::None,
+                target_id: -1i32,
             },
             last_eating: PositionM {
                 x: -1f32,

@@ -178,7 +178,7 @@ fn run_walk(entity: &Entity, ground: &Entity) -> Status {
     //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
     let delta: f32 = monster_attr.speed as f32;
     // тут заставляем монстра ходить туда-сюда, бесцельно, куда подует)
-    next_step(&mut position, delta, &wind);
+    next_step_calculate(&mut position, delta, &wind);
     behaviour_state.action = BehaviorActions::Walk;
     entity.add_component(Replication); // произошли изменения монстра.
     entity.refresh();
@@ -295,35 +295,6 @@ fn run_water_intake(_entity: &Entity) -> Status {
     Status::Success
 }
 
-// TODO: сделать как-нибудь по-человечески
-fn make_step_to(
-    position: &mut ::ground::components::Position,
-    target: ::monster::components::PositionM,
-    monster_state: &mut ::monster::components::MonsterState,
-    delta: f32,
-) {
-    // расчеты по Х
-    if position.x < target.x {
-        monster_state.old_position.x = position.x;
-
-        position.x = f32::min(position.x + delta, target.x);
-    } else if position.x > target.x {
-        monster_state.old_position.x = position.x;
-
-        position.x = f32::max(position.x - delta, target.x);
-    }
-
-    // расчеты по Y
-    if position.y < target.y {
-        monster_state.old_position.y = position.y;
-
-        position.y = f32::min(position.y + delta, target.y);
-    } else if position.y > target.y {
-        monster_state.old_position.y = position.y;
-
-        position.y = f32::max(position.y - delta, target.y);
-    }
-}
 
 /// Действие монстра "движение к цели"
 fn run_move_to_target(entity: &Entity) -> Status {
@@ -344,7 +315,7 @@ fn run_move_to_target(entity: &Entity) -> Status {
         return Status::Success;
     } else {
         // цель не достигнута, делаем шаг в сторону цели.
-        make_step_to(&mut position, monster_state.target_point, &mut monster_state, delta);
+        next_step_make(&mut position, monster_state.target_point, &mut monster_state, delta);
     }
 
     entity.add_component(Replication); // произошли изменения монстра.
@@ -367,159 +338,6 @@ fn run_check_memory_meal(entity: &Entity) -> Status {
     monster_state.target_point.y = monster_maps.last_eating.y;
     //println!("монстр {} вспомнил где ел, x{} y{}", monster_id.id, monster_maps.last_eating.x, monster_maps.last_eating.y);
     Status::Success
-}
-
-// Поиск пути
-/*
-- для поиска пути, предложить проложить путь по шаблону(прямой путь, обход слева, обход справа), если шаблон не проходим, выполнить поиск пути.
-Сначала нужно создать два списка: список узлов, которые еще не проверены (Unchecked), и список уже проверенных узлов (Checked). Каждый список включает узел расположения, предполагаемое расстояние до цели и ссылку на родительский объект (узел, который поместил данный узел в список). Изначально списки пусты.
-
-Теперь добавим начальное расположение в список непроверенных, не указывая ничего в качестве родительского объекта. Затем вводим алгоритм.
-
-    Выбираем в списке наиболее подходящий узел.
-    Если этот узел является целью, то все готово.
-    Если этот узел не является целью, добавляем его в список проверенных.
-    Для каждого узла, соседнего с данным узлом.
-        Если этот узел непроходим, игнорируем его.
-        Если этот узел уже есть в любом из списков (проверенных или непроверенных), игнорируем его.
-        В противном случае добавляем его в список непроверенных, указываем текущий узел в качестве родительского и рассчитываем длину пути до цели (достаточно просто вычислить расстояние).
-
-Когда объект достигает поля цели, можно построить путь, отследив родительские узлы вплоть до узла, у которого нет родительского элемента (это начальный узел).
-
-При загрузке большого количества запросов путей агент может либо подождать, либо, не дожидаясь выдачи путей, просто начать двигаться в нужном направлении (например, по алгоритму «Столкнуться и повернуть»).*/
-
-
-/// Расчет следующего шага монстра.
-// Вывезли наружу расчет следующего шага монстра.
-fn next_step(position: &mut Position, delta: f32, wind: &WindDirection) {
-    match wind.direction {
-        Direction::North => {
-            if position.x < (GROUND_SIZE as f32 - delta) {
-                position.x += delta;
-            }
-        }
-        Direction::NorthWest => {
-            if (position.x > position.y * 2f32) && (position.x < (GROUND_SIZE as f32 - delta)) {
-                position.x += delta;
-            }
-        }
-        Direction::West => {
-            if position.y > 0f32 + delta {
-                position.y -= delta;
-            }
-        }
-        Direction::WestSouth => {
-            if (position.y < position.x * 2f32) && (position.y > 0f32 + delta) {
-                position.y -= delta;
-            }
-        }
-        Direction::South => {
-            if position.x > 0f32 + delta {
-                position.x -= delta;
-            }
-        }
-        Direction::SouthEast => {
-            if (position.x < (position.y * 2f32)) && (position.x > 0f32 + delta) {
-                position.x -= delta;
-            }
-        }
-        Direction::East => {
-            if position.y < (GROUND_SIZE as f32 - delta) {
-                position.y += delta;
-            }
-        }
-        Direction::EastNorth => {
-            if (position.y > position.x * 2f32) && (position.y < (GROUND_SIZE as f32 - delta)) {
-                position.y += delta;
-            }
-        }
-    }
-}
-
-
-/// Расчет следующего шага по кругу монстра.
-// По кругу должен ходить.
-fn _next_step_around2(position: &mut Position, monster_state: &mut MonsterState) {
-    // алгоритм движения по кругу для клетчатого поля
-    // https://stackoverflow.com/questions/398299/looping-in-a-spiral
-    let delta_x = monster_state.delta_x;
-    let delta_y = monster_state.delta_y;
-    let mut x: i32 = position.x as i32;
-    let mut y: i32 = position.y as i32;
-    let mut dx = delta_x;
-    let mut dy = delta_y;
-
-    // середа спирали в начале координат (0.0). Вроде =)
-    if (x == y) || ((x < 0) && (x == -y)) || ((x > 0) && (x == 1 - y)) {
-        let t = dx;
-        dx = -dy;
-        dy = t;
-    };
-
-    x += dx;
-    y += dy;
-    monster_state.delta_x = dx;
-    monster_state.delta_y = dy;
-
-    if ((position.x as u32) < GROUND_SIZE)
-        && ((position.x as u32) > 0)
-        && ((position.y as u32) < GROUND_SIZE)
-        && ((position.y as u32) > 0) {
-        position.x = x as f32;
-        position.y = y as f32;
-        //println!("монстр ходит кругами: x{} y{}", position.x, position.y);
-    }
-}
-
-// По кругу должен ходить.
-fn next_step_around(position: &mut Position, delta: f32, monster_state: &mut MonsterState) {
-    //println!("монстр ходит кругами: x{} y{}",
-    //       monster_state.target_point.x,
-    //     monster_state.target_point.y);
-
-    // проверяем достижение цели
-    if (
-        (position.x as u32 == monster_state.target_point.x as u32)
-            && (position.y as u32 == monster_state.target_point.y as u32)
-    )
-        ||
-        (
-            (position.x - monster_state.target_point.x).abs() > 10f32 ||
-                (position.y - monster_state.target_point.y).abs() > 10f32
-        ) {
-        // цель достигнута, ставим новую цель:
-        // выбираем новую цель по направлению монстра.
-        // две клетки вперед и одну вправо. меняем направление монстра.
-        match monster_state.move_target.direct {
-            Direction::North | Direction::NorthWest => {
-                if (position.x as u32) < GROUND_SIZE - 4 { monster_state.target_point.x = position.x + 4f32; };
-                if (position.y as u32) > 1 { monster_state.target_point.y = position.y - 1f32; };
-                monster_state.move_target.direct = Direction::West;
-            }
-
-            Direction::West | Direction::WestSouth => {
-                if (position.y as u32) > 5 { monster_state.target_point.y = position.y - 5f32; };
-                if (position.x as u32) > 2 { monster_state.target_point.x = position.x - 2f32; };
-                monster_state.move_target.direct = Direction::South;
-            }
-
-            Direction::South | Direction::SouthEast => {
-                if (position.x as u32) > 6 { monster_state.target_point.x = position.x - 6f32; };
-                if (position.y as u32) < GROUND_SIZE - 2 { monster_state.target_point.y = position.y + 2f32; };
-                monster_state.move_target.direct = Direction::East;
-            }
-
-            Direction::East | Direction::EastNorth => {
-                if (position.y as u32) < GROUND_SIZE - 7 { monster_state.target_point.y = position.y + 7f32; };
-                if (position.x as u32) < GROUND_SIZE - 3 { monster_state.target_point.x = position.x + 3f32; };
-                monster_state.move_target.direct = Direction::North;
-            }
-        }
-        //println!("NEW target_x {}, target_y {}", monster_state.target_point.x, monster_state.target_point.y);
-    } else {
-        // цель не достигнута, делаем шаг в сторону цели.
-        make_step_to(position, monster_state.target_point, monster_state, delta);
-    }
 }
 
 
@@ -630,6 +448,200 @@ fn run_join_to_group(entity: &Entity, ground: &Entity) -> Status {
 }
 
 
+// -------------------------------------------------------------------------------------------------
+// КОНЕЦ основных функций графа мсье
+// -------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
+
+// Поиск пути
+/*
+- для поиска пути, предложить проложить путь по шаблону(прямой путь, обход слева, обход справа), если шаблон не проходим, выполнить поиск пути.
+Сначала нужно создать два списка: список узлов, которые еще не проверены (Unchecked), и список уже проверенных узлов (Checked). Каждый список включает узел расположения, предполагаемое расстояние до цели и ссылку на родительский объект (узел, который поместил данный узел в список). Изначально списки пусты.
+
+Теперь добавим начальное расположение в список непроверенных, не указывая ничего в качестве родительского объекта. Затем вводим алгоритм.
+
+    Выбираем в списке наиболее подходящий узел.
+    Если этот узел является целью, то все готово.
+    Если этот узел не является целью, добавляем его в список проверенных.
+    Для каждого узла, соседнего с данным узлом.
+        Если этот узел непроходим, игнорируем его.
+        Если этот узел уже есть в любом из списков (проверенных или непроверенных), игнорируем его.
+        В противном случае добавляем его в список непроверенных, указываем текущий узел в качестве родительского и рассчитываем длину пути до цели (достаточно просто вычислить расстояние).
+
+Когда объект достигает поля цели, можно построить путь, отследив родительские узлы вплоть до узла, у которого нет родительского элемента (это начальный узел).
+
+При загрузке большого количества запросов путей агент может либо подождать, либо, не дожидаясь выдачи путей, просто начать двигаться в нужном направлении (например, по алгоритму «Столкнуться и повернуть»).*/
+
+
+/// Расчет следующего шага монстра.
+// Вывезли наружу расчет следующего шага монстра.
+fn next_step_calculate(position: &mut Position, delta: f32, wind: &WindDirection) {
+    match wind.direction {
+        Direction::North => {
+            if position.x < (GROUND_SIZE as f32 - delta) {
+                position.x += delta;
+            }
+        }
+        Direction::NorthWest => {
+            if (position.x > position.y * 2f32) && (position.x < (GROUND_SIZE as f32 - delta)) {
+                position.x += delta;
+            }
+        }
+        Direction::West => {
+            if position.y > 0f32 + delta {
+                position.y -= delta;
+            }
+        }
+        Direction::WestSouth => {
+            if (position.y < position.x * 2f32) && (position.y > 0f32 + delta) {
+                position.y -= delta;
+            }
+        }
+        Direction::South => {
+            if position.x > 0f32 + delta {
+                position.x -= delta;
+            }
+        }
+        Direction::SouthEast => {
+            if (position.x < (position.y * 2f32)) && (position.x > 0f32 + delta) {
+                position.x -= delta;
+            }
+        }
+        Direction::East => {
+            if position.y < (GROUND_SIZE as f32 - delta) {
+                position.y += delta;
+            }
+        }
+        Direction::EastNorth => {
+            if (position.y > position.x * 2f32) && (position.y < (GROUND_SIZE as f32 - delta)) {
+                position.y += delta;
+            }
+        }
+    }
+}
+
+
+/// Двигаем монстра на один шаг дальше
+fn next_step_make(
+    position: &mut ::ground::components::Position,
+    target: ::monster::components::PositionM,
+    monster_state: &mut ::monster::components::MonsterState,
+    delta: f32,
+) {
+    // расчеты по Х
+    if position.x < target.x {
+        monster_state.old_position.x = position.x;
+
+        position.x = f32::min(position.x + delta, target.x);
+    } else if position.x > target.x {
+        monster_state.old_position.x = position.x;
+
+        position.x = f32::max(position.x - delta, target.x);
+    }
+
+    // расчеты по Y
+    if position.y < target.y {
+        monster_state.old_position.y = position.y;
+
+        position.y = f32::min(position.y + delta, target.y);
+    } else if position.y > target.y {
+        monster_state.old_position.y = position.y;
+
+        position.y = f32::max(position.y - delta, target.y);
+    }
+}
+
+
+/// Расчет следующего шага по кругу монстра.
+// По кругу должен ходить.
+fn _next_step_around2(position: &mut Position, monster_state: &mut MonsterState) {
+    // алгоритм движения по кругу для клетчатого поля
+    // https://stackoverflow.com/questions/398299/looping-in-a-spiral
+    let delta_x = monster_state.delta_x;
+    let delta_y = monster_state.delta_y;
+    let mut x: i32 = position.x as i32;
+    let mut y: i32 = position.y as i32;
+    let mut dx = delta_x;
+    let mut dy = delta_y;
+
+    // середа спирали в начале координат (0.0). Вроде =)
+    if (x == y) || ((x < 0) && (x == -y)) || ((x > 0) && (x == 1 - y)) {
+        let t = dx;
+        dx = -dy;
+        dy = t;
+    };
+
+    x += dx;
+    y += dy;
+    monster_state.delta_x = dx;
+    monster_state.delta_y = dy;
+
+    if ((position.x as u32) < GROUND_SIZE)
+        && ((position.x as u32) > 0)
+        && ((position.y as u32) < GROUND_SIZE)
+        && ((position.y as u32) > 0) {
+        position.x = x as f32;
+        position.y = y as f32;
+        //println!("монстр ходит кругами: x{} y{}", position.x, position.y);
+    }
+}
+
+// По кругу должен ходить.
+fn next_step_around(position: &mut Position, delta: f32, monster_state: &mut MonsterState) {
+    //println!("монстр ходит кругами: x{} y{}",
+    //       monster_state.target_point.x,
+    //     monster_state.target_point.y);
+
+    // проверяем достижение цели
+    if (
+        (position.x as u32 == monster_state.target_point.x as u32)
+            && (position.y as u32 == monster_state.target_point.y as u32)
+    )
+        ||
+        (
+            (position.x - monster_state.target_point.x).abs() > 10f32 ||
+                (position.y - monster_state.target_point.y).abs() > 10f32
+        ) {
+        // цель достигнута, ставим новую цель:
+        // выбираем новую цель по направлению монстра.
+        // две клетки вперед и одну вправо. меняем направление монстра.
+        match monster_state.move_target.direct {
+            Direction::North | Direction::NorthWest => {
+                if (position.x as u32) < GROUND_SIZE - 4 { monster_state.target_point.x = position.x + 4f32; };
+                if (position.y as u32) > 1 { monster_state.target_point.y = position.y - 1f32; };
+                monster_state.move_target.direct = Direction::West;
+            }
+
+            Direction::West | Direction::WestSouth => {
+                if (position.y as u32) > 5 { monster_state.target_point.y = position.y - 5f32; };
+                if (position.x as u32) > 2 { monster_state.target_point.x = position.x - 2f32; };
+                monster_state.move_target.direct = Direction::South;
+            }
+
+            Direction::South | Direction::SouthEast => {
+                if (position.x as u32) > 6 { monster_state.target_point.x = position.x - 6f32; };
+                if (position.y as u32) < GROUND_SIZE - 2 { monster_state.target_point.y = position.y + 2f32; };
+                monster_state.move_target.direct = Direction::East;
+            }
+
+            Direction::East | Direction::EastNorth => {
+                if (position.y as u32) < GROUND_SIZE - 7 { monster_state.target_point.y = position.y + 7f32; };
+                if (position.x as u32) < GROUND_SIZE - 3 { monster_state.target_point.x = position.x + 3f32; };
+                monster_state.move_target.direct = Direction::North;
+            }
+        }
+        //println!("NEW target_x {}, target_y {}", monster_state.target_point.x, monster_state.target_point.y);
+    } else {
+        // цель не достигнута, делаем шаг в сторону цели.
+        next_step_make(position, monster_state.target_point, monster_state, delta);
+    }
+}
+
+
 /// Монстр идет к другому монстру
 fn move_to_lead(entity: &Entity) -> Status {
     println!("move_to_lead - start");
@@ -654,7 +666,7 @@ fn move_to_lead(entity: &Entity) -> Status {
             return Status::Success;
         } else {
             // цель не достигнута, делаем шаг в сторону цели.
-            make_step_to(&mut position, lead_pos, &mut monster_state, delta);
+            next_step_make(&mut position, lead_pos, &mut monster_state, delta);
         }
 
         entity.add_component(Replication); // произошли изменения монстра.

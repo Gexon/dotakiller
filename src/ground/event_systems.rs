@@ -85,237 +85,27 @@ impl System for MonsterEventSystem {
         let ground = data.unwrap_entity(); // общая сущность, хранит в себе очередь событий.
         let mut events_to = ground.get_component::<EventsTo>(); // очередь событий, всех, и флора и монстры.
         // извлекаем вектор с событиями из компоненты EventsTo
-        let mut events_vec: &mut Vec<EventGroupMonster> = &mut events_to.events_group_monster;
+        let events_vec: &mut Vec<EventGroupMonster> = &mut events_to.events_group_monster;
         // чекаем события из очереди событий групп монстра.
         // оставляю общую проверку на присутствие событий в очереди, преждевременная оптимизация
         if !events_vec.is_empty() {
-            // временная переменная для характеристик монстра
-            let mut temp_event_accept: EventGroupMonster = EventGroupMonster {
-                event_type: EventTypeMonster::None,
-                id_sender: 0,
-                id_receiver: 0,
-            };
-            // временная переменная для характеристик монстра
-            let mut temp_event_leave: EventGroupMonster = EventGroupMonster {
-                event_type: EventTypeMonster::None,
-                id_sender: 0,
-                id_receiver: 0,
-            };
-            // временная переменная для характеристик монстра
-            let mut vec_event_leave_lead = vec![];
-
             // обработка запроса на вхождение в группу
-            if !events_vec.is_empty() {
-                let mut in_entry = false;
-                let mut accepted = false;
-                {
-                    // получаем ссылку на последнее событие в очереди
-                    let event: &mut EventGroupMonster = events_vec.last_mut().unwrap();
-                    // работа с запросами RequestJoinGroup
-                    // событие для ВОЖДЯ, прошение вступить в группу.
-                    if event.event_type == EventTypeMonster::RequestJoinGroup {
-                        in_entry = true;
-                        let sender = event.id_sender; // отправитель запроса
-                        let recipient = event.id_receiver; // этот краб - ВОЖДЬ, он принимает приглос.
-                        // вынимаем ВОЖДЯ
-                        for entity in &*entities {
-                            let monster_id = entity.get_component::<MonsterId>();
-                            if monster_id.id == recipient {
-                                println!("Пришел запрос от монстра {} на вступление в твою группу, уважаемый  ВОЖДЬ {}", sender, monster_id.id);
-                                let mut monster_attr = entity.get_component::<MonsterAttributes>(); // атрибуты ВОЖДЯ
-                                // а настоящий ли ВОЖДЬ или может ли монстр стать ВОЖДЕМ.
-                                if (monster_attr.in_group && monster_attr.lead) || !monster_attr.in_group {
-                                    temp_event_accept = self.add_to_group(&mut monster_attr, sender, recipient); // делаем пометки о новом члене
-                                    accepted = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-                if in_entry {
-                    // убираем из очереди событйи, для предотвращения зацикливания при отсутствии монстра на месте.
-                    events_vec.pop().unwrap();
-                    if accepted {
-                        self.send_accept_event(temp_event_accept, &mut events_vec);
-                    } else { println!("В запросе отказано"); }
-                }
-            }
-
+            self.exec_request_join_group(events_vec, EventTypeMonster::RequestJoinGroup, entities);
 
             // погнали второй трай, тут будем принимать нашим монстром-просителем ответ от ВОЖДЯ
-            if !events_vec.is_empty() {
-                let mut in_entry = false;
-                {
-                    // получаем ссылку на последнее событие в очереди
-                    let event: &mut EventGroupMonster = events_vec.last_mut().unwrap();
-                    // работа с событием AnswerAcceptingGroup
-                    // событие для просителя, меня приняли в группу.
-                    if event.event_type == EventTypeMonster::AnswerAcceptingGroup {
-                        in_entry = true;
-                        let sender = event.id_sender; // отправитель запроса ВОЖДЬ
-                        let recipient = event.id_receiver; // этот краб, новичек
-                        // вынимаем получателя-новичка
-                        for entity in &*entities {
-                            let monster_id = entity.get_component::<MonsterId>();
-                            if monster_id.id == recipient {
-                                println!("Пришел ответ от ВОЖДЯ {} на вступление монстра {} в группу", sender, monster_id.id);
-                                let mut monster_attr = entity.get_component::<MonsterAttributes>();
-                                self.accepting_group(&mut monster_attr, sender);
-                                break;
-                            }
-                        }
-                    }
-                }
-                if in_entry {
-                    // убираем из очереди событйи, для предотвращения зацикливания при отсутствии монстра на месте.
-                    events_vec.pop().unwrap();
-                }
-            }
-
+            self.exec_answer_accepting_group(events_vec, EventTypeMonster::AnswerAcceptingGroup, entities);
 
             // сообщение о выходе члена из стаи
-            if !events_vec.is_empty() {
-                let mut in_entry = false;
-                {
-                    // получаем ссылку на последнее событие в очереди
-                    let event: &mut EventGroupMonster = events_vec.last_mut().unwrap();
-                    // работа с запросами MessageLeaveGroup
-                    // событие для ВОЖДЯ, извещение о выходе из этой унылой группы
-                    if event.event_type == EventTypeMonster::MessageLeaveGroup {
-                        in_entry = true;
-                        let sender = event.id_sender; // отправитель запроса
-                        let recipient = event.id_receiver; // этот краб - ВОЖДЬ, он принимает извещение.
-                        // вынимаем ВОЖДЯ
-                        for entity in &*entities {
-                            let monster_id = entity.get_component::<MonsterId>();
-                            if monster_id.id == recipient {
-                                println!("Пришело смс. Монстр {} ливает из группы, хладнокровный ВОЖДЬ", monster_id.id);
-                                let mut monster_attr = entity.get_component::<MonsterAttributes>(); // атрибуты ВОЖДЯ
-                                temp_event_leave = self.leave_in_group(&mut monster_attr, sender, recipient); // выпиливаем монстра с группы
-                                break;
-                            }
-                        }
-                    }
-                }
-                if in_entry {
-                    // убираем из очереди событйи, для предотвращения зацикливания при отсутствии монстра на месте.
-                    events_vec.pop().unwrap();
-                    self.send_leave_event(temp_event_leave, &mut events_vec);
-                }
-            }
-
+            self.exec_message_leave_group(events_vec, EventTypeMonster::MessageLeaveGroup, entities);
 
             // ответ члену о исключении из стаи
-            if !events_vec.is_empty() {
-                let mut in_entry = false;
-                {
-                    // получаем ссылку на последнее событие в очереди
-                    let event: &mut EventGroupMonster = events_vec.last_mut().unwrap();
-                    // работа с запросами AnswerLeavingGroup
-                    // событие для члена, извещение о исключении из группы
-                    if event.event_type == EventTypeMonster::AnswerLeavingGroup {
-                        in_entry = true;
-                        let sender = event.id_sender; // отправитель ВОЖДЬ
-                        let recipient = event.id_receiver; // этот краб - член, он принимает извещение.
-                        // вынимаем члена
-                        for entity in &*entities {
-                            let monster_id = entity.get_component::<MonsterId>();
-                            if monster_id.id == recipient {
-                                println!("Пришело смс от ВОЖДЯ {}: монстр {} выпилен из группы", sender, monster_id.id);
-                                let mut monster_attr = entity.get_component::<MonsterAttributes>(); // атрибуты ВОЖДЯ
-                                self.leaving_group(&mut monster_attr); // выпиливаем монстра с группы
-                                break;
-                            }
-                        }
-                    }
-                }
-                if in_entry {
-                    // убираем из очереди событйи, для предотвращения зацикливания при отсутствии монстра на месте.
-                    events_vec.pop().unwrap();
-                }
-            }
+            self.exec_answer_leaving_group(events_vec, EventTypeMonster::AnswerLeavingGroup, entities);
 
             // ВОЖДЬ покидает стаю
-            if !events_vec.is_empty() {
-                let mut in_entry = false;
-                {
-                    // получаем ссылку на последнее событие в очереди
-                    let event: &mut EventGroupMonster = events_vec.last_mut().unwrap();
-
-                    // работа с запросами LeadLeaveGroup
-                    // событие для ВСЕХ, о выходе ВОЖДЯ из группы
-                    if event.event_type == EventTypeMonster::LeadLeaveGroup {
-                        in_entry = true;
-                        let sender = event.id_sender; // отправитель ВОЖДЬ
-                        // вынимаем ВОЖДЯ
-                        for entity in &*entities {
-                            let monster_id = entity.get_component::<MonsterId>();
-                            if monster_id.id == sender {
-                                println!("ВОЖДЬ {} покинул группу", sender);
-                                let mut monster_attr = entity.get_component::<MonsterAttributes>(); // атрибуты ВОЖДЯ
-                                vec_event_leave_lead = self.leave_lead_in_group(&mut monster_attr, sender); // выпиливаем монстра с группы
-                                break;
-                            }
-                        }
-                    }
-                }
-                if in_entry {
-                    // убираем из очереди событйи, для предотвращения зацикливания при отсутствии монстра на месте.
-                    events_vec.pop().unwrap();
-                    self.send_leave_lead_event(vec_event_leave_lead, &mut events_vec);
-                }
-            }
+            self.exec_lead_leave_group(events_vec, EventTypeMonster::LeadLeaveGroup, entities);
 
             // Обновление координат ВОЖДЯ у членов
-            if !events_vec.is_empty() {
-                let mut in_entry = false;
-                {
-                    // получаем ссылку на последнее событие в очереди
-                    let event: &mut EventGroupMonster = events_vec.last_mut().unwrap();
-
-                    // работа с запросами UpdateLeadPoint
-                    // событие обновления координат ВОЖДя у членов
-                    if event.event_type == EventTypeMonster::UpdateLeadPoint {
-                        in_entry = true;
-                        let sender = event.id_sender; // отправитель член группы
-                        let recipient = event.id_receiver; // принимает ВОЖДЬ
-                        let mut target_point: Option<PositionM> = None;
-
-                        // вынимаем координаты ВОЖДЯ
-                        for entity in &*entities {
-                            let monster_id = entity.get_component::<MonsterId>();
-                            if monster_id.id == recipient {
-                                let position = entity.get_component::<Position>();
-                                target_point = Some(PositionM{
-                                    x: position.x,
-                                    y: position.y,
-                                    direct: Direction::North,
-                                });
-                                break;
-                            }
-                        } // for entity
-
-                        // передаем координаты ВОЖДЯ монстру
-                        for entity in &*entities {
-                            let monster_id = entity.get_component::<MonsterId>();
-                            if monster_id.id == sender {
-                                let mut monster_state = entity.get_component::<MonsterState>(); // атрибуты/характеристики
-                                monster_state.lead_point = target_point;
-                                println!("Обновление координат ВОЖДЯ {} у монстра {}", recipient, sender, );
-                                break;
-                            }
-                        } // for entity
-                    }
-                }
-                if in_entry {
-                    // убираем из очереди событйи, для предотвращения зацикливания при отсутствии монстра на месте.
-                    events_vec.pop().unwrap();
-                    //self.send_leave_lead_event(vec_event_leave_lead, &mut events_vec);
-                }
-            }
-
-            // конец обновления координат ВОЖДЯ у членов -------------------------------
+            self.exec_update_lead_point(events_vec, EventTypeMonster::UpdateLeadPoint, entities);
         }
     }
 }
@@ -454,4 +244,262 @@ impl MonsterEventSystem {
             println!("send_leave_lead_event -> Что-то пошло не так, пустые события!");
         }
     }
+
+    // Обработка события: ВОЖДЬ принимает запрос на вступление в группу
+    fn exec_request_join_group(&self,
+                               events_vec: &mut Vec<EventGroupMonster>,
+                               event_type: EventTypeMonster,
+                               entities: &mut Vec<&mut Entity>,
+    ) {
+        // временная переменная для характеристик монстра
+        let mut temp_event_accept: EventGroupMonster = EventGroupMonster {
+            event_type: EventTypeMonster::None,
+            id_sender: 0,
+            id_receiver: 0,
+        };
+
+        if !events_vec.is_empty() {
+            let mut in_entry = false;
+            let mut accepted = false;
+            {
+                // получаем ссылку на последнее событие в очереди
+                let event: &mut EventGroupMonster = events_vec.last_mut().unwrap();
+                // работа с запросами
+                if event.event_type == event_type {
+                    in_entry = true;
+                    let sender = event.id_sender; // отправитель запроса
+                    let recipient = event.id_receiver; // этот краб
+                    // вынимаем получателя
+                    for entity in &*entities {
+                        let monster_id = entity.get_component::<MonsterId>();
+                        if monster_id.id == recipient {
+                            println!("Пришел запрос от монстра {} для монстра {}", sender, monster_id.id);
+                            let mut monster_attr = entity.get_component::<MonsterAttributes>(); // атрибуты монстра
+                            // а настоящий ли ВОЖДЬ или может ли монстр стать ВОЖДЕМ.
+                            if (monster_attr.in_group && monster_attr.lead) || !monster_attr.in_group {
+                                temp_event_accept = self.add_to_group(&mut monster_attr, sender, recipient); // делаем пометки о новом члене
+                                accepted = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            if in_entry {
+                // убираем из очереди событйи, для предотвращения зацикливания при отсутствии монстра на месте.
+                events_vec.pop().unwrap();
+                if accepted {
+                    self.send_accept_event(temp_event_accept, events_vec);
+                } else { println!("В запросе отказано"); }
+            }
+        }
+    }
+
+    // Обработка события: Монстра приняли в группу.
+    fn exec_answer_accepting_group(&self,
+                                   events_vec: &mut Vec<EventGroupMonster>,
+                                   event_type: EventTypeMonster,
+                                   entities: &mut Vec<&mut Entity>,
+    ) {
+        if !events_vec.is_empty() {
+            let mut in_entry = false;
+            {
+                // получаем ссылку на последнее событие в очереди
+                let event: &mut EventGroupMonster = events_vec.last_mut().unwrap();
+                // работа с событием AnswerAcceptingGroup
+                // событие для просителя, меня приняли в группу.
+                if event.event_type == event_type {
+                    in_entry = true;
+                    let sender = event.id_sender; // отправитель запроса ВОЖДЬ
+                    let recipient = event.id_receiver; // этот краб, новичек
+                    // вынимаем получателя-новичка
+                    for entity in &*entities {
+                        let monster_id = entity.get_component::<MonsterId>();
+                        if monster_id.id == recipient {
+                            println!("Пришел ответ от ВОЖДЯ {} на вступление монстра {} в группу", sender, monster_id.id);
+                            let mut monster_attr = entity.get_component::<MonsterAttributes>();
+                            self.accepting_group(&mut monster_attr, sender);
+                            break;
+                        }
+                    }
+                }
+            }
+            if in_entry {
+                // убираем из очереди событйи, для предотвращения зацикливания при отсутствии монстра на месте.
+                events_vec.pop().unwrap();
+            }
+        }
+    }
+
+    // Обработка события: сообщение о выходе монстра из группы для ВОЖДЯ
+    fn exec_message_leave_group(&self,
+                                events_vec: &mut Vec<EventGroupMonster>,
+                                event_type: EventTypeMonster,
+                                entities: &mut Vec<&mut Entity>,
+    ) {
+        // временная переменная для характеристик монстра
+        let mut temp_event_leave: EventGroupMonster = EventGroupMonster {
+            event_type: EventTypeMonster::None,
+            id_sender: 0,
+            id_receiver: 0,
+        };
+
+        if !events_vec.is_empty() {
+            let mut in_entry = false;
+            {
+                // получаем ссылку на последнее событие в очереди
+                let event: &mut EventGroupMonster = events_vec.last_mut().unwrap();
+                // работа с запросами MessageLeaveGroup
+                // событие для ВОЖДЯ, извещение о выходе из этой унылой группы
+                if event.event_type == event_type {
+                    in_entry = true;
+                    let sender = event.id_sender; // отправитель запроса
+                    let recipient = event.id_receiver; // этот краб - ВОЖДЬ, он принимает извещение.
+                    // вынимаем ВОЖДЯ
+                    for entity in &*entities {
+                        let monster_id = entity.get_component::<MonsterId>();
+                        if monster_id.id == recipient {
+                            println!("Пришело смс. Монстр {} ливает из группы", monster_id.id);
+                            let mut monster_attr = entity.get_component::<MonsterAttributes>(); // атрибуты ВОЖДЯ
+                            temp_event_leave = self.leave_in_group(&mut monster_attr, sender, recipient); // выпиливаем монстра с группы
+                            break;
+                        }
+                    }
+                }
+            }
+            if in_entry {
+                // убираем из очереди событйи, для предотвращения зацикливания при отсутствии монстра на месте.
+                events_vec.pop().unwrap();
+                self.send_leave_event(temp_event_leave, events_vec);
+            }
+        }
+    }
+
+    fn exec_answer_leaving_group(&self,
+                                 events_vec: &mut Vec<EventGroupMonster>,
+                                 event_type: EventTypeMonster,
+                                 entities: &mut Vec<&mut Entity>,
+    ) {
+        if !events_vec.is_empty() {
+            let mut in_entry = false;
+            {
+                // получаем ссылку на последнее событие в очереди
+                let event: &mut EventGroupMonster = events_vec.last_mut().unwrap();
+                // работа с запросами AnswerLeavingGroup
+                // событие для члена, извещение о исключении из группы
+                if event.event_type == event_type {
+                    in_entry = true;
+                    let sender = event.id_sender; // отправитель ВОЖДЬ
+                    let recipient = event.id_receiver; // этот краб - член, он принимает извещение.
+                    // вынимаем члена
+                    for entity in &*entities {
+                        let monster_id = entity.get_component::<MonsterId>();
+                        if monster_id.id == recipient {
+                            println!("Пришело смс от ВОЖДЯ {}: монстр {} выпилен из группы", sender, monster_id.id);
+                            let mut monster_attr = entity.get_component::<MonsterAttributes>(); // атрибуты ВОЖДЯ
+                            self.leaving_group(&mut monster_attr); // выпиливаем монстра с группы
+                            break;
+                        }
+                    }
+                }
+            }
+            if in_entry {
+                // убираем из очереди событйи, для предотвращения зацикливания при отсутствии монстра на месте.
+                events_vec.pop().unwrap();
+            }
+        }
+    }
+
+    fn exec_lead_leave_group(&self,
+                             events_vec: &mut Vec<EventGroupMonster>,
+                             event_type: EventTypeMonster,
+                             entities: &mut Vec<&mut Entity>,
+    ) {
+        // временная переменная для характеристик монстра
+        let mut vec_event_leave_lead = vec![];
+
+        if !events_vec.is_empty() {
+            let mut in_entry = false;
+            {
+                // получаем ссылку на последнее событие в очереди
+                let event: &mut EventGroupMonster = events_vec.last_mut().unwrap();
+
+                // работа с запросами LeadLeaveGroup
+                // событие для ВСЕХ, о выходе ВОЖДЯ из группы
+                if event.event_type == event_type {
+                    in_entry = true;
+                    let sender = event.id_sender; // отправитель ВОЖДЬ
+                    // вынимаем ВОЖДЯ
+                    for entity in &*entities {
+                        let monster_id = entity.get_component::<MonsterId>();
+                        if monster_id.id == sender {
+                            println!("ВОЖДЬ {} покинул группу", sender);
+                            let mut monster_attr = entity.get_component::<MonsterAttributes>(); // атрибуты ВОЖДЯ
+                            vec_event_leave_lead = self.leave_lead_in_group(&mut monster_attr, sender); // выпиливаем монстра с группы
+                            break;
+                        }
+                    }
+                }
+            }
+            if in_entry {
+                // убираем из очереди событйи, для предотвращения зацикливания при отсутствии монстра на месте.
+                events_vec.pop().unwrap();
+                self.send_leave_lead_event(vec_event_leave_lead, events_vec);
+            }
+        }
+    }
+
+    // Обработка события: Обновление координат ВОЖДЯ у членов
+    fn exec_update_lead_point(&self,
+                              events_vec: &mut Vec<EventGroupMonster>,
+                              event_type: EventTypeMonster,
+                              entities: &mut Vec<&mut Entity>, ) {
+        if !events_vec.is_empty() {
+            let mut in_entry = false;
+            {
+                // получаем ссылку на последнее событие в очереди
+                let event: &mut EventGroupMonster = events_vec.last_mut().unwrap();
+
+                // работа с запросами UpdateLeadPoint
+                // событие обновления координат ВОЖДя у членов
+                if event.event_type == event_type {
+                    in_entry = true;
+                    let sender = event.id_sender; // отправитель член группы
+                    let recipient = event.id_receiver; // принимает ВОЖДЬ
+                    let mut target_point: Option<PositionM> = None;
+
+                    // вынимаем координаты ВОЖДЯ
+                    for entity in &*entities {
+                        let monster_id = entity.get_component::<MonsterId>();
+                        if monster_id.id == recipient {
+                            let position = entity.get_component::<Position>();
+                            target_point = Some(PositionM {
+                                x: position.x,
+                                y: position.y,
+                                direct: Direction::North,
+                            });
+                            break;
+                        }
+                    } // for entity
+
+                    // передаем координаты ВОЖДЯ монстру
+                    for entity in &*entities {
+                        let monster_id = entity.get_component::<MonsterId>();
+                        if monster_id.id == sender {
+                            let mut monster_state = entity.get_component::<MonsterState>(); // атрибуты/характеристики
+                            monster_state.lead_point = target_point;
+                            println!("Обновление координат ВОЖДЯ {} у монстра {}", recipient, sender, );
+                            break;
+                        }
+                    } // for entity
+                }
+            }
+            if in_entry {
+                // убираем из очереди событйи, для предотвращения зацикливания при отсутствии монстра на месте.
+                events_vec.pop().unwrap();
+            }
+        }
+    }
+    //----------------------------------------------------------------------------------------------
 }
+

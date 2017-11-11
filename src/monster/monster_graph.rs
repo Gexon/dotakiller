@@ -182,7 +182,7 @@ fn run_walk(entity: &Entity, ground: &Entity) -> Status {
     behaviour_state.action = BehaviorActions::Walk;
     entity.add_component(Replication); // произошли изменения монстра.
     entity.refresh();
-    println!("Монстр гуляет", );
+    //println!("Монстр гуляет", );
     Status::Success
 }
 
@@ -207,7 +207,7 @@ fn run_check_hungry(entity: &Entity) -> Status {
         entity.refresh();
         return Status::Success;
     }
-    println!("монстр сыт");
+    //println!("монстр сыт");
     Status::Failure
 }
 
@@ -346,13 +346,13 @@ fn run_check_in_group(entity: &Entity, ground: &Entity) -> Status {
     // MonsterAttributes
     let monster_attr = entity.get_component::<MonsterAttributes>(); // атрибуты/характеристики
     let mut behaviour_event = entity.get_component::<BehaviourEvents>(); // события
-    let monster_state = entity.get_component::<MonsterState>(); // атрибуты/характеристики
+    let mut monster_state = entity.get_component::<MonsterState>(); // атрибуты/характеристики
     let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
     if monster_attr.in_group {
         if !monster_attr.lead {
-            println!("Монстр {} в группе, ВОЖДЬ {}", monster_id.id, monster_attr.id_lead);
+            //println!("Монстр {} в группе, ВОЖДЬ {}", monster_id.id, monster_attr.id_lead);
             // добавляем в очередь событий запрос на обновление координат ВОЖДЯ
-            println!("монстр {} обновляет координаты ВОЖДЯ", monster_id.id, );
+            //println!("монстр {} обновляет координаты ВОЖДЯ", monster_id.id, );
             let mut events_to = ground.get_component::<EventsTo>();
             events_to.events_group_monster.push(
                 EventGroupMonster {
@@ -362,15 +362,16 @@ fn run_check_in_group(entity: &Entity, ground: &Entity) -> Status {
                 });
             // идем за вождем
             if monster_state.lead_point.is_some() {
-                move_to_lead(entity);
-            }
+                let mut position = entity.get_component::<Position>();
+                move_to_lead(entity, &mut position, &mut monster_state, &monster_id, monster_attr.speed as f32);
+            } else {println!("monster_state.lead_point - Пусто")}
             /*
             if let Some(ref _x) = monster_state.lead_point {
                 // use _x
             }
             */
         } else {
-            println!("Монстр {} ВОЖДЬ", monster_id.id);
+            //println!("Монстр {} ВОЖДЬ", monster_id.id);
         }
 
         return Status::Success;
@@ -643,21 +644,14 @@ fn next_step_around(position: &mut Position, delta: f32, monster_state: &mut Mon
 
 
 /// Монстр идет к другому монстру
-fn move_to_lead(entity: &Entity) -> Status {
-    println!("move_to_lead - start");
-    let monster_attr = entity.get_component::<MonsterAttributes>(); // атрибуты/характеристики
-    println!("move_to_lead - monster_state");
-    let mut monster_state = entity.get_component::<MonsterState>(); // атрибуты/характеристики
-    println!("move_to_lead - position");
-    let mut position = entity.get_component::<Position>();
-    let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+fn move_to_lead(entity: &Entity,
+                mut position: &mut Position,
+                mut monster_state: &mut MonsterState,
+                monster_id: &MonsterId,
+                speed: f32) -> Status {
     println!("Монстр {} идет к ВОЖДЮ", monster_id.id);
-    let delta = monster_attr.speed as f32;
-    // let x_tpoint = monster_state.target_point.x;
-    // let y_tpoint = monster_state.target_point.y;
-    // println!("монстр {} идет к цели: x{} y{}", monster_id.id, x_tpoint, y_tpoint, );
+    let delta = speed;
     // проверяем достижение цели
-
     if let Some(lead_pos) = monster_state.lead_point {
         if (position.x as u32, position.y as u32) == (lead_pos.x as u32, lead_pos.y as u32) {
             // цель достигнута,

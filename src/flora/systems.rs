@@ -5,7 +5,6 @@ use time::{PreciseTime, Duration};
 
 use FLORA_SPEED;
 
-//use ::utility::map::Point;
 use ::utility::enums::Direction;
 use ::ground::components::*;
 use ::flora::components::*;

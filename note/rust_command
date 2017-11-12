@@ -33,3 +33,8 @@ rustup show
 rustup default nightly
 rustup default nightly nightly-x86_64-unknown-linux-gnu
 rustup default nightly-2017-11-02-x86_64-unknown-linux-gnu
+
+//
+Igor Shaposhnik@Gordon-F
+cargo fmt
+CARGO_INCREMENTAL=1 cargo build

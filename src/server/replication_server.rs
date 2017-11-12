@@ -1,13 +1,12 @@
 // A tiny async echo server with tokio-core
 // bredov - автор кода) https://www.liveedu.tv
 
-
-
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use std::sync::{Arc, Mutex};
 use std::str::{self};
 use std::net::SocketAddr;
+use time::PreciseTime;
 
 use futures::{self, future, Future, Sink};
 use futures::stream::Stream;
@@ -65,7 +64,7 @@ impl ReplicationServer {
 
                 connections.lock().unwrap().insert(addr, tx);
                 connections_info.lock().unwrap()
-                    .insert(addr, Connect { is_new: true, token: 0, name: String::new() });
+                    .insert(addr, Connect { is_new: true, token: 0, name: String::new(), primary_replication_time: PreciseTime::now(), });
 
                 // Определяем, что мы делаем для активного/текущего ввода/вывода.
                 // То есть, читаем кучу строк из сокета и обрабатываем их

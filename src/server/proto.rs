@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use std::net::SocketAddr;
 use std::str::{self, FromStr};
+use time::PreciseTime;
 
 use futures::sync::oneshot::Sender;
 use futures::sync::mpsc;
@@ -19,6 +20,7 @@ pub struct Connect {
     pub is_new: bool,
     pub token: i64,
     pub name: String,
+    pub primary_replication_time: PreciseTime,
 }
 
 // незнаю для чего)

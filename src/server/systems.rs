@@ -1,7 +1,7 @@
 // тут система от ECS, по репликации мира клиентам.
 
 use tinyecs::*;
-
+use time::{PreciseTime, Duration};
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -11,6 +11,7 @@ use futures::sync::mpsc;
 
 use ::server::proto::*;
 
+use GROUND_SPEED;
 
 use ::server::components::ReplicationServerClass;
 use ::ground::components::*;
@@ -43,12 +44,15 @@ impl System for ReplicationServerSystem {
     // Вынимаем аспекты макросом, т.к. там безумие в коде.
     impl_process!(self, _entity, | _replication_server_class: ReplicationServerClass | with (_floras, _monsters) => {
         // _replication_server_class - это компонента из _entity типа ReplicationServerClass
+        // отсрочить первичную репликацию
         // Репликация растений ------------------------
+        let mut is_primary_replication: bool = false;
         for flora in _floras {
             self.replication(|tx, _addr, conn| {
                 // Выполняем первичную репликацию, если клиент новый.
-                if conn.is_new {
+                if conn.is_new && conn.primary_replication_time.to(PreciseTime::now()) > Duration::seconds(GROUND_SPEED) {
                     //println!("_floras {}", _floras.len());
+                    is_primary_replication = true;
                     let id_herb = flora.get_component::<HerbId>();
                     let class = flora.get_component::<Name>();
                     let position = flora.get_component::<Position>();
@@ -78,7 +82,7 @@ impl System for ReplicationServerSystem {
         for monster in _monsters {
             self.replication(|tx, _addr, conn| {
                 // Выполняем первичную репликацию, если клиент новый.
-                if conn.is_new {
+                if conn.is_new && is_primary_replication{
                     let id_monstr = monster.get_component::< MonsterId > ();
                     let class = monster.get_component::< Name > ();
                     let state = monster.get_component::< MonsterState > ();
@@ -103,7 +107,8 @@ impl System for ReplicationServerSystem {
         } // -------- Репликация монстров
 
         self.replication(|_tx, _addr, conn| {
-            conn.is_new = false; // снимаем флаг новичка.
+            // снимаем флаг новичка.
+            if is_primary_replication {conn.is_new = false;}
         });
     });
 }

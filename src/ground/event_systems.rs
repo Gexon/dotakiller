@@ -488,7 +488,7 @@ impl MonsterEventSystem {
                         if monster_id.id == sender {
                             let mut monster_state = entity.get_component::<MonsterState>(); // атрибуты/характеристики
                             monster_state.lead_point = target_point;
-                            println!("Обновление координат ВОЖДЯ {} у монстра {}", recipient, sender, );
+                            //println!("Обновление координат ВОЖДЯ {} у монстра {}", recipient, sender, );
                             break;
                         }
                     } // for entity

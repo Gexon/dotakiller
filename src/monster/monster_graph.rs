@@ -175,14 +175,14 @@ fn run_walk(entity: &Entity, ground: &Entity) -> Status {
     let monster_attr = entity.get_component::<MonsterAttributes>(); // атрибуты/характеристики
     let mut behaviour_state = entity.get_component::<BehaviourEvents>(); // состояние
     let mut position = entity.get_component::<Position>();
-    //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+    let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
     let delta: f32 = monster_attr.speed as f32;
     // тут заставляем монстра ходить туда-сюда, бесцельно, куда подует)
     next_step_calculate(&mut position, delta, &wind);
     behaviour_state.action = BehaviorActions::Walk;
     entity.add_component(Replication); // произошли изменения монстра.
     entity.refresh();
-    //println!("Монстр гуляет", );
+    println!("Монстр {} гуляет", monster_id.id);
     Status::Success
 }
 
@@ -190,7 +190,7 @@ fn run_walk(entity: &Entity, ground: &Entity) -> Status {
 fn run_check_hungry(entity: &Entity) -> Status {
     let mut behaviour_event = entity.get_component::<BehaviourEvents>(); // события
     let mut state = entity.get_component::<MonsterState>(); // состояние монстра
-    //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+    let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
     //println!("монстр {} проверяет голод", monster_id.id);
 
     //
@@ -201,7 +201,7 @@ fn run_check_hungry(entity: &Entity) -> Status {
             //println!("Создаем монстру событие NeedFood");
             behaviour_event.event.push(BehaviorEventEnum::NeedFood);
         }
-        println!("монстр голоден");
+        println!("монстр {} голоден", monster_id.id);
         state.emo_state = 1;
         entity.add_component(Replication); // произошли изменения монстра.
         entity.refresh();
@@ -217,12 +217,12 @@ fn run_find_food(entity: &Entity) -> Status {
     let mut monster_state = entity.get_component::<MonsterState>();
     let mut behaviour_event = entity.get_component::<BehaviourEvents>(); // события
     let mut position = entity.get_component::<Position>();
-    let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
+    //let monster_id = entity.get_component::<MonsterId>(); // удалить. для отладки
 
     // если мы долго кружим
     if monster_state.find_around_count > 8 {
         monster_state.find_around_count = 0;
-        println!("Долго ищем еду, прекратить поиски");
+        //println!("Долго ищем еду, прекратить поиски");
         if behaviour_event.event.contains(&BehaviorEventEnum::NeedFood) {
             //println!("Выпиливаем монстру событие NeedFood");
             behaviour_event.event.retain(|x| x != &BehaviorEventEnum::NeedFood);
@@ -235,12 +235,12 @@ fn run_find_food(entity: &Entity) -> Status {
     if behaviour_event.event.contains(&BehaviorEventEnum::FoundFood) {
         // есть событие обнаружена еда, убираем событие из списка событий.
         behaviour_event.event.retain(|x| x != &BehaviorEventEnum::FoundFood);
-        println!("Монстр {} вижу пальму", monster_id.id);
+        //println!("Монстр {} вижу пальму", monster_id.id);
         monster_attr.speed = 1;
         return Status::Success;
     }
 
-    println!("Монстр {} ищет че бы поесть", monster_id.id);
+    //println!("Монстр {} ищет че бы поесть", monster_id.id);
     // поиск пищи. ходим по окружности
     if monster_attr.speed == 1 { monster_attr.speed = 2 };
     next_step_around(&mut position, monster_attr.speed as f32, &mut monster_state);
@@ -275,7 +275,7 @@ fn run_meal(entity: &Entity) -> Status {
         entity.refresh();
         return Status::Success;
     } else if behaviour_event.event.contains(&BehaviorEventEnum::TargetLost) {
-        println!("монстр {} потерял цель", monster_id.id);
+        //println!("монстр {} потерял цель", monster_id.id);
         behaviour_event.event.retain(|x| x != &BehaviorEventEnum::TargetLost);
         //println!("Выпиливаем монстру событие NeedFood");
         behaviour_event.event.retain(|x| x != &BehaviorEventEnum::NeedFood); // убираем чтоб не возникло ошибки сканирования.
@@ -284,7 +284,7 @@ fn run_meal(entity: &Entity) -> Status {
 
     // пальму съесть
     behaviour_event.action = BehaviorActions::Meal;
-    println!("монстр {} ест", monster_id.id);
+    //println!("монстр {} ест", monster_id.id);
     Status::Running
 }
 
@@ -363,7 +363,7 @@ fn run_check_in_group(entity: &Entity, ground: &Entity) -> Status {
             // идем за вождем
             if monster_state.lead_point.is_some() {
                 let mut position = entity.get_component::<Position>();
-                move_to_lead(entity, &mut position, &mut monster_state, &monster_id, monster_attr.speed as f32);
+                move_to_lead(entity, &mut position, &mut monster_state, &monster_id, &monster_attr);
             } else {println!("monster_state.lead_point - Пусто")}
             /*
             if let Some(ref _x) = monster_state.lead_point {
@@ -378,7 +378,7 @@ fn run_check_in_group(entity: &Entity, ground: &Entity) -> Status {
     }
     // NeedGroup
     if !behaviour_event.event.contains(&BehaviorEventEnum::NeedGroup) {
-        println!("Создаем монстру событие NeedGroup");
+        //println!("Создаем монстру событие NeedGroup");
         behaviour_event.event.push(BehaviorEventEnum::NeedGroup);
     }
     println!("Монстр не в группе");
@@ -401,7 +401,7 @@ fn run_find_monsters(entity: &Entity) -> Status {
         println!("Монстр {} долго кружит в поисках друзей", monster_id.id);
         // Выпиливаем NeedGroup, чтоб не сканировало
         if behaviour_event.event.contains(&BehaviorEventEnum::NeedGroup) {
-            println!("Выпиливаем монстру событие NeedGroup");
+            //println!("Выпиливаем монстру событие NeedGroup");
             behaviour_event.event.retain(|x| x != &BehaviorEventEnum::NeedGroup);
             behaviour_event.event.retain(|x| x != &BehaviorEventEnum::TargetLost);
         }
@@ -415,7 +415,7 @@ fn run_find_monsters(entity: &Entity) -> Status {
         // есть событие обнаружен монстр, убираем событие из списка событий.
         behaviour_event.event.retain(|x| x != &BehaviorEventEnum::FoundMonster);
         println!("Монстр {} видит коллегу", monster_id.id);
-        println!("Выпиливаем монстру событие NeedGroup");
+        //println!("Выпиливаем монстру событие NeedGroup");
         behaviour_event.event.retain(|x| x != &BehaviorEventEnum::NeedGroup);
         monster_attr.speed = 1;
         return Status::Success;
@@ -648,9 +648,9 @@ fn move_to_lead(entity: &Entity,
                 mut position: &mut Position,
                 mut monster_state: &mut MonsterState,
                 monster_id: &MonsterId,
-                speed: f32) -> Status {
-    println!("Монстр {} идет к ВОЖДЮ", monster_id.id);
-    let delta = speed;
+                monster_attr: &MonsterAttributes) -> Status {
+    println!("Монстр {} идет к ВОЖДЮ {}", monster_id.id, monster_attr.id_lead);
+    let delta = monster_attr.speed as f32;
     // проверяем достижение цели
     if let Some(lead_pos) = monster_state.lead_point {
         if (position.x as u32, position.y as u32) == (lead_pos.x as u32, lead_pos.y as u32) {

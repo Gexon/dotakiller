@@ -111,6 +111,7 @@ impl System for PlantGrowthSystem {
         if state.growth_time.to(PreciseTime::now()) > Duration::seconds(FLORA_SPEED) {
             if state.state < 10 {
                 state.state += 1;
+                state.mass += 10;
                 entity.add_component(Replication); // требуется репликация.
                 entity.refresh();
             }

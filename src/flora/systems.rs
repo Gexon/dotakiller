@@ -76,14 +76,14 @@ impl System for PlantReproductionSystem {
                         //13
                         // проверяем, не пора ли cactusu в валхаллу
                         entity.add_component(Dead); // пальме пора умереть.
-                        entity.remove_component::<Reproduction>(); // выключаем размножение.
+                        if entity.has_component::<Reproduction>() {entity.remove_component::<Reproduction>();}; // выключаем размножение.
                         entity.refresh();
                     }
                 } else if state.dead > 6 {
                     //13
                     // проверяем, не пора ли пальме в валхаллу
                     entity.add_component(Dead); // пальме пора умереть.
-                    entity.remove_component::<Reproduction>(); // выключаем размножение.
+                    if entity.has_component::<Reproduction>() {entity.remove_component::<Reproduction>();}; // выключаем размножение.
                     entity.refresh();
                 }
                 // фиксируем текущее время
@@ -118,7 +118,7 @@ impl System for PlantGrowthSystem {
             // фиксируем таймер для размножения
             if state.state >= 10 {
                 entity.add_component(Reproduction); // пальме пора чпокаться.
-                entity.remove_component::<Growth>(); // выключаем рост.
+                if entity.has_component::<Growth>() {entity.remove_component::<Growth>();}; // выключаем рост.
                 entity.refresh();
             }
             // фиксируем текущее время
@@ -167,7 +167,7 @@ impl System for PlantDeadSystem {
             }
 
             state.state = 0; // помечаем состояние как труп.
-            entity.remove_component::<Dead>(); //
+            if entity.has_component::<Dead>() {entity.remove_component::<Dead>();};
             entity.add_component(Replication); // требуется репликация.
             entity.add_component(Remove); // требуется убрать с полей.
             entity.refresh();
@@ -187,8 +187,6 @@ impl System for PlantRemoveSystem {
 
     // эта функция выполняется во время update столько раз, сколько сущностей содержащих компонент FloraState
     fn process_one(&mut self, entity: &mut Entity) {
-        //entity.remove_component::<Remove>(); // хз, надо ли?
-        //entity.remove_component::<FloraClass>(); // если мы удаляем всю сущность целиком однако.
         entity.delete();
     }
 }

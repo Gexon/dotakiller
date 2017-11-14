@@ -375,6 +375,7 @@ impl MonsterEventSystem {
         }
     }
 
+    // Обработка события: подтверждение для члена об исключении из группы.
     fn exec_answer_leaving_group(&self,
                                  events_vec: &mut Vec<EventGroupMonster>,
                                  event_type: EventTypeMonster,
@@ -410,6 +411,7 @@ impl MonsterEventSystem {
         }
     }
 
+    // Обработка события: выход ВОЖДЯ из группы.
     fn exec_lead_leave_group(&self,
                              events_vec: &mut Vec<EventGroupMonster>,
                              event_type: EventTypeMonster,

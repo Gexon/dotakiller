@@ -11,8 +11,6 @@ use futures::sync::mpsc;
 
 use ::server::proto::*;
 
-use GROUND_SPEED;
-
 use ::server::components::ReplicationServerClass;
 use ::ground::components::*;
 use ::flora::components::FloraState;
@@ -50,8 +48,8 @@ impl System for ReplicationServerSystem {
         for flora in _floras {
             self.replication(|tx, _addr, conn| {
                 // Выполняем первичную репликацию, если клиент новый.
-                if conn.is_new && conn.primary_replication_time.to(PreciseTime::now()) > Duration::seconds(GROUND_SPEED) {
-                    //println!("_floras {}", _floras.len());
+                if conn.is_new && conn.primary_replication_time.to(PreciseTime::now()) > Duration::seconds(5) {
+                    println!("_floras {}", _floras.len());
                     is_primary_replication = true;
                     let id_herb = flora.get_component::<HerbId>();
                     let class = flora.get_component::<Name>();

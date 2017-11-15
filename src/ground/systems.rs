@@ -65,7 +65,7 @@ impl System for SpawnFloraSystem {
                 insert_id
             });
 
-            if entity.has_component::<SpawnFlora>() {entity.remove_component::<SpawnFlora>();}; // удаляем компонент "Точка спавна/spawn_point"
+            //entity.remove_component::<SpawnFlora>(); // удаляем компонент "Точка спавна/spawn_point"
             entity.delete();
         }
     }
@@ -125,7 +125,7 @@ impl System for SpawnMonsterSystem {
             println!("Создаем сущность {} {}", spawn_point.name.to_string(), monster_id.id);
             last_id.monster_id += 1;
 
-            if entity.has_component::<SpawnMonster>() {entity.remove_component::<SpawnMonster>();}; // удаляем компонент "Точка спавна/spawn_point"
+            //entity.remove_component::<SpawnMonster>(); // удаляем компонент "Точка спавна/spawn_point"
             entity.delete();
         }
     }

@@ -17,6 +17,8 @@ $ screen -r 12836 (подключиться к существующей сесс
 
 // вывод стека ошибок
 RUST_BACKTRACE=1 cargo run
+// для VPS
+./dk_server RUST_BACKTRACE=1
 
 // обновить репозиторий убунту
 sudo apt-get update
@@ -24,4 +26,38 @@ sudo apt-get dist-upgrade
 // обновление убунту
 sudo apt-get update && sudo apt-get upgrade -y && reboot
 
-
+// на VPS иногда не включен SWAP, от чего убивается приложение в пиках потребления ОЗУ.
+https://www.digitalocean.com/community/tutorials/how-to-add-swap-space-on-ubuntu-16-04
+// посмотреть сколько используется, если не выводит ничего, файл подкачки отключен.
+sudo swapon --show
+// тоже показывает сколько занято под свап
+free -h
+// тут что-то про разделы дисков, тот что "/dev/vda1       9.4G  2.8G  6.2G  32% /" - видимо всего места
+df -h
+// создаем свап файл
+sudo fallocate -l 2G /swapfile
+// проверяем что создался, должно быть что-то вроде "-rw-r--r-- 1 root root 2.0G Nov 13 20:47 /swapfile"
+ls -lh /swapfile
+// даем доступ только руту
+sudo chmod 600 /swapfile
+// проверяем права, должно быть типа "-rw------- 1 root root 2.0G Nov 13 20:47 /swapfile"
+ls -lh /swapfile
+// включаем файл подкачки, чтоб система могла его использовать
+sudo swapon /swapfile
+// проверяем использование файла подкачки
+sudo swapon --show
+// короче добавляем эту херь в автозагрузку - ппц
+sudo cp /etc/fstab /etc/fstab.bak
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+// дальше настраиваем порог срабатывания свопа на 10 процентов, короче это для серверов так надо.
+sudo sysctl vm.swappiness=10
+// пишем это в автозагрузку. откроется нано, в конец файла нужно добавить "vm.swappiness=10"
+// надеюсь ты не забыл как в нем сохранять файл "ctrl+O" и выход "ctrl+x"
+sudo nano /etc/sysctl.conf
+vm.swappiness=10
+// еще какаую-то херь настроить надо, типа чтоб не грузить проц
+cat /proc/sys/vm/vfs_cache_pressure
+sudo sysctl vm.vfs_cache_pressure=50
+// опять в автозагрузку надо это добавить
+sudo nano /etc/sysctl.conf
+vm.vfs_cache_pressure=50

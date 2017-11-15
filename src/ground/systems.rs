@@ -125,7 +125,7 @@ impl System for SpawnMonsterSystem {
             println!("Создаем сущность {} {}", spawn_point.name.to_string(), monster_id.id);
             last_id.monster_id += 1;
 
-            //entity.remove_component::<SpawnMonster>();  // удаляем компонент "Точка спавна/spawn_point"
+            //entity.remove_component::<SpawnMonster>(); // удаляем компонент "Точка спавна/spawn_point"
             entity.delete();
         }
     }

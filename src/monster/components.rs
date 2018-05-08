@@ -222,7 +222,7 @@ impl SelectionTree {
 
     //
     pub fn get_graph() -> NodeBehavior {
-        // получаем граф с БД (список, хешмап, вектор, массив?)
+        // получаем граф с БД
         let graph = get_monster_graph();
 
         // передаем его в парсер

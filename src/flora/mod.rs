@@ -14,8 +14,8 @@ pub fn init(dk_world: &mut World) {
     dk_world.set_system(PlantDeadSystem);
     dk_world.set_system(PlantRemoveSystem);
 
-    for y in 0..100 {
-        for count in 0..100 {
+    for y in 0..10 {
+        for count in 0..10 {
             // поручаем спавнеру, засумонить в наш мир пальму.
             // создаем спавнер
             let mut entity_manager = dk_world.entity_manager();

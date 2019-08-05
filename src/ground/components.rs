@@ -118,6 +118,15 @@ pub struct SpawnMonster {
 
 impl Component for SpawnMonster {}
 
+/// Для спавна аборигенов
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct SpawnAborigen {
+    pub name: &'static str,
+    pub x: f32,
+    pub y: f32,
+}
+
+impl Component for SpawnAborigen {}
 
 /// Все что должно расти - должно расти.
 pub struct Growth;

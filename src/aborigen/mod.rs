@@ -7,4 +7,6 @@ use ::aborigen::systems::*;
 
 pub mod components;
 pub mod systems;
+pub mod aborigen_goap;
+
 

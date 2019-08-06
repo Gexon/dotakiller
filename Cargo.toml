@@ -25,3 +25,4 @@ rustc-serialize = "0.3.21"
 tokio-core = "0.1.6"
 tokio-io = "0.1.1"
 futures = "0.1.13"
+gpgoap = { git = "https://github.com/Gexon/gpgoap-rs"}

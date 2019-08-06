@@ -31,6 +31,7 @@ pub struct ReplicationServer {
 }
 
 impl ReplicationServer {
+    #[allow(deprecated)]
     pub fn run(&mut self) {
         // Привязываем сокет сервера
         let hostname: &str = SERVER_IP;

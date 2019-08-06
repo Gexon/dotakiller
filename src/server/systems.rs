@@ -19,6 +19,9 @@ use ::flora::components::FloraClass;
 use ::monster::components::MonsterId;
 use ::monster::components::MonsterClass;
 use ::monster::components::MonsterState;
+use ::aborigen::components::AborigenId;
+use ::aborigen::components::AborigenClass;
+use ::aborigen::components::AborigenState;
 
 
 pub struct ReplicationServerSystem {
@@ -36,11 +39,11 @@ impl System for ReplicationServerSystem {
     }
 
     fn data_aspects(&self) -> Vec<Aspect> {
-        vec![aspect_all![FloraClass].optional(), aspect_all![MonsterClass].optional()]
+        vec![aspect_all![FloraClass].optional(), aspect_all![MonsterClass].optional(), aspect_all![AborigenClass].optional()]
     }
 
     // Вынимаем аспекты макросом, т.к. там безумие в коде.
-    impl_process!(self, _entity, | _replication_server_class: ReplicationServerClass | with (_floras, _monsters) => {
+    impl_process!(self, _entity, | _replication_server_class: ReplicationServerClass | with (_floras, _monsters, _aborigens) => {
         // _replication_server_class - это компонента из _entity типа ReplicationServerClass
         // отсрочить первичную репликацию
         // Репликация растений ------------------------
@@ -103,6 +106,34 @@ impl System for ReplicationServerSystem {
                 monster.refresh();
             }
         } // -------- Репликация монстров
+
+        // Репликация аборигенов ---------------------------
+        for aborigen in _aborigens {
+            self.replication(|tx, _addr, conn| {
+                // Выполняем первичную репликацию, если клиент новый.
+                if conn.is_new && is_primary_replication{
+                    let id_aborigen = aborigen.get_component::< AborigenId > ();
+                    let class = aborigen.get_component::< Name > ();
+                    let state = aborigen.get_component::< AborigenState > ();
+                    let position = aborigen.get_component::< Position > ();
+                    let s = format ! ("updaborigen {} {} {} {} {} {}", id_aborigen.id, class.name, state.state, position.x, position.y, state.emo_state);
+                    tx.unbounded_send(Ok(Message::Raw(s))).unwrap();
+                    // основная репликация.
+                } else if aborigen.has_component::<Replication>() {
+                    let id_aborigen = aborigen.get_component::< AborigenId > ();
+                    let class = aborigen.get_component::< Name > ();
+                    let state = aborigen.get_component::< AborigenState > ();
+                    let position = aborigen.get_component::< Position > ();
+                    let s = format!("updaborigen {} {} {} {} {} {}", id_aborigen.id, class.name, state.state, position.x, position.y, state.emo_state);
+                    tx.unbounded_send(Ok(Message::Raw(s))).unwrap();
+                }
+            });
+            // Удалять флаг репликации тут! Иначе будет стопятьсот раз его пытаться удалить в каждом соединении.
+            if aborigen.has_component::<Replication>() {
+                aborigen.remove_component::<Replication>(); // убираем компонент репликации.
+                aborigen.refresh();
+            }
+        } // -------- Репликация аборигенов
 
         self.replication(|_tx, _addr, conn| {
             // снимаем флаг новичка.

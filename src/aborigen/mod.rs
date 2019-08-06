@@ -3,7 +3,6 @@
 use tinyecs::*;
 
 use ::ground::components::SpawnAborigen;
-//use ::aborigen::systems::*;
 
 pub mod components;
 pub mod systems;

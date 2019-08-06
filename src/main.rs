@@ -9,7 +9,7 @@ extern crate futures;
 extern crate tokio_core;
 extern crate tokio_io;
 
-#[macro_use]
+//#[macro_use]
 extern crate tinyecs;
 //use time::{PreciseTime, Duration};
 

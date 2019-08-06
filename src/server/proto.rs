@@ -10,7 +10,7 @@ use futures::sync::oneshot::Sender;
 use futures::sync::mpsc;
 use tokio_io::codec::{Decoder, Encoder};
 
-use bytes::{BytesMut, Buf, BufMut, IntoBuf, LittleEndian};
+use bytes::{BytesMut, Buf, BufMut, IntoBuf};
 
 pub type Connections = HashMap<SocketAddr, mpsc::UnboundedSender<Result<Message, MessageError>>>;
 
@@ -190,7 +190,7 @@ impl Decoder for MessageCodec {
         }
 
         let size = {
-            let size = buf[..8].into_buf().get_u64::<LittleEndian>() as usize;
+            let size = buf[..8].into_buf().get_u64_le() as usize;
 
             if size == 0 || size > 1_048_576 {
                 let error = Error::new(ErrorKind::InvalidData,
@@ -272,7 +272,7 @@ impl Encoder for MessageCodec {
             .write_to_buf(&mut msg_buf)
             .map_err(MessageError::from));
         buf.reserve(8 + msg_buf.len());
-        buf.put_u64::<LittleEndian>(msg_buf.len() as u64);
+        buf.put_u64_le(msg_buf.len() as u64);
         buf.put(msg_buf);
         Ok(())
     }

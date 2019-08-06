@@ -78,8 +78,6 @@ pub struct MonsterState {
     pub delta_y: i32,
 }
 
-impl Component for MonsterState {}
-
 impl MonsterState {
     pub fn new() -> MonsterState {
         MonsterState {
@@ -100,6 +98,8 @@ impl MonsterState {
         }
     }
 }
+
+impl Component for MonsterState {}
 
 /// характеристики монстра и его текущее состояние
 pub struct MonsterAttributes {
@@ -152,8 +152,6 @@ pub struct MonsterMem {
 
 }
 
-impl Component for MonsterMem {}
-
 impl MonsterMem {
     pub fn new() -> MonsterMem {
         MonsterMem {
@@ -175,6 +173,7 @@ impl MonsterMem {
     }
 }
 
+impl Component for MonsterMem {}
 
 /// Сосотояние монстра, для Behaviour Tree
 #[derive(Debug, Clone, Copy, PartialEq)]

@@ -4,7 +4,7 @@ use tinyecs::*;
 use time::PreciseTime;
 
 use ::utility::enums::*;
-use ::monster::components::PositionM;
+use ::monster::components::*;
 
 /// метка принадлежности к классу аборигена.
 pub struct AborigenClass {

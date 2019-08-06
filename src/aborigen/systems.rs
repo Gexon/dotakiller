@@ -1,3 +1,3 @@
 // будем юзать GOAP
 
-use tinyecs::*;
+//use tinyecs::*;

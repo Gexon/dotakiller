@@ -52,6 +52,7 @@ fn main() {
     ground::init(&mut dk_world);    // инициализация основ мира.
     flora::init(&mut dk_world);     // инициализация растений.
     monster::init(&mut dk_world);     // инициализация монстров.
+    aborigen::init(&mut dk_world);     // инициализация аборигенов.
     //let mut event_time: std::time::Instant;//PreciseTime;
     //let max_time = std::time::Duration::from_millis(TICK_MAX_TIME);
     loop {

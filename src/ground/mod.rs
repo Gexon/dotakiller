@@ -20,6 +20,7 @@ pub fn init(dk_world: &mut World) {
     // добавляем в мир систему спавна.
     dk_world.set_system(SpawnFloraSystem);
     dk_world.set_system(SpawnMonsterSystem);
+    dk_world.set_system(SpawnAborigenSystem);
     dk_world.set_system(WindDirectionSystem);
     dk_world.set_system(FloraEventSystem);
     dk_world.set_system(MonsterEventSystem);
@@ -38,6 +39,7 @@ pub fn init(dk_world: &mut World) {
         entity.add_component(WorldLastId {
             flora_id: 0,
             monster_id: 0,
+            aborigen_id: 0,
         });
         entity.add_component(EventsTo::new());
         entity.refresh();

@@ -54,6 +54,7 @@ impl ReplicationServer {
             .incoming()
             .for_each(move |(stream, addr)| {
                 //println!("Входящее соединение: {}", addr);
+
                 let framed = stream.framed(MessageCodec);
                 let (writer, reader) = framed.split();
                 // Then register our address with the stream to send data to us.

@@ -12,6 +12,7 @@ use ::utility::enums::*;
 use ::ground::components::*;
 use ::flora::components::*;
 use ::monster::components::*;
+use ::aborigen::components::*;
 
 /// Система создает растения в мире.
 pub struct SpawnFloraSystem;
@@ -124,6 +125,61 @@ impl System for SpawnMonsterSystem {
             let monster_id = entity_object.get_component::<MonsterId>();
             println!("Создаем сущность {} {}", spawn_point.name.to_string(), monster_id.id);
             last_id.monster_id += 1;
+
+            //entity.remove_component::<SpawnMonster>(); // удаляем компонент "Точка спавна/spawn_point"
+            entity.delete();
+        }
+    }
+}
+
+/// Система создает аборигенов в мире.
+pub struct SpawnAborigenSystem;
+
+impl System for SpawnAborigenSystem {
+    // Обрабатываем сущности содержащие компоненты "SpawnPoint", "Position"
+    // Аспект - список сущностей, содержащих выбранные компоненты.
+    fn aspect(&self) -> Aspect {
+        aspect_all!(SpawnAborigen)
+    }
+
+    fn data_aspects(&self) -> Vec<Aspect> {
+        vec![aspect_all![ClassGround]]
+    }
+
+    // обработчик, вызывается при update, process_all - 1 раз вызывается.
+    fn process_all(&mut self, entities: &mut Vec<&mut Entity>, world: &mut WorldHandle, data: &mut DataList) {
+        let ground = data.unwrap_entity();
+        let mut last_id = ground.get_component::<WorldLastId>();
+
+        // перебираем все сущности
+        for entity in entities {
+            // берем компонент "Точка спавна/spawn_point"
+            let spawn_point = entity.get_component::<SpawnAborigen>();
+
+            // создаем новую сущность-объект, Аборигена короче.
+            let entity_object = world.entity_manager.create_entity();
+            entity_object.add_component(Name { name: spawn_point.name.to_string() });
+            entity_object.add_component(Position { x: spawn_point.x, y: spawn_point.y });
+            entity_object.add_component(AborigenClass {
+                growth_time: PreciseTime::now(),
+                reproduction_time: PreciseTime::now(),
+                behavior_time: PreciseTime::now(),
+                bios_time: PreciseTime::now(),
+                event_time: PreciseTime::now(),
+                selector_time: PreciseTime::now(),
+                perception_time: PreciseTime::now()
+            });
+            entity_object.add_component(Replication); // произошли изменения аборигена.
+            entity_object.add_component(AborigenState::new());
+            entity_object.add_component(AborigenId { id: last_id.aborigen_id });
+            //entity_object.add_component(SelectionTree::new());
+
+            entity_object.add_component(AborigenAttributes::new());
+            entity_object.add_component(AborigenMem::new());
+            entity_object.refresh();
+            let aborigen_id = entity_object.get_component::<AborigenId>();
+            println!("Создаем сущность {} {}", spawn_point.name.to_string(), aborigen_id.id);
+            last_id.aborigen_id += 1;
 
             //entity.remove_component::<SpawnMonster>(); // удаляем компонент "Точка спавна/spawn_point"
             entity.delete();

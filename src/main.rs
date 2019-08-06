@@ -29,6 +29,7 @@ mod server;
 mod utility;
 mod flora;
 mod monster;
+mod aborigen;
 mod ground;
 
 // port 6655

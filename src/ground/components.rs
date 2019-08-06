@@ -56,6 +56,7 @@ impl EventsTo {
 pub struct WorldLastId {
     pub flora_id: i32,
     pub monster_id: i32,
+    pub aborigen_id: i32,
 }
 
 impl Component for WorldLastId {}
